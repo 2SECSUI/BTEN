@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTEN Ledger — live Sui chain reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101614;
+    --ink-2:#161f1c;
+    --plate:#1b2622;
+    --hair:#2c3a35;
+    --parchment:#ece6d8;
+    --parchment-dim:#a9a294;
+    --brass:#b8935a;
+    --brass-bright:#d4ab72;
+    --teal:#3c6b66;
+    --rust:#a05a45;
+    --good:#7c9a6d;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--parchment);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    line-height:1.6;
+  }
+  ::selection{ background:var(--brass); color:var(--ink); }
+  a{ color:var(--brass-bright); text-decoration:none; border-bottom:1px solid rgba(212,171,114,0.35); }
+  a:hover{ border-bottom-color:var(--brass-bright); }
+
+  .wrap{ max-width:920px; margin:0 auto; padding:0 24px; }
+
+  /* ---------- Hero ---------- */
+  header.hero{
+    border-bottom:1px solid var(--hair);
+    padding:56px 0 40px;
+    background:
+      radial-gradient(1200px 400px at 15% -20%, rgba(184,147,90,0.10), transparent 60%),
+      var(--ink);
+  }
+  .hero-grid{ display:grid; grid-template-columns:1.3fr 1fr; gap:40px; align-items:end; }
+  @media (max-width:760px){ .hero-grid{ grid-template-columns:1fr; } }
+
+  .eyebrow-line{ display:flex; align-items:center; gap:10px; color:var(--parchment-dim); font-size:12.5px; margin-bottom:18px; }
+  .eyebrow-line .dot{ width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }
+  .eyebrow-line .dot.bad{ background:var(--rust); box-shadow:0 0 8px var(--rust); }
+
+  h1.title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-style:italic;
+    font-size:clamp(40px, 6vw, 64px);
+    line-height:0.98;
+    margin:0 0 14px;
+    color:var(--parchment);
+    letter-spacing:-0.5px;
+  }
+  h1.title em{ color:var(--brass-bright); font-style:italic; }
+  .subhead{ max-width:52ch; color:var(--parchment-dim); font-size:14.5px; margin:0; }
+
+  .supply-meter{ border:1px solid var(--hair); background:var(--plate); padding:20px 22px; }
+  .supply-meter .figure{ font-family:'Fraunces', serif; font-weight:500; font-size:34px; color:var(--parchment); }
+  .supply-meter .figure small{ font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--parchment-dim); font-weight:400; margin-left:6px; }
+  .supply-meter .cap-label{ display:flex; justify-content:space-between; font-size:12px; color:var(--parchment-dim); margin-top:14px; }
+  .ruler{ position:relative; height:14px; margin-top:6px; border:1px solid var(--hair); background:repeating-linear-gradient(90deg, transparent, transparent calc(10% - 1px), var(--hair) calc(10% - 1px), var(--hair) 10%); }
+  .ruler .fill{ position:absolute; inset:0; width:0%; background:linear-gradient(90deg, var(--teal), var(--brass)); transition:width 0.6s ease; }
+
+  /* ---------- Facts strip ---------- */
+  .facts{ border-bottom:1px solid var(--hair); }
+  .facts-grid{ display:grid; grid-template-columns:repeat(4, 1fr); }
+  @media (max-width:760px){ .facts-grid{ grid-template-columns:repeat(2, 1fr); } }
+  .fact{ padding:18px 22px; border-right:1px solid var(--hair); border-top:1px solid var(--hair); }
+  .fact:nth-child(4n){ border-right:none; }
+  .fact .k{ font-size:11.5px; color:var(--parchment-dim); margin-bottom:6px; }
+  .fact .v{ font-size:15px; color:var(--brass-bright); }
+
+  /* ---------- Sections ---------- */
+  section{ padding:44px 0; border-bottom:1px solid var(--hair); }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
+  h2.section-title{
+    font-family:'Fraunces', serif; font-weight:500; font-style:italic;
+    font-size:26px; margin:0; color:var(--parchment);
+  }
+  .section-note{ color:var(--parchment-dim); font-size:12.5px; }
+  .updated{ font-size:11.5px; color:var(--parchment-dim); }
+
+  .ledger-row{
+    display:grid; grid-template-columns:200px 1fr; gap:16px;
+    padding:12px 0; border-top:1px solid var(--hair);
+  }
+  .ledger-row:last-child{ border-bottom:1px solid var(--hair); }
+  .ledger-row .k{ color:var(--parchment-dim); font-size:12.5px; padding-top:2px; }
+  .ledger-row .v{ color:var(--parchment); word-break:break-all; }
+  @media (max-width:600px){ .ledger-row{ grid-template-columns:1fr; gap:4px; } }
+
+  .addr-copy{ display:inline-flex; align-items:center; gap:8px; }
+  .copy-btn{
+    background:none; border:1px solid var(--hair); color:var(--parchment-dim);
+    font-family:inherit; font-size:11px; padding:3px 8px; cursor:pointer; border-radius:var(--radius);
+  }
+  .copy-btn:hover{ border-color:var(--brass); color:var(--brass-bright); }
+
+  .btn{
+    background:none; border:1px solid var(--brass); color:var(--brass-bright);
+    font-family:inherit; font-size:12.5px; padding:8px 16px; cursor:pointer; border-radius:var(--radius);
+  }
+  .btn:hover{ background:rgba(184,147,90,0.12); }
+  .btn:disabled{ opacity:0.4; cursor:default; }
+  .btn.ghost{ border-color:var(--hair); color:var(--parchment-dim); }
+  .btn.ghost:hover{ border-color:var(--parchment-dim); color:var(--parchment); }
+
+  .status-msg{ font-size:12.5px; color:var(--parchment-dim); padding:10px 0; }
+  .status-msg.err{ color:var(--rust); }
+  .status-msg.ok{ color:var(--good); }
+
+  /* module tree */
+  .module{ border-top:1px solid var(--hair); }
+  .module:last-child{ border-bottom:1px solid var(--hair); }
+  .module-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 0; cursor:pointer;
+  }
+  .module-head .name{ color:var(--brass-bright); }
+  .module-head .count{ color:var(--parchment-dim); font-size:12px; }
+  .module-body{ display:none; padding:0 0 16px 18px; border-left:1px solid var(--hair); margin-left:2px; }
+  .module.open .module-body{ display:block; }
+  .fn-row{ display:flex; gap:10px; padding:6px 0; font-size:12.5px; align-items:baseline; flex-wrap:wrap; }
+  .fn-row .fn-name{ color:var(--parchment); }
+  .tag{ font-size:10px; padding:1px 6px; border:1px solid var(--hair); color:var(--parchment-dim); border-radius:var(--radius); }
+  .tag.entry{ border-color:var(--teal); color:#9fc2bd; }
+  .tag.public{ border-color:var(--brass); color:var(--brass-bright); }
+
+  /* activity feed */
+  .tx-row{
+    display:grid; grid-template-columns:110px 1fr 90px 130px; gap:12px;
+    padding:10px 0; border-top:1px solid var(--hair); font-size:12.5px; align-items:center;
+  }
+  .tx-row:last-child{ border-bottom:1px solid var(--hair); }
+  @media (max-width:700px){ .tx-row{ grid-template-columns:1fr; gap:4px; } }
+  .tx-row .digest{ color:var(--brass-bright); }
+  .tx-row .ok{ color:var(--good); }
+  .tx-row .fail{ color:var(--rust); }
+
+  /* input rows */
+  .input-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  input[type=text]{
+    flex:1; min-width:220px; background:var(--ink-2); border:1px solid var(--hair);
+    color:var(--parchment); font-family:inherit; font-size:13px; padding:10px 12px; border-radius:var(--radius);
+  }
+  input[type=text]:focus{ outline:none; border-color:var(--brass); }
+  input[type=text]::placeholder{ color:#555f5a; }
+
+  .kv-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .kv-table td{ padding:8px 10px; border-top:1px solid var(--hair); vertical-align:top; }
+  .kv-table td:first-child{ color:var(--parchment-dim); width:220px; }
+  .kv-table td:last-child{ color:var(--parchment); word-break:break-all; }
+
+  .price-callout{
+    border:1px solid var(--brass); padding:16px 18px; margin-bottom:16px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+  }
+  .price-callout .num{ font-family:'Fraunces',serif; font-size:26px; color:var(--brass-bright); }
+
+  footer{ padding:36px 0 64px; }
+  .footer-links{ display:flex; gap:22px; flex-wrap:wrap; margin-bottom:20px; font-size:13px; }
+  .disclaimer{ color:var(--parchment-dim); font-size:12px; max-width:70ch; }
+
+  .skeleton{ color:#555f5a; }
+  code.inline{ background:var(--ink-2); padding:1px 5px; border-radius:2px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow-line"><span class="dot" id="rpcDot"></span><span id="rpcStatusText">connecting to Sui mainnet RPC…</span></div>
+    <div class="hero-grid">
+      <div>
+        <h1 class="title">BTEN <em>Ledger</em></h1>
+        <p class="subhead">An unofficial live reader for BlockTen (BTEN) on Sui mainnet — supply, on-chain functions, activity, and pool state, pulled directly from the chain, not from a cached API.</p>
+      </div>
+      <div class="supply-meter">
+        <div class="cap-label"><span>circulating supply</span><span>cap 21,000,000</span></div>
+        <div class="figure" id="supplyFigure"><span class="skeleton">— — —</span></div>
+        <div class="ruler"><div class="fill" id="supplyFill"></div></div>
+        <div class="cap-label"><span id="supplyPct">0.00% minted</span><span id="supplyRemaining">— remaining</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="facts">
+  <div class="wrap">
+    <div class="facts-grid">
+      <div class="fact"><div class="k">supply cap</div><div class="v">21,000,000 BTEN</div></div>
+      <div class="fact"><div class="k">decimals</div><div class="v">8</div></div>
+      <div class="fact"><div class="k">initial subsidy</div><div class="v">50 BTEN / release</div></div>
+      <div class="fact"><div class="k">release gate</div><div class="v">10 routed receipts / block</div></div>
+    </div>
+  </div>
+  <div class="wrap" style="padding:0 22px 16px;">
+    <div class="section-note">Constants above are as published in the project's public README — not live RPC reads. Everything below this line is fetched live.</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- IDENTITY -->
+  <section id="identity">
+    <div class="section-head">
+      <h2 class="section-title">Coin identity</h2>
+      <span class="updated" id="identityUpdated"></span>
+    </div>
+    <div class="ledger-row">
+      <div class="k">coin type</div>
+      <div class="v addr-copy"><span id="coinTypeText"></span><button class="copy-btn" data-copy="coinType">copy</button></div>
+    </div>
+    <div class="ledger-row">
+      <div class="k">package</div>
+      <div class="v addr-copy"><span id="packageIdText"></span><button class="copy-btn" data-copy="packageId">copy</button></div>
+    </div>
+    <div class="ledger-row">
+      <div class="k">symbol / name</div>
+      <div class="v" id="metaSymbolName">loading…</div>
+    </div>
+    <div class="ledger-row">
+      <div class="k">description</div>
+      <div class="v" id="metaDescription">loading…</div>
+    </div>
+    <div class="ledger-row">
+      <div class="k">on-chain decimals</div>
+      <div class="v" id="metaDecimals">loading…</div>
+    </div>
+    <div class="ledger-row">
+      <div class="k">explorers</div>
+      <div class="v" id="explorerLinks">—</div>
+    </div>
+    <div id="identityStatus" class="status-msg"></div>
+  </section>
+
+  <!-- MODULES / FUNCTIONS -->
+  <section id="modules">
+    <div class="section-head">
+      <h2 class="section-title">Package functions</h2>
+      <button class="btn ghost" id="refreshModules">re-read package</button>
+    </div>
+    <div class="section-note" style="margin-bottom:14px;">Read directly from the published bytecode via <code class="inline">sui_getNormalizedMoveModulesByPackage</code> — this is the real, current function surface, not a description of it.</div>
+    <div id="modulesList"><div class="status-msg">loading modules…</div></div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section id="activity">
+    <div class="section-head">
+      <h2 class="section-title">Recent chain activity</h2>
+      <button class="btn ghost" id="refreshActivity">refresh</button>
+    </div>
+    <div class="section-note" style="margin-bottom:10px;">Latest transactions that touched the BTEN package, newest first. This is a proxy for trader/caller activity — Sui full nodes don't expose a dedicated "traders" index, so this lists raw transaction blocks referencing the package as an input.</div>
+    <div class="tx-row" style="border-top:none; font-size:11px; color:var(--parchment-dim);">
+      <div>digest</div><div>sender</div><div>status</div><div>time</div>
+    </div>
+    <div id="activityList"><div class="status-msg">loading recent transactions…</div></div>
+  </section>
+
+  <!-- WALLET LOOKUP -->
+  <section id="wallet">
+    <div class="section-head">
+      <h2 class="section-title">Wallet lookup</h2>
+    </div>
+    <div class="section-note" style="margin-bottom:14px;">Paste any Sui address to read its live BTEN balance directly from the chain.</div>
+    <div class="input-row">
+      <input type="text" id="walletInput" placeholder="0x… Sui address">
+      <button class="btn" id="walletLookupBtn">read balance</button>
+    </div>
+    <div id="walletResult"></div>
+  </section>
+
+  <!-- POOL MONITOR -->
+  <section id="pool">
+    <div class="section-head">
+      <h2 class="section-title">Pool monitor</h2>
+    </div>
+    <div class="section-note" style="margin-bottom:14px;">
+      The public repo's <code class="inline">MAINNET_ROUTE_CONFIG.json</code> lists the live pool object IDs but wasn't reachable from this session to pre-fill automatically. Paste a Sui object ID for a Cetus CLMM pool (or any DEX pool object) below to decode its live on-chain state — reserves, price, liquidity, and fee tier, read straight from the object.
+    </div>
+    <div class="input-row">
+      <input type="text" id="poolInput" placeholder="0x… pool object ID">
+      <button class="btn" id="poolLookupBtn">read pool</button>
+    </div>
+    <div id="poolResult"></div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-links">
+      <a href="https://github.com/2SECSUI/BTEN" target="_blank" rel="noopener">source repository</a>
+      <a href="https://github.com/2SECSUI/BTEN/blob/main/verification" target="_blank" rel="noopener">verification records</a>
+      <a href="https://github.com/2SECSUI/BTEN/blob/main/DEPLOYMENT.md" target="_blank" rel="noopener">deployment notes</a>
+      <a href="#" id="autoRefreshToggle">turn on auto-refresh (30s)</a>
+    </div>
+    <p class="disclaimer">This is an independent, unofficial viewer built to read public Sui mainnet state for the BTEN package and coin type published in the linked repository. It is not affiliated with the repository's maintainers, holds no custody of funds, and signs no transactions. All figures come from live RPC calls made by your browser to Sui's public mainnet full node, or are explicitly marked as static repo claims.</p>
+  </div>
+</footer>
+
+<script>
+// Several public endpoints, tried in order. Some public RPCs block cross-origin
+// browser calls or rate-limit unknown origins, so we fail over instead of
+// depending on a single node.
+const RPC_ENDPOINTS = [
+  "https://fullnode.mainnet.sui.io:443",
+  "https://sui-mainnet.public.blastapi.io",
+  "https://sui-rpc.publicnode.com",
+  "https://sui-mainnet-endpoint.blockvision.org"
+];
+let activeEndpointIndex = 0;
+
+const COIN_TYPE = "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN";
+const PACKAGE_ID = "0x5a15d97c6466448b0e4960c8f0a61e7a2d9d8cc9397542fe26ceacad3cf066f0";
+const SUPPLY_CAP = 21000000;
+let DECIMALS = 8;
+let autoRefreshTimer = null;
+
+function shorten(addr, head=8, tail=6){
+  if(!addr) return "";
+  if(addr.length <= head+tail+3) return addr;
+  return addr.slice(0,head) + "…" + addr.slice(-tail);
+}
+
+async function rpcOnce(endpoint, method, params){
+  let res;
+  try{
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc:"2.0", id:1, method, params })
+    });
+  } catch(networkErr){
+    // fetch() throws a bare TypeError for both offline networks and CORS
+    // rejections — either way this endpoint is unusable from this browser.
+    throw new Error("network/CORS blocked (" + endpoint + ")");
+  }
+  if(!res.ok) throw new Error("HTTP " + res.status + " from " + endpoint);
+  const json = await res.json();
+  if(json.error) throw new Error((json.error.message || "RPC error") + " [" + endpoint + "]");
+  return json.result;
+}
+
+async function rpc(method, params){
+  const order = [activeEndpointIndex, ...RPC_ENDPOINTS.map((_,i)=>i).filter(i => i !== activeEndpointIndex)];
+  let lastErr;
+  for(const i of order){
+    try{
+      const result = await rpcOnce(RPC_ENDPOINTS[i], method, params);
+      if(i !== activeEndpointIndex){
+        activeEndpointIndex = i;
+        setRpcStatus(true, "connected — " + RPC_ENDPOINTS[i].replace("https://",""));
+      }
+      return result;
+    } catch(err){
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+function setRpcStatus(ok, text){
+  document.getElementById("rpcDot").className = "dot" + (ok ? "" : " bad");
+  document.getElementById("rpcStatusText").textContent = text;
+}
+
+function nowStamp(){
+  return new Date().toLocaleTimeString();
+}
+
+// ---------- Identity + supply ----------
+async function loadIdentity(){
+  document.getElementById("coinTypeText").textContent = shorten(COIN_TYPE, 14, 10);
+  document.getElementById("packageIdText").textContent = shorten(PACKAGE_ID, 14, 10);
+  document.getElementById("explorerLinks").innerHTML =
+    `<a href="https://suivision.xyz/coin/${encodeURIComponent(COIN_TYPE)}" target="_blank" rel="noopener">Suivision — coin</a> &nbsp; ` +
+    `<a href="https://suivision.xyz/package/${PACKAGE_ID}" target="_blank" rel="noopener">Suivision — package</a>`;
+
+  const statusEl = document.getElementById("identityStatus");
+  try{
+    const [meta, supply] = await Promise.all([
+      rpc("suix_getCoinMetadata", [COIN_TYPE]),
+      rpc("suix_getTotalSupply", [COIN_TYPE])
+    ]);
+
+    setRpcStatus(true, "connected — Sui mainnet full node");
+
+    if(meta){
+      DECIMALS = meta.decimals;
+      document.getElementById("metaSymbolName").textContent = `${meta.symbol || "—"}  /  ${meta.name || "—"}`;
+      document.getElementById("metaDescription").textContent = meta.description || "(none set on-chain)";
+      document.getElementById("metaDecimals").textContent = meta.decimals;
+    } else {
+      document.getElementById("metaSymbolName").textContent = "no CoinMetadata object found on-chain";
+      document.getElementById("metaDescription").textContent = "—";
+      document.getElementById("metaDecimals").textContent = "8 (from repo constant)";
+    }
+
+    if(supply && supply.value !== undefined){
+      const total = Number(supply.value) / Math.pow(10, DECIMALS);
+      document.getElementById("supplyFigure").innerHTML = `${total.toLocaleString(undefined,{maximumFractionDigits:DECIMALS})}<small>BTEN</small>`;
+      const pct = Math.min(100, (total / SUPPLY_CAP) * 100);
+      document.getElementById("supplyFill").style.width = pct.toFixed(4) + "%";
+      document.getElementById("supplyPct").textContent = pct.toFixed(4) + "% minted";
+      document.getElementById("supplyRemaining").textContent = (SUPPLY_CAP - total).toLocaleString(undefined,{maximumFractionDigits:0}) + " remaining";
+    }
+
+    document.getElementById("identityUpdated").textContent = "updated " + nowStamp();
+    statusEl.textContent = "";
+  } catch(err){
+    setRpcStatus(false, "RPC call failed — " + err.message);
+    statusEl.className = "status-msg err";
+    statusEl.textContent = "Could not read coin identity: " + err.message + ". Your browser or network may be blocking calls to the Sui RPC endpoint.";
+    document.getElementById("supplyFigure").innerHTML = `<span class="skeleton">unavailable</span>`;
+  }
+}
+
+// ---------- Modules ----------
+async function loadModules(){
+  const list = document.getElementById("modulesList");
+  list.innerHTML = `<div class="status-msg">reading package bytecode…</div>`;
+  try{
+    const modules = await rpc("sui_getNormalizedMoveModulesByPackage", [PACKAGE_ID]);
+    const names = Object.keys(modules);
+    if(names.length === 0){
+      list.innerHTML = `<div class="status-msg">Package returned no modules.</div>`;
+      return;
+    }
+    list.innerHTML = "";
+    names.forEach(modName => {
+      const mod = modules[modName];
+      const fns = mod.exposedFunctions || {};
+      const fnNames = Object.keys(fns);
+      const wrap = document.createElement("div");
+      wrap.className = "module";
+      wrap.innerHTML = `
+        <div class="module-head">
+          <span class="name">${modName}</span>
+          <span class="count">${fnNames.length} exposed function${fnNames.length===1?"":"s"} ›</span>
+        </div>
+        <div class="module-body">
+          ${fnNames.length ? fnNames.map(fn => {
+            const f = fns[fn];
+            const paramCount = (f.parameters || []).length;
+            return `<div class="fn-row">
+              <span class="fn-name">${fn}(${paramCount} arg${paramCount===1?"":"s"})</span>
+              ${f.isEntry ? '<span class="tag entry">entry</span>' : ''}
+              <span class="tag public">${f.visibility ? f.visibility.toLowerCase() : "public"}</span>
+            </div>`;
+          }).join("") : '<div class="status-msg">no publicly exposed functions in this module</div>'}
+        </div>
+      `;
+      wrap.querySelector(".module-head").addEventListener("click", () => wrap.classList.toggle("open"));
+      list.appendChild(wrap);
+    });
+  } catch(err){
+    list.innerHTML = `<div class="status-msg err">Could not read package modules: ${err.message}</div>`;
+  }
+}
+
+// ---------- Activity ----------
+async function loadActivity(){
+  const list = document.getElementById("activityList");
+  list.innerHTML = `<div class="status-msg">querying recent transactions…</div>`;
+  try{
+    const result = await rpc("suix_queryTransactionBlocks", [
+      {
+        filter: { InputObject: PACKAGE_ID },
+        options: { showInput: true, showEffects: true }
+      },
+      null,
+      15,
+      true
+    ]);
+    const txs = result.data || [];
+    if(txs.length === 0){
+      list.innerHTML = `<div class="status-msg">No recent transactions found referencing this package.</div>`;
+      return;
+    }
+    list.innerHTML = "";
+    txs.forEach(tx => {
+      const digest = tx.digest;
+      const sender = tx.transaction && tx.transaction.data ? tx.transaction.data.sender : "—";
+      const status = tx.effects && tx.effects.status ? tx.effects.status.status : "unknown";
+      const time = tx.timestampMs ? new Date(Number(tx.timestampMs)).toLocaleString() : "—";
+      const row = document.createElement("div");
+      row.className = "tx-row";
+      row.innerHTML = `
+        <div><a class="digest" href="https://suivision.xyz/txblock/${digest}" target="_blank" rel="noopener">${shorten(digest,6,4)}</a></div>
+        <div>${shorten(sender,6,4)}</div>
+        <div class="${status === 'success' ? 'ok' : 'fail'}">${status}</div>
+        <div>${time}</div>
+      `;
+      list.appendChild(row);
+    });
+  } catch(err){
+    list.innerHTML = `<div class="status-msg err">Could not load activity: ${err.message}</div>`;
+  }
+}
+
+// ---------- Wallet lookup ----------
+async function lookupWallet(){
+  const addr = document.getElementById("walletInput").value.trim();
+  const out = document.getElementById("walletResult");
+  if(!addr){ out.innerHTML = `<div class="status-msg err">Enter an address first.</div>`; return; }
+  out.innerHTML = `<div class="status-msg">reading balance…</div>`;
+  try{
+    const bal = await rpc("suix_getBalance", [addr, COIN_TYPE]);
+    const human = Number(bal.totalBalance) / Math.pow(10, DECIMALS);
+    out.innerHTML = `
+      <table class="kv-table">
+        <tr><td>address</td><td>${addr}</td></tr>
+        <tr><td>BTEN balance</td><td>${human.toLocaleString(undefined,{maximumFractionDigits:DECIMALS})} BTEN</td></tr>
+        <tr><td>coin objects held</td><td>${bal.coinObjectCount}</td></tr>
+      </table>
+    `;
+  } catch(err){
+    out.innerHTML = `<div class="status-msg err">Lookup failed: ${err.message}</div>`;
+  }
+}
+
+// ---------- Pool monitor ----------
+async function lookupPool(){
+  const id = document.getElementById("poolInput").value.trim();
+  const out = document.getElementById("poolResult");
+  if(!id){ out.innerHTML = `<div class="status-msg err">Enter a pool object ID first.</div>`; return; }
+  out.innerHTML = `<div class="status-msg">reading pool object…</div>`;
+  try{
+    const obj = await rpc("sui_getObject", [id, { showContent:true, showType:true }]);
+    if(obj.error){ throw new Error(obj.error.code || "object not found"); }
+    const content = obj.data && obj.data.content;
+    if(!content || content.dataType !== "moveObject"){
+      out.innerHTML = `<div class="status-msg err">That object exists but isn't a readable Move struct (or wasn't found).</div>`;
+      return;
+    }
+    const fields = content.fields || {};
+    const type = content.type;
+
+    // try to find common CLMM-style fields
+    const findKey = (needle) => Object.keys(fields).find(k => k.toLowerCase().includes(needle));
+    const sqrtKey = findKey("sqrt_price");
+    const liqKey = findKey("liquidity");
+    const feeKey = findKey("fee_rate") || findKey("fee");
+    const coinAKey = findKey("coin_a");
+    const coinBKey = findKey("coin_b");
+    const tickKey = findKey("tick");
+
+    let priceHtml = "";
+    if(sqrtKey && fields[sqrtKey]){
+      try{
+        const sqrtPrice = BigInt(fields[sqrtKey]);
+        const Q64 = Math.pow(2,64);
+        const rawPrice = Math.pow(Number(sqrtPrice) / Q64, 2);
+        priceHtml = `
+          <div class="price-callout">
+            <div>
+              <div style="font-size:11.5px;color:var(--parchment-dim);">raw price (token B per token A, before decimal adjustment)</div>
+              <div class="num">${rawPrice.toPrecision(8)}</div>
+            </div>
+            <div style="font-size:11.5px;color:var(--parchment-dim);max-width:32ch;">Adjust by 10^(decimalsA − decimalsB) for a human-readable quote — this dashboard doesn't know the pool's second asset, so the raw ratio is shown as-read.</div>
+          </div>
+        `;
+      } catch(e){ /* ignore malformed sqrt price */ }
+    }
+
+    const rows = [
+      ["object type", type],
+      liqKey ? ["liquidity", fields[liqKey]] : null,
+      sqrtKey ? ["current sqrt price", fields[sqrtKey]] : null,
+      tickKey ? ["tick index", JSON.stringify(fields[tickKey])] : null,
+      feeKey ? ["fee rate", fields[feeKey]] : null,
+      coinAKey ? ["coin A reserve field", JSON.stringify(fields[coinAKey])] : null,
+      coinBKey ? ["coin B reserve field", JSON.stringify(fields[coinBKey])] : null,
+    ].filter(Boolean);
+
+    out.innerHTML = priceHtml + `
+      <table class="kv-table">
+        ${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}
+      </table>
+      <div class="section-note" style="margin-top:10px;">Showing decoded struct fields as returned by the chain. Field names vary by DEX/protocol — if nothing above resembles price or liquidity, this object may not be a CLMM pool.</div>
+    `;
+  } catch(err){
+    out.innerHTML = `<div class="status-msg err">Could not read that object: ${err.message}</div>`;
+  }
+}
+
+// ---------- copy buttons ----------
+document.querySelectorAll(".copy-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const which = btn.dataset.copy;
+    const text = which === "coinType" ? COIN_TYPE : PACKAGE_ID;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = "copied";
+      setTimeout(() => btn.textContent = original, 1200);
+    });
+  });
+});
+
+document.getElementById("refreshModules").addEventListener("click", loadModules);
+document.getElementById("refreshActivity").addEventListener("click", loadActivity);
+document.getElementById("walletLookupBtn").addEventListener("click", lookupWallet);
+document.getElementById("poolLookupBtn").addEventListener("click", lookupPool);
+document.getElementById("walletInput").addEventListener("keydown", e => { if(e.key === "Enter") lookupWallet(); });
+document.getElementById("poolInput").addEventListener("keydown", e => { if(e.key === "Enter") lookupPool(); });
+
+document.getElementById("autoRefreshToggle").addEventListener("click", (e) => {
+  e.preventDefault();
+  if(autoRefreshTimer){
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+    e.target.textContent = "turn on auto-refresh (30s)";
+  } else {
+    autoRefreshTimer = setInterval(() => { loadIdentity(); loadActivity(); }, 30000);
+    e.target.textContent = "turn off auto-refresh";
+  }
+});
+
+// initial load
+loadIdentity();
+loadModules();
+loadActivity();
+</script>
+</body>
+</html>
