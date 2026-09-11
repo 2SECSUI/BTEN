@@ -1,0 +1,9 @@
+[submodule ".cetus-clmm-interface"]
+	path = .cetus-clmm-interface
+	url = https://github.com/CetusProtocol/cetus-clmm-interface.git
+[submodule ".integer-mate"]
+	path = .integer-mate
+	url = https://github.com/CetusProtocol/integer-mate.git
+[submodule ".move-stl"]
+	path = .move-stl
+	url = https://github.com/CetusProtocol/move-stl.git

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTEN Public Operations Status",
+  "type": "object",
+  "required": ["network", "checkedAt", "block", "sponsor", "pools", "alerts"],
+  "properties": {
+    "network": { "const": "mainnet" },
+    "checkedAt": { "type": "string", "format": "date-time" },
+    "block": { "type": "object" },
+    "sponsor": { "type": "object" },
+    "pools": { "type": "object" },
+    "alerts": { "type": "array" }
+  },
+  "additionalProperties": false
+}

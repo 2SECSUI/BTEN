@@ -1,19 +1,28 @@
-# BTEN assets
+# BTEN / BlockTen
 
-Official public assets for BlockTen (BTEN).
+This repository is the public source and verification record for BlockTen (BTEN) on Sui mainnet.
 
-## Supply policy
+## Mainnet
 
-- Maximum supply: 21,000,000 BTEN
-- Decimals: 8
-- Genesis block: 50 BTEN at height zero
-- Normal block subsidy: 50 BTEN, trade-gated by ten-minute slots
-- Halving: every 210,000 released heights
+- Coin: `0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN`
+- Package: `0x5a15d97c6466448b0e4960c8f0a61e7a2d9d8cc9397542fe26ceacad3cf066f0`
+- Supply cap: 21,000,000 BTEN, eight decimals
+- Initial subsidy: 50 BTEN, with a 10-route receipt gate per released block
 
-The currently deployed mainnet package is upgradeable and has zero circulating
-supply. Genesis, liquidity, and public routing remain inactive until the final
-atomic-routing implementation is ready.
+## Verification
 
-Logo URL for coin metadata:
+`verification/BTEN-mainnet-v6-verification.zip` contains the package manifest, lockfile, published package record, Move source, and compiled `bten.mv` bytecode. The SHA-256 and exact package identity are in `verification/manifest.json`.
 
-`https://raw.githubusercontent.com/2SECSUI/BTEN/main/assets/bten-logo.jpg`
+Build locally after initializing submodules:
+
+```powershell
+git submodule update --init --recursive
+sui move test
+sui move build
+```
+
+## Public operations records
+
+`MAINNET_ROUTE_CONFIG.json` lists the public pool and contract identities. `monitoring/` contains the public status schema used by the future site.
+
+This public repository intentionally excludes wallet keys, recovery data, sponsor credentials, local runtime ledgers, private signing services, and operational execution scripts.

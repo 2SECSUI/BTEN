@@ -1,0 +1,15 @@
+{
+  "network": "mainnet",
+  "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
+  "packageId": "0x5a15d97c6466448b0e4960c8f0a61e7a2d9d8cc9397542fe26ceacad3cf066f0",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "packageVersion": 6,
+  "buildCommand": "sui move build",
+  "testCommand": "sui move test",
+  "bytecode": "build/bten/bytecode_modules/bten.mv",
+  "source": "sources/bten.move",
+  "includedFiles": ["Move.toml", "Move.lock", "Published.toml", "sources/bten.move", "build/bten/bytecode_modules/bten.mv"],
+  "archive": "verification/BTEN-mainnet-v6-verification.zip",
+  "archiveSha256": "0FE347B4CD9962F0E91B38940E8ECA86276C7E959AB6A117CC75F178480D2B2D",
+  "notes": "This bundle is for independent source/bytecode verification. It does not contain keys, recovery phrases, sponsor tokens, or runtime ledgers."
+}

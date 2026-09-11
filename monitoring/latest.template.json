@@ -1,0 +1,8 @@
+{
+  "network": "mainnet",
+  "checkedAt": "REPLACE_WITH_REVIEWED_ISO_TIMESTAMP",
+  "block": { "height": "REPLACE", "pending": "REPLACE", "routeReceipts": "REPLACE", "currentRound": "REPLACE" },
+  "sponsor": { "enabled": false, "balanceMist": "REPLACE", "dailyCapMist": "250000000" },
+  "pools": { "configured": 11, "activeTested": 9, "excluded": ["BTEN/vSUI"] },
+  "alerts": []
+}

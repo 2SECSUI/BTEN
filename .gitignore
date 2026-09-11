@@ -1,0 +1,17 @@
+# Generated Move and local runtime material
+build/
+.move/
+runtime/
+*.log
+
+# Never commit credentials, keys, recovery material, or sponsor authorization data
+*.env
+*.env.*
+!*.env.template
+*.keystore
+secrets/
+
+# Monitoring snapshots are generated locally; publish reviewed snapshots only.
+monitoring/live/
+
+tools/

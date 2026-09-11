@@ -1,0 +1,8 @@
+[package]
+name = "bten"
+edition = "2024.beta"
+
+[dependencies]
+# Pinned to Cetus's published mainnet interface release. The interface is
+# declaration-only, so builds and publishes must use --dependencies-are-root.
+cetusclmm = { local = ".cetus-clmm-interface/sui/cetus_clmm", override = true }
