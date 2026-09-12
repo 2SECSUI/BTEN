@@ -21,6 +21,7 @@ module bten::bten {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::url;
+    use sui::sui::SUI;
     use cetusclmm::config::GlobalConfig;
     use cetusclmm::pool::{Self, Pool};
 
@@ -33,6 +34,16 @@ module bten::bten {
     const MIN_TRADES_PER_BLOCK: u64 = 10;
     const MAX_SETTLE_BLOCKS: u64 = 100;
     const BPS: u64 = 10_000;
+    const DAY_MS: u64 = 86_400_000;
+    // The route reserve may only refill the SUI sponsor gradually. These are
+    // hard maximums; the shared FeeSubsidyState can choose lower values.
+    const MAX_REFILL_MIST: u64 = 5_000_000;
+    const MAX_DAILY_REFILL_MIST: u64 = 250_000_000;
+    const ROUTE_SPONSOR_BPS: u64 = 3_000;
+    const ROUTE_POL_BPS: u64 = 3_000;
+    const ROUTE_REBATE_BPS: u64 = 2_000;
+    const ROUTE_LP_SUPPORT_BPS: u64 = 1_000;
+    const ROUTE_SAFETY_BPS: u64 = 1_000;
 
     const ROUTE_VAULT_BPS: u64 = 5_000;
     const TRADER_BPS: u64 = 1_000;
@@ -49,7 +60,8 @@ module bten::bten {
     const BUCKET_TURBOS: u8 = 3;
     const BUCKET_SUI_GAS: u8 = 4;
     const BUCKET_HAEDAL: u8 = 5;
-    const MAX_BUCKET: u8 = BUCKET_HAEDAL;
+    const BUCKET_STAKING: u8 = 6;
+    const MAX_BUCKET: u8 = BUCKET_STAKING;
 
     const E_BAD_AMOUNT: u64 = 0;
     const E_NO_ELIGIBLE_BLOCKS: u64 = 1;
@@ -66,6 +78,11 @@ module bten::bten {
     const E_POOL_NOT_REGISTERED: u64 = 12;
     const E_MIN_OUTPUT: u64 = 13;
     const E_ZERO_INPUT: u64 = 14;
+    const E_FEE_STATE_CONFIG: u64 = 15;
+    const E_FEE_CAP: u64 = 16;
+    const E_FEE_POOL: u64 = 17;
+    const E_DISTRIBUTION_CONFIG: u64 = 18;
+    const E_TREASURY_PAUSED: u64 = 19;
 
     public struct BTEN has drop {}
 
@@ -81,6 +98,48 @@ module bten::bten {
         id: UID,
         pools: Table<address, u8>,
         finalized: bool,
+    }
+
+    /// Shared, capped configuration for converting a small portion of the
+    /// route reserve into SUI gas. It has no withdrawal function: the only
+    /// destination is the fixed sponsor address and the only source is the
+    /// route_fee_vault through this exact registered BTEN/SUI pool.
+    public struct FeeSubsidyState has key {
+        id: UID,
+        sponsor: address,
+        sui_pool: address,
+        per_refill_cap_mist: u64,
+        daily_cap_mist: u64,
+        accounting_day: u64,
+        spent_today_mist: u64,
+    }
+
+    /// Shared delivery configuration for allocations that have a fixed
+    /// destination.  It deliberately starts at the current height: reserves
+    /// accumulated before a venue is configured stay in their vault, while
+    /// every subsequently released block can be delivered atomically.
+    /// Route-reserve and trader allocations are excluded: those have their
+    /// own capped sponsor and point-based payout paths.
+    public struct DistributionState has key {
+        id: UID,
+        next_height: u64,
+        enabled: Table<u8, bool>,
+        destinations: Table<u8, address>,
+    }
+
+    /// Per-height accounting for the fixed route-reserve split. The BTEN stays
+    /// in EmissionState's route vault until a separately protected adapter
+    /// consumes an accrued budget; this state prevents the keeper from
+    /// treating the whole 50% reserve as freely spendable.
+    public struct RouteTreasuryState has key {
+        id: UID,
+        next_height: u64,
+        sponsor_accrued: u64,
+        pol_accrued: u64,
+        rebate_accrued: u64,
+        lp_support_accrued: u64,
+        safety_accrued: u64,
+        paused: bool,
     }
 
     /// A receipt key is immutable once the qualifying atomic route succeeds.
@@ -140,6 +199,35 @@ module bten::bten {
         round: u64,
         trader: address,
         amount: u64,
+    }
+
+    public struct SponsorRefilled has copy, drop {
+        sponsor: address,
+        bten_in: u64,
+        sui_out_mist: u64,
+        spent_today_mist: u64,
+    }
+
+    public struct AllocationDelivered has copy, drop {
+        height: u64,
+        bucket: u8,
+        recipient: address,
+        amount: u64,
+    }
+
+    public struct DistributionDestinationConfigured has copy, drop {
+        bucket: u8,
+        recipient: address,
+        enabled: bool,
+    }
+
+    public struct RouteTreasuryAccrued has copy, drop {
+        height: u64,
+        sponsor: u64,
+        protocol_liquidity: u64,
+        rebates: u64,
+        lp_support: u64,
+        safety: u64,
     }
 
     #[test_only]
@@ -426,6 +514,227 @@ module bten::bten {
         table::add(&mut registry.pools, pool_id, bucket);
     }
 
+    /// One-time setup for the gas-subsidy route. The owner of RegistryAdminCap
+    /// sets the immutable sponsor wallet and the exact registered BTEN/SUI
+    /// pool. Caps cannot exceed the protocol seed policy.
+    public entry fun create_fee_subsidy_state(
+        registry: &PoolRegistry,
+        _admin: &RegistryAdminCap,
+        sponsor: address,
+        sui_pool: address,
+        per_refill_cap_mist: u64,
+        daily_cap_mist: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(table::contains(&registry.pools, sui_pool), E_FEE_POOL);
+        assert!(*table::borrow(&registry.pools, sui_pool) == BUCKET_CETUS, E_FEE_POOL);
+        assert!(per_refill_cap_mist > 0 && per_refill_cap_mist <= MAX_REFILL_MIST, E_FEE_STATE_CONFIG);
+        assert!(daily_cap_mist >= per_refill_cap_mist && daily_cap_mist <= MAX_DAILY_REFILL_MIST, E_FEE_STATE_CONFIG);
+        transfer::share_object(FeeSubsidyState {
+            id: object::new(ctx),
+            sponsor,
+            sui_pool,
+            per_refill_cap_mist,
+            daily_cap_mist,
+            accounting_day: clock::timestamp_ms(clock) / DAY_MS,
+            spent_today_mist: 0,
+        });
+    }
+
+    /// Permissionless but fully constrained route-reserve refill. It can only
+    /// exchange BTEN from the route vault for SUI via the configured
+    /// BTEN/SUI Cetus pool, honours a caller-provided minimum output, and sends
+    /// the SUI only to the fixed sponsor wallet. No caller receives reserve
+    /// funds. A keeper invokes it when the sponsor balance is low.
+    public fun refill_sponsor_from_route_reserve(
+        state: &mut EmissionState,
+        fee: &mut FeeSubsidyState,
+        config: &GlobalConfig,
+        pool: &mut Pool<BTEN, SUI>,
+        requested_bten: u64,
+        min_sui_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(requested_bten > 0, E_BAD_AMOUNT);
+        let pool_id = object::id(pool);
+        assert!(object::id_to_address(&pool_id) == fee.sui_pool, E_FEE_POOL);
+        let day = clock::timestamp_ms(clock) / DAY_MS;
+        if (day > fee.accounting_day) {
+            fee.accounting_day = day;
+            fee.spent_today_mist = 0;
+        };
+        let (unused_bten, receive_sui, receipt) = pool::flash_swap<BTEN, SUI>(
+            config, pool, true, true, requested_bten, sqrt_price_limit, clock
+        );
+        let paid_bten = pool::swap_pay_amount(&receipt);
+        let sui_out = balance::value(&receive_sui);
+        assert!(sui_out >= min_sui_out, E_MIN_OUTPUT);
+        assert!(sui_out <= fee.per_refill_cap_mist, E_FEE_CAP);
+        assert!(fee.spent_today_mist + sui_out <= fee.daily_cap_mist, E_FEE_CAP);
+        let payment = balance::split(&mut state.route_fee_vault, paid_bten);
+        pool::repay_flash_swap(config, pool, payment, balance::zero<SUI>(), receipt);
+        balance::join(&mut state.route_fee_vault, unused_bten);
+        fee.spent_today_mist = fee.spent_today_mist + sui_out;
+        transfer::public_transfer(coin::from_balance(receive_sui, ctx), fee.sponsor);
+        event::emit(SponsorRefilled { sponsor: fee.sponsor, bten_in: paid_bten, sui_out_mist: sui_out, spent_today_mist: fee.spent_today_mist });
+    }
+
+    /// Creates the delivery state at the current emission height. This makes
+    /// the first configured payout occur at the next gate release, rather
+    /// than retrospectively sending any bootstrap or unconfigured reserves.
+    public entry fun create_distribution_state(
+        state: &EmissionState,
+        _admin: &RegistryAdminCap,
+        ctx: &mut TxContext,
+    ) {
+        transfer::share_object(DistributionState {
+            id: object::new(ctx),
+            next_height: state.block_height,
+            enabled: table::new<u8, bool>(ctx),
+            destinations: table::new<u8, address>(ctx),
+        });
+    }
+
+    /// Begins route-reserve accounting at the current height. Existing route
+    /// reserve is deliberately not retroactively reclassified.
+    public entry fun create_route_treasury_state(
+        state: &EmissionState,
+        _admin: &RegistryAdminCap,
+        ctx: &mut TxContext,
+    ) {
+        transfer::share_object(RouteTreasuryState {
+            id: object::new(ctx), next_height: state.block_height,
+            sponsor_accrued: 0, pol_accrued: 0, rebate_accrued: 0,
+            lp_support_accrued: 0, safety_accrued: 0, paused: false,
+        });
+    }
+
+    public fun set_route_treasury_paused(
+        treasury: &mut RouteTreasuryState,
+        _admin: &RegistryAdminCap,
+        paused: bool,
+    ) { treasury.paused = paused; }
+
+    /// Permissionless accounting sync after a settlement. Each released
+    /// height is split 30/30/20/10/10 inside the fixed 50% route reserve.
+    public entry fun sync_route_treasury(
+        state: &EmissionState,
+        treasury: &mut RouteTreasuryState,
+    ) {
+        assert!(!treasury.paused, E_TREASURY_PAUSED);
+        while (treasury.next_height < state.block_height) {
+            let height = treasury.next_height;
+            let route = subsidy_at_height(height) * ROUTE_VAULT_BPS / BPS;
+            let sponsor = route * ROUTE_SPONSOR_BPS / BPS;
+            let pol = route * ROUTE_POL_BPS / BPS;
+            let rebates = route * ROUTE_REBATE_BPS / BPS;
+            let lp = route * ROUTE_LP_SUPPORT_BPS / BPS;
+            let mut safety = route * ROUTE_SAFETY_BPS / BPS;
+            // Preserve exact accounting at future halvings by retaining any
+            // integer-division dust in the non-spendable safety budget.
+            safety = safety + (route - sponsor - pol - rebates - lp - safety);
+            treasury.sponsor_accrued = treasury.sponsor_accrued + sponsor;
+            treasury.pol_accrued = treasury.pol_accrued + pol;
+            treasury.rebate_accrued = treasury.rebate_accrued + rebates;
+            treasury.lp_support_accrued = treasury.lp_support_accrued + lp;
+            treasury.safety_accrued = treasury.safety_accrued + safety;
+            treasury.next_height = height + 1;
+            event::emit(RouteTreasuryAccrued { height, sponsor, protocol_liquidity: pol, rebates, lp_support: lp, safety });
+        };
+    }
+
+    /// Configure or pause one allocation destination while setup is still
+    /// controlled. A disabled bucket advances with each release but its BTEN
+    /// remains safely accumulated in the corresponding emission vault.
+    public fun configure_distribution_destination(
+        distribution: &mut DistributionState,
+        _admin: &RegistryAdminCap,
+        bucket: u8,
+        destination: address,
+        enabled: bool,
+    ) {
+        assert!(bucket <= MAX_BUCKET, E_BAD_BUCKET);
+        assert!(bucket != BUCKET_BTEN_LP || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        assert!(bucket != BUCKET_CETUS || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        assert!(bucket != BUCKET_BLUE || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        assert!(bucket != BUCKET_TURBOS || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        assert!(bucket != BUCKET_SUI_GAS || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        assert!(bucket != BUCKET_HAEDAL || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        assert!(bucket != BUCKET_STAKING || destination != @0x0, E_DISTRIBUTION_CONFIG);
+        if (table::contains(&distribution.destinations, bucket)) {
+            *table::borrow_mut(&mut distribution.destinations, bucket) = destination;
+            *table::borrow_mut(&mut distribution.enabled, bucket) = enabled;
+        } else {
+            table::add(&mut distribution.destinations, bucket, destination);
+            table::add(&mut distribution.enabled, bucket, enabled);
+        };
+        event::emit(DistributionDestinationConfigured { bucket, recipient: destination, enabled });
+    }
+
+    /// Settle a gate and immediately deliver the allocations from every block
+    /// released by that gate. This is permissionless: destinations are fixed
+    /// in DistributionState and callers can never redirect a payout.
+    public entry fun settle_and_distribute(
+        state: &mut EmissionState,
+        distribution: &mut DistributionState,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        settle(state, clock, ctx);
+        distribute_released_blocks(state, distribution, ctx);
+    }
+
+    /// Completes delivery for blocks already settled in an earlier transaction
+    /// (for example, a legacy route which called `settle` directly). It only
+    /// processes heights already released by EmissionState.
+    public entry fun distribute_released_blocks(
+        state: &mut EmissionState,
+        distribution: &mut DistributionState,
+        ctx: &mut TxContext,
+    ) {
+        while (distribution.next_height < state.block_height) {
+            let height = distribution.next_height;
+            let emission = subsidy_at_height(height);
+            distribute_fixed_allocations(state, distribution, height, emission, ctx);
+            distribution.next_height = height + 1;
+        };
+    }
+
+    fun distribute_fixed_allocations(
+        state: &mut EmissionState,
+        distribution: &DistributionState,
+        height: u64,
+        emission: u64,
+        ctx: &mut TxContext,
+    ) {
+        deliver_if_enabled(&mut state.bten_lp_vault, distribution, BUCKET_BTEN_LP, emission * BTEN_LP_BPS / BPS, height, ctx);
+        deliver_if_enabled(&mut state.staking_vault, distribution, BUCKET_STAKING, emission * STAKING_BPS / BPS, height, ctx);
+        deliver_if_enabled(&mut state.cetus_vault, distribution, BUCKET_CETUS, emission * CETUS_BPS / BPS, height, ctx);
+        deliver_if_enabled(&mut state.haedal_vault, distribution, BUCKET_HAEDAL, emission * HAEDAL_BPS / BPS, height, ctx);
+        deliver_if_enabled(&mut state.blue_vault, distribution, BUCKET_BLUE, emission * BLUE_BPS / BPS, height, ctx);
+        deliver_if_enabled(&mut state.magma_vault, distribution, BUCKET_TURBOS, emission * TURBOS_BPS / BPS, height, ctx);
+        deliver_if_enabled(&mut state.sui_gas_vault, distribution, BUCKET_SUI_GAS, emission * SUI_GAS_BPS / BPS, height, ctx);
+    }
+
+    fun deliver_if_enabled(
+        vault: &mut Balance<BTEN>,
+        distribution: &DistributionState,
+        bucket: u8,
+        amount: u64,
+        height: u64,
+        ctx: &mut TxContext,
+    ) {
+        if (amount == 0 || !table::contains(&distribution.enabled, bucket) || !*table::borrow(&distribution.enabled, bucket)) {
+            return
+        };
+        let recipient = *table::borrow(&distribution.destinations, bucket);
+        transfer::public_transfer(coin::from_balance(balance::split(vault, amount), ctx), recipient);
+        event::emit(AllocationDelivered { height, bucket, recipient, amount });
+    }
+
     /// Irreversibly blocks new pool registrations. The caller must delete or
     /// permanently custody RegistryAdminCap after this call.
     public fun finalize_pool_registry(registry: &mut PoolRegistry, _admin: &RegistryAdminCap) {
@@ -618,6 +927,22 @@ module bten::bten {
     /// `turbos_balance`.
     public fun magma_balance(state: &EmissionState): u64 { turbos_balance(state) }
     public fun sui_gas_balance(state: &EmissionState): u64 { balance::value(&state.sui_gas_vault) }
+    public fun distribution_next_height(distribution: &DistributionState): u64 { distribution.next_height }
+    public fun distribution_is_enabled(distribution: &DistributionState, bucket: u8): bool {
+        if (!table::contains(&distribution.enabled, bucket)) { return false };
+        *table::borrow(&distribution.enabled, bucket)
+    }
+    public fun distribution_destination(distribution: &DistributionState, bucket: u8): option::Option<address> {
+        if (!table::contains(&distribution.destinations, bucket)) { return option::none<address>() };
+        option::some(*table::borrow(&distribution.destinations, bucket))
+    }
+    public fun route_treasury_next_height(treasury: &RouteTreasuryState): u64 { treasury.next_height }
+    public fun route_treasury_sponsor(treasury: &RouteTreasuryState): u64 { treasury.sponsor_accrued }
+    public fun route_treasury_pol(treasury: &RouteTreasuryState): u64 { treasury.pol_accrued }
+    public fun route_treasury_rebates(treasury: &RouteTreasuryState): u64 { treasury.rebate_accrued }
+    public fun route_treasury_lp_support(treasury: &RouteTreasuryState): u64 { treasury.lp_support_accrued }
+    public fun route_treasury_safety(treasury: &RouteTreasuryState): u64 { treasury.safety_accrued }
+    public fun route_treasury_is_paused(treasury: &RouteTreasuryState): bool { treasury.paused }
     public fun pool_bucket(registry: &PoolRegistry, pool_id: address): u8 {
         if (!table::contains(&registry.pools, pool_id)) { return 255 };
         *table::borrow(&registry.pools, pool_id)

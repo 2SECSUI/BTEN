@@ -1,0 +1,55 @@
+# BTEN final upgrade scope
+
+This is the single release candidate scope. No item below is enabled until the
+package upgrade, dry-runs, and small-value mainnet tests all succeed.
+
+## Gate-qualified routes
+
+- Direct, protected Cetus `asset <-> BTEN` adapters for every approved BTEN
+  pool.
+- No multi-hop route qualifies in this release. Every qualifying route is a
+  direct BTEN-pair swap with a user minimum output and one receipt per
+  completed transaction.
+
+## Emission and allocation delivery
+
+- 10 successful qualified routes release an eligible time slot.
+- Delivery is queued per released block, is permissionless to process, and has
+  per-allocation pause controls.
+- Trader rewards remain point-weighted and automatic after round settlement.
+- BTEN LP rewards must use registered, active, in-range positions only. The
+  active-position distributor remains disabled until its Cetus deposit calls
+  pass live protected simulations.
+- Staking rewards will use rolling Aftermath schedules rather than one funding
+  transaction per block; the replacement-farm adapter remains disabled until
+  its exact funding call passes a live protected simulation.
+
+## Route treasury
+
+- 15% sponsor reserve, 15% protocol-owned BTEN/SUI liquidity, 10% verified
+  route rebates, 5% direct registered-BTEN-LP support, 5% safety buffer.
+- The external-zap plan is retired: no USDC/SUI, DEEP/SUI, or WAL/SUI treasury
+  positions are created by the current policy.
+- Sponsor conversion has fixed pool, destination, per-refill, and daily caps.
+- A failed strategy is never force-sold. After 1,000 released blocks, its
+  unspent BTEN allocation is routed to the registered BTEN LP distributor.
+
+## Operational safeguards
+
+- Treasury LP positions held by a dedicated custody/multisig owner.
+- Protected quote, min-output, price-impact, tick-range, simulation, and
+  receipt checks before every broadcast.
+- Events and monitoring for gate release, allocation delivery, payouts, sponsor
+  refill, route failure, fallback, pause, LP health, and farm funding.
+- Global and per-strategy emergency pauses.
+
+## Release gates
+
+1. Move unit tests and package build pass.
+2. Every direct transaction passes simulation.
+3. Small-value mainnet test confirms receipts, output guards, and distribution.
+4. Monitoring reports are clean over a full block interval.
+5. Verification artifacts are regenerated for the final package.
+6. The verification archive includes `assets/bten-logo.jpg`, and the metadata
+   update uses `https://raw.githubusercontent.com/2SECSUI/BTEN/main/assets/bten-logo.jpg`.
+7. Upgrade, enable strategies gradually, then make immutable only after review.
