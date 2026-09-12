@@ -26,6 +26,10 @@ CERT is intentionally absent from that public pool list and is not in the
 on-chain LP allowlist. These files contain only public chain data; they never
 contain a private key, capability, or sponsor credential.
 
+The planned verified-indexer and bounded treasury-executor work is documented
+in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md). It is explicitly
+not live in V13.
+
 ## Implemented core
 
 - 21,000,000 BTEN hard cap with eight decimals.
