@@ -2,10 +2,9 @@
 /**
  * GitHub Actions keeper for permissionless BTEN maintenance.
  *
- * `--execute` is deliberately limited to settlement and treasury accounting.
- * It never swaps, transfers treasury assets, funds a farm, controls upgrades,
- * or starts a sponsor.  Those paths require the future delegated KeeperCap
- * release described in config/keeper_policy.json.
+ * `--execute` is deliberately limited to settlement, accounting, LP accrual,
+ * and permissionless native-farm reward syncing. It never swaps, controls an
+ * upgrade, withdraws user stake, or holds a farm/sponsor administrator cap.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -65,7 +64,11 @@ async function execute(client, signer, transaction) {
   return { digest: result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null, effects: result.effects ?? result.transaction?.effects ?? result.Transaction?.effects };
 }
 
-const [state, treasuryState] = await Promise.all([moveFields(mainnet.emissionState), moveFields(policy.routeTreasuryState)]);
+const [state, treasuryState, farmState] = await Promise.all([
+  moveFields(mainnet.emissionState),
+  moveFields(policy.routeTreasuryState),
+  policy.nativeFarmSync?.enabled && policy.nativeFarmSync?.state ? moveFields(policy.nativeFarmSync.state) : Promise.resolve(null),
+]);
 const now = Math.floor(Date.now() / 1000);
 const elapsedSlots = Math.max(0, Math.floor((now - Number(state.last_slot_ts)) / SLOT_SECONDS));
 const pending = Number(state.pending_blocks) + elapsedSlots;
@@ -80,6 +83,14 @@ const report = {
     enabled: Boolean(policy.lpProgrammeAccrual?.enabled),
     configured: Boolean(policy.lpProgrammeAccrual?.state),
     availableRaw: LP_VAULT_FIELDS.reduce((total, field) => total + balanceValue(state[field]), 0n).toString(),
+  },
+  nativeFarmSync: {
+    enabled: Boolean(policy.nativeFarmSync?.enabled),
+    configured: Boolean(policy.nativeFarmSync?.state),
+    needed: Boolean(farmState?.started) && Number(farmState.next_height) < Number(state.block_height),
+    started: Boolean(farmState?.started),
+    nextHeight: farmState ? String(farmState.next_height) : null,
+    blockHeight: String(state.block_height),
   },
   privilegedExecutors: policy.privilegedExecutors,
   submitted: [],
@@ -119,6 +130,17 @@ if (policy.lpProgrammeAccrual?.enabled && policy.lpProgrammeAccrual?.state) {
     tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
     tx.moveCall({ target: `${PACKAGE}::bten::accrue_lp_program`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.lpProgrammeAccrual.state)] });
     report.submitted.push({ action: "accrue_lp_program", ...(await execute(client, signer, tx)) });
+  }
+}
+if (policy.nativeFarmSync?.enabled && policy.nativeFarmSync?.state) {
+  const refreshedState = await moveFields(mainnet.emissionState);
+  const refreshedFarm = await moveFields(policy.nativeFarmSync.state);
+  if (Boolean(refreshedFarm.started) && Number(refreshedFarm.next_height) < Number(refreshedState.block_height)) {
+    const tx = new Transaction();
+    tx.setSender(policy.keeperAddress);
+    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+    tx.moveCall({ target: `${PACKAGE}::bten::sync_bten_staking_farm_rewards`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.nativeFarmSync.state)] });
+    report.submitted.push({ action: "sync_bten_staking_farm_rewards", ...(await execute(client, signer, tx)) });
   }
 }
 console.log(JSON.stringify(report, null, 2));

@@ -18,6 +18,11 @@
     "state": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
     "reason": "The finalized, unpaused V9 LP programme may receive accrued BTEN. The keeper cannot withdraw, swap, add liquidity, fund farms, or access any capability."
   },
+  "nativeFarmSync": {
+    "enabled": true,
+    "state": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
+    "reason": "Permissionless deterministic sync only moves the fixed staking allocation for blocks released after the farm started. The keeper receives no farm admin capability and cannot withdraw principal or rewards."
+  },
   "privilegedExecutors": {
     "enabled": false,
     "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."
