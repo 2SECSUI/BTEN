@@ -19,10 +19,11 @@ const mainnet = JSON.parse(fs.readFileSync(path.join(root, "MAINNET_ROUTE_CONFIG
 const policy = JSON.parse(fs.readFileSync(path.join(root, "config", "keeper_policy.json"), "utf8"));
 const EXECUTE = process.argv.includes("--execute");
 const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
-const PACKAGE = "0xfb4a37274bc784bc31cd03bbb6ab3e176d077ce22722ca2d7a9ba7f08f814042";
+const PACKAGE = mainnet.currentPackage;
 const CLOCK = "0x6";
 const SLOT_SECONDS = 600;
 const ROUTES_PER_BLOCK = 10;
+const LP_VAULT_FIELDS = ["bten_lp_vault", "cetus_vault", "haedal_vault", "blue_vault", "magma_vault", "sui_gas_vault"];
 
 async function moveFields(address) {
   const query = `query($address: SuiAddress!) { object(address: $address) { asMoveObject { contents { json } } } }`;
@@ -53,6 +54,11 @@ function succeeded(result) {
   return effects?.status?.status === "success" || effects?.status?.success === true;
 }
 
+function balanceValue(value) {
+  if (typeof value === "bigint" || typeof value === "number" || typeof value === "string") return BigInt(value);
+  return BigInt(value?.value ?? 0);
+}
+
 async function execute(client, signer, transaction) {
   const result = await client.signAndExecuteTransaction({ signer, transaction, include: { effects: true, events: true } });
   if (!succeeded(result)) throw new Error("Keeper transaction did not report success");
@@ -70,6 +76,11 @@ const report = {
   keeper: policy.keeperAddress,
   settlement: { eligibleBlocks, routeReceipts: Number(state.batch_trades), pendingBlocksAfterTimeAdvance: pending },
   treasurySync: { needed: syncNeeded, nextHeight: String(treasuryState.next_height), blockHeight: String(state.block_height) },
+  lpProgrammeAccrual: {
+    enabled: Boolean(policy.lpProgrammeAccrual?.enabled),
+    configured: Boolean(policy.lpProgrammeAccrual?.state),
+    availableRaw: LP_VAULT_FIELDS.reduce((total, field) => total + balanceValue(state[field]), 0n).toString(),
+  },
   privilegedExecutors: policy.privilegedExecutors,
   submitted: [],
 };
@@ -97,6 +108,17 @@ if (policy.treasurySync.enabled) {
     tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
     tx.moveCall({ target: `${PACKAGE}::bten::sync_route_treasury`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.routeTreasuryState)] });
     report.submitted.push({ action: "sync_route_treasury", ...(await execute(client, signer, tx)) });
+  }
+}
+if (policy.lpProgrammeAccrual?.enabled && policy.lpProgrammeAccrual?.state) {
+  const refreshed = await moveFields(mainnet.emissionState);
+  const available = LP_VAULT_FIELDS.reduce((total, field) => total + balanceValue(refreshed[field]), 0n);
+  if (available > 0n) {
+    const tx = new Transaction();
+    tx.setSender(policy.keeperAddress);
+    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+    tx.moveCall({ target: `${PACKAGE}::bten::accrue_lp_program`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.lpProgrammeAccrual.state)] });
+    report.submitted.push({ action: "accrue_lp_program", ...(await execute(client, signer, tx)) });
   }
 }
 console.log(JSON.stringify(report, null, 2));

@@ -1,0 +1,35 @@
+{
+  "network": "mainnet",
+  "status": "v9-upgrade-required",
+  "policyVersion": 1,
+  "treasuryOperator": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "allocation": {
+    "redirectedEmissionBps": 3000,
+    "protocolOwnedLiquidityBps": 7000,
+    "cetusNativeRewardsBps": 3000,
+    "routeReserveLpSupport": "100% protocol-owned liquidity"
+  },
+  "backlog": {
+    "includePausedVenueVaults": true,
+    "vaults": ["btenLp", "cetus", "bluefin", "turbos", "suiGas", "haedal"]
+  },
+  "eligibility": {
+    "requireRegisteredPool": true,
+    "requireCetusBtenPair": true,
+    "requireProtectedRouteTest": true,
+    "excludePairs": ["BTEN/vSUI"]
+  },
+  "pools": [
+    { "pair": "BTEN/SUI", "poolId": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950", "weightBps": 2500, "cetusRewardProgram": null },
+    { "pair": "BTEN/WAL", "poolId": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7", "weightBps": 1500, "cetusRewardProgram": null },
+    { "pair": "BTEN/NAVX", "poolId": "0x2eb3cd887c38a20c7d4775a02847f8cbf55f1648bbfe3931420cb06180eb9128", "weightBps": 1000, "cetusRewardProgram": null },
+    { "pair": "BTEN/CETUS", "poolId": "0xf6c5df04eb488373c8309b96f0ea187aada7c3b446b3fb6ef5f73f222eaa5f0c", "weightBps": 1000, "cetusRewardProgram": null },
+    { "pair": "BTEN/MAGMA", "poolId": "0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6", "weightBps": 1000, "cetusRewardProgram": null },
+    { "pair": "BTEN/DEEP", "poolId": "0x924c998ea2acc2bd1c91377a5d5f6ac1b634037bd05c4ebf67f5ad0d98bad835", "weightBps": 1000, "cetusRewardProgram": null },
+    { "pair": "BTEN/NS", "poolId": "0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c", "weightBps": 500, "cetusRewardProgram": null },
+    { "pair": "BTEN/USDC", "poolId": "0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45", "weightBps": 500, "cetusRewardProgram": null },
+    { "pair": "BTEN/USDT", "poolId": "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c", "weightBps": 500, "cetusRewardProgram": null },
+    { "pair": "BTEN/TURBOS", "poolId": "0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427", "weightBps": 500, "cetusRewardProgram": null }
+  ],
+  "activation": "Every Cetus reward program remains disabled until its exact creation/funding transaction passes simulation and a low-value mainnet transaction."
+}

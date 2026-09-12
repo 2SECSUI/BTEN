@@ -44,6 +44,9 @@ module bten::bten {
     const ROUTE_REBATE_BPS: u64 = 2_000;
     const ROUTE_LP_SUPPORT_BPS: u64 = 1_000;
     const ROUTE_SAFETY_BPS: u64 = 1_000;
+    const LP_PROTOCOL_LIQUIDITY_BPS: u64 = 7_000;
+    const LP_CETUS_REWARDS_BPS: u64 = 3_000;
+    const MAX_LP_RELEASE_PER_CALL: u64 = 50 * UNIT;
 
     const ROUTE_VAULT_BPS: u64 = 5_000;
     const TRADER_BPS: u64 = 1_000;
@@ -86,6 +89,11 @@ module bten::bten {
     const E_KEEPER_PAUSED: u64 = 20;
     const E_KEEPER_SENDER: u64 = 21;
     const E_KEEPER_CAP: u64 = 22;
+    const E_LP_PROGRAM_PAUSED: u64 = 23;
+    const E_LP_PROGRAM_POOL: u64 = 24;
+    const E_LP_PROGRAM_FINAL: u64 = 25;
+    const E_LP_PROGRAM_WEIGHTS: u64 = 26;
+    const E_REDIRECTED_BUCKET: u64 = 27;
 
     public struct BTEN has drop {}
 
@@ -110,6 +118,23 @@ module bten::bten {
         daily_staking_cap: u64,
         accounting_day: u64,
         spent_today: u64,
+    }
+
+    /// Narrow capability for the treasury-owned LP execution wallet. It has
+    /// no mint, upgrade, registry, staking, or sponsor authority.
+    public struct LpProgramCap has key, store { id: UID }
+
+    /// Accounting and allowlist for the BTEN LP programme. The actual Cetus
+    /// add-liquidity/reward-program calls consume coins from this object in a
+    /// single operator-signed transaction after their quote is simulated.
+    public struct LpProgramState has key {
+        id: UID,
+        pools: Table<address, u64>,
+        weight_total: u64,
+        finalized: bool,
+        paused: bool,
+        protocol_liquidity: Balance<BTEN>,
+        cetus_rewards: Balance<BTEN>,
     }
 
     public struct PoolRegistry has key {
@@ -246,6 +271,18 @@ module bten::bten {
         rebates: u64,
         lp_support: u64,
         safety: u64,
+    }
+
+    public struct LpProgrammeAccrued has copy, drop {
+        total: u64,
+        protocol_liquidity: u64,
+        cetus_rewards: u64,
+    }
+
+    public struct LpProgrammeReleased has copy, drop {
+        pool_id: address,
+        category: u8,
+        amount: u64,
     }
 
     #[test_only]
@@ -674,6 +711,128 @@ module bten::bten {
         paused: bool,
     ) { treasury.paused = paused; }
 
+    /// Creates the LP programme in a paused state and assigns its narrowly
+    /// scoped execution cap to the declared treasury operator.
+    public entry fun create_lp_program(
+        _admin: &RegistryAdminCap,
+        treasury_operator: address,
+        ctx: &mut TxContext,
+    ) {
+        assert!(treasury_operator != @0x0, E_KEEPER_SENDER);
+        transfer::public_transfer(LpProgramCap { id: object::new(ctx) }, treasury_operator);
+        transfer::share_object(LpProgramState {
+            id: object::new(ctx), pools: table::new(ctx), weight_total: 0,
+            finalized: false, paused: true,
+            protocol_liquidity: balance::zero<BTEN>(),
+            cetus_rewards: balance::zero<BTEN>(),
+        });
+    }
+
+    /// Records a fixed registered Cetus BTEN-pair pool and its allocation
+    /// weight. No new pool can be added once the programme is finalized.
+    public fun register_lp_program_pool(
+        programme: &mut LpProgramState,
+        registry: &PoolRegistry,
+        _admin: &RegistryAdminCap,
+        pool_id: address,
+        weight_bps: u64,
+    ) {
+        assert!(!programme.finalized, E_LP_PROGRAM_FINAL);
+        assert!(weight_bps > 0 && programme.weight_total + weight_bps <= BPS, E_LP_PROGRAM_WEIGHTS);
+        assert!(table::contains(&registry.pools, pool_id), E_LP_PROGRAM_POOL);
+        assert!(!table::contains(&programme.pools, pool_id), E_DUPLICATE_POOL);
+        table::add(&mut programme.pools, pool_id, weight_bps);
+        programme.weight_total = programme.weight_total + weight_bps;
+    }
+
+    public fun finalize_lp_program(programme: &mut LpProgramState, _admin: &RegistryAdminCap) {
+        assert!(programme.weight_total == BPS, E_LP_PROGRAM_WEIGHTS);
+        programme.finalized = true;
+    }
+
+    public fun set_lp_program_paused(
+        programme: &mut LpProgramState,
+        _admin: &RegistryAdminCap,
+        paused: bool,
+    ) { programme.paused = paused; }
+
+    /// Collects the 25% BTEN LP vault plus every redirected 1% venue vault,
+    /// including any backlog accumulated while those venue buckets were
+    /// paused. The split is exact at the programme boundary: 70% protocol
+    /// liquidity and 30% Cetus-native LP reward programmes.
+    public entry fun accrue_lp_program(
+        state: &mut EmissionState,
+        programme: &mut LpProgramState,
+    ) {
+        assert!(programme.finalized, E_LP_PROGRAM_FINAL);
+        let mut total = drain_bten(&mut state.bten_lp_vault);
+        balance::join(&mut total, drain_bten(&mut state.cetus_vault));
+        balance::join(&mut total, drain_bten(&mut state.haedal_vault));
+        balance::join(&mut total, drain_bten(&mut state.blue_vault));
+        balance::join(&mut total, drain_bten(&mut state.magma_vault));
+        balance::join(&mut total, drain_bten(&mut state.sui_gas_vault));
+        let amount = balance::value(&total);
+        assert!(LP_PROTOCOL_LIQUIDITY_BPS + LP_CETUS_REWARDS_BPS == BPS, E_LP_PROGRAM_WEIGHTS);
+        let protocol_amount = amount * LP_PROTOCOL_LIQUIDITY_BPS / BPS;
+        let reward_amount = amount - protocol_amount;
+        balance::join(&mut programme.protocol_liquidity, balance::split(&mut total, protocol_amount));
+        balance::join(&mut programme.cetus_rewards, total);
+        event::emit(LpProgrammeAccrued { total: amount, protocol_liquidity: protocol_amount, cetus_rewards: reward_amount });
+    }
+
+    /// Moves only the already-accounted route-reserve LP-support allocation
+    /// into protocol-owned liquidity. Sponsor, rebate, and safety balances are
+    /// deliberately excluded from this path.
+    public fun accrue_route_lp_support_to_program(
+        state: &mut EmissionState,
+        treasury: &mut RouteTreasuryState,
+        programme: &mut LpProgramState,
+        _cap: &LpProgramCap,
+        amount: u64,
+    ) {
+        assert!(!programme.paused && programme.finalized, E_LP_PROGRAM_PAUSED);
+        assert!(amount > 0 && amount <= treasury.lp_support_accrued, E_BAD_AMOUNT);
+        treasury.lp_support_accrued = treasury.lp_support_accrued - amount;
+        balance::join(&mut programme.protocol_liquidity, balance::split(&mut state.route_fee_vault, amount));
+        event::emit(LpProgrammeAccrued { total: amount, protocol_liquidity: amount, cetus_rewards: 0 });
+    }
+
+    /// Takes a bounded, allowlisted protocol-liquidity allocation. The caller
+    /// must use the returned coin in the same transaction's verified Cetus
+    /// add-liquidity path; users and the GitHub keeper never receive this cap.
+    public fun take_protocol_liquidity(
+        programme: &mut LpProgramState,
+        _cap: &LpProgramCap,
+        pool_id: address,
+        amount: u64,
+        ctx: &mut TxContext,
+    ): Coin<BTEN> {
+        assert!(!programme.paused, E_LP_PROGRAM_PAUSED);
+        assert!(programme.finalized && table::contains(&programme.pools, pool_id), E_LP_PROGRAM_POOL);
+        assert!(amount > 0 && amount <= MAX_LP_RELEASE_PER_CALL, E_BAD_AMOUNT);
+        let funding = coin::from_balance(balance::split(&mut programme.protocol_liquidity, amount), ctx);
+        event::emit(LpProgrammeReleased { pool_id, category: 0, amount });
+        funding
+    }
+
+    /// Takes a bounded, allowlisted BTEN reward allocation for the exact
+    /// Cetus reward programme configured for this pool. It remains paused
+    /// until the programme's deposit transaction is simulated on mainnet.
+    public fun take_cetus_reward_funding(
+        programme: &mut LpProgramState,
+        _cap: &LpProgramCap,
+        pool_id: address,
+        amount: u64,
+        ctx: &mut TxContext,
+    ): Coin<BTEN> {
+        assert!(!programme.paused, E_LP_PROGRAM_PAUSED);
+        assert!(programme.finalized && table::contains(&programme.pools, pool_id), E_LP_PROGRAM_POOL);
+        assert!(amount > 0 && amount <= MAX_LP_RELEASE_PER_CALL, E_BAD_AMOUNT);
+        let funding = coin::from_balance(balance::split(&mut programme.cetus_rewards, amount), ctx);
+        event::emit(LpProgrammeReleased { pool_id, category: 1, amount });
+        funding
+    }
+
     /// Permissionless accounting sync after a settlement. Each released
     /// height is split 30/30/20/10/10 inside the fixed 50% route reserve.
     public entry fun sync_route_treasury(
@@ -713,6 +872,9 @@ module bten::bten {
         enabled: bool,
     ) {
         assert!(bucket <= MAX_BUCKET, E_BAD_BUCKET);
+        // v9 redirects all LP and venue shares through LpProgramState. Direct
+        // recipient transfers would bypass its fixed weights and safeguards.
+        assert!(bucket == BUCKET_STAKING, E_REDIRECTED_BUCKET);
         assert!(bucket != BUCKET_BTEN_LP || destination != @0x0, E_DISTRIBUTION_CONFIG);
         assert!(bucket != BUCKET_CETUS || destination != @0x0, E_DISTRIBUTION_CONFIG);
         assert!(bucket != BUCKET_BLUE || destination != @0x0, E_DISTRIBUTION_CONFIG);
@@ -948,6 +1110,11 @@ module bten::bten {
         };
     }
 
+    fun drain_bten(vault: &mut Balance<BTEN>): Balance<BTEN> {
+        let amount = balance::value(vault);
+        balance::split(vault, amount)
+    }
+
     fun allocate(state: &mut EmissionState, mut minted: Balance<BTEN>, emission: u64) {
         let route = emission * ROUTE_VAULT_BPS / BPS;
         let traders = emission * TRADER_BPS / BPS;
@@ -1038,6 +1205,14 @@ module bten::bten {
     public fun keeper_is_paused(config: &KeeperConfig): bool { config.paused }
     public fun keeper_daily_staking_cap(config: &KeeperConfig): u64 { config.daily_staking_cap }
     public fun keeper_staking_spent_today(config: &KeeperConfig): u64 { config.spent_today }
+    public fun lp_program_is_paused(programme: &LpProgramState): bool { programme.paused }
+    public fun lp_program_is_finalized(programme: &LpProgramState): bool { programme.finalized }
+    public fun lp_program_weight(programme: &LpProgramState, pool_id: address): u64 {
+        if (!table::contains(&programme.pools, pool_id)) { return 0 };
+        *table::borrow(&programme.pools, pool_id)
+    }
+    public fun lp_program_protocol_balance(programme: &LpProgramState): u64 { balance::value(&programme.protocol_liquidity) }
+    public fun lp_program_cetus_reward_balance(programme: &LpProgramState): u64 { balance::value(&programme.cetus_rewards) }
     public fun pool_bucket(registry: &PoolRegistry, pool_id: address): u8 {
         if (!table::contains(&registry.pools, pool_id)) { return 255 };
         *table::borrow(&registry.pools, pool_id)

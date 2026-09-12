@@ -13,6 +13,11 @@
   "treasurySync": {
     "enabled": true
   },
+  "lpProgrammeAccrual": {
+    "enabled": false,
+    "state": null,
+    "reason": "v9 creates this shared state paused; this permissionless keeper may accrue balances into it but never releases LP or farm funding."
+  },
   "privilegedExecutors": {
     "enabled": false,
     "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."

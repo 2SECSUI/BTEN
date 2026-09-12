@@ -8,6 +8,13 @@ Use the public BlockTen interface at [block10.grok.me](https://block10.grok.me/)
 The public source and verification materials are published through the
 [BTEN GitHub repository](https://github.com/2SECSUI/BTEN).
 
+The public machine-readable integration contract for Block10 is
+[`config/block10_integration.json`](config/block10_integration.json). It has
+only public package/state IDs and adapter entrypoints; it never contains a
+wallet secret, capability, or sponsor key. The v9 LP programme policy and pool
+weights are in [`config/lp_program_policy.json`](config/lp_program_policy.json).
+Run `npm run validate-launch` before consuming either file.
+
 ## Implemented core
 
 - 21,000,000 BTEN hard cap with eight decimals.
@@ -29,11 +36,10 @@ The public source and verification materials are published through the
 
 ## Current mainnet adapter status
 
-Mainnet package version 6 adds the Cetus adapters and keeps the package
-upgradeable. The registered pools are BTEN/SUI and WAL/BTEN on Cetus. The
-single live adapter proof is `s8fsNFSTwhiUxUvzqsuJn2QH77dLiGCyeCTHYzgc5QD`:
-it swapped 0.01 SUI for BTEN and emitted the corresponding `RouteRecorded`
-event in the same transaction.
+Mainnet package version 8 is upgradeable at
+`0xfb4a37274bc784bc31cd03bbb6ab3e176d077ce22722ca2d7a9ba7f08f814042`.
+The v9 branch adds a paused, allowlisted LP programme and keeps all external
+funding operations off until their exact mainnet recipient calls are tested.
 
 Run the non-signing route check with:
 
@@ -41,10 +47,8 @@ Run the non-signing route check with:
 node .\scripts\dry_run_cetus_adapter.mjs
 ```
 
-`--execute` performs one 0.01 SUI live proof and should be used deliberately.
-Remaining launch work includes the Turbos adapter, automatic trader payout
-keeper, sponsorship policy implementation, LP-position verification, and an
-independent audit before immutability.
+`--execute` performs a live proof and should be used deliberately. See
+[`V9_LAUNCH_RUNBOOK.md`](V9_LAUNCH_RUNBOOK.md) for the staged release process.
 
 Run local tests with:
 

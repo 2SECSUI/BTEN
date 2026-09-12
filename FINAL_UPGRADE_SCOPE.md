@@ -17,9 +17,12 @@ package upgrade, dry-runs, and small-value mainnet tests all succeed.
 - Delivery is queued per released block, is permissionless to process, and has
   per-allocation pause controls.
 - Trader rewards remain point-weighted and automatic after round settlement.
-- BTEN LP rewards must use registered, active, in-range positions only. The
-  active-position distributor remains disabled until its Cetus deposit calls
-  pass live protected simulations.
+- The 25% BTEN LP allocation and all five 1% venue allocations are redirected
+  into the v9 LP programme, including their paused-vault backlog. It sends 70%
+  to protocol-owned registered-pool liquidity and 30% to verified Cetus-native
+  reward programmes, weighted by `config/lp_program_policy.json`.
+- Cetus reward funding remains disabled per pool until the exact venue objects,
+  deposit call, and low-value mainnet transaction have been verified.
 - Staking rewards will use rolling Aftermath schedules rather than one funding
   transaction per block; the replacement-farm adapter remains disabled until
   its exact funding call passes a live protected simulation.
@@ -33,6 +36,8 @@ package upgrade, dry-runs, and small-value mainnet tests all succeed.
 - Sponsor conversion has fixed pool, destination, per-refill, and daily caps.
 - A failed strategy is never force-sold. After 1,000 released blocks, its
   unspent BTEN allocation is routed to the registered BTEN LP distributor.
+- The separate 5% route-reserve LP-support share is 100% protocol-owned
+  liquidity; it never funds external LP claims.
 
 ## Operational safeguards
 

@@ -38,6 +38,8 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci --ignore-scripts
+      - name: Validate public launch policy
+        run: npm run validate-launch
       - name: Mainnet preflight
         run: node scripts/github_keeper.mjs
       - name: Permissionless maintenance

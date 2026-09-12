@@ -2,6 +2,9 @@
   "name": "bten-automation",
   "private": true,
   "type": "module",
+  "scripts": {
+    "validate-launch": "node scripts/validate_launch_config.mjs"
+  },
   "engines": {
     "node": ">=24"
   },

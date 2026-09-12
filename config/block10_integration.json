@@ -1,0 +1,31 @@
+{
+  "network": "mainnet",
+  "dapp": "https://block10.grok.me",
+  "sourceRepository": "https://github.com/2SECSUI/BTEN",
+  "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
+  "currentPackage": "0xfb4a37274bc784bc31cd03bbb6ab3e176d077ce22722ca2d7a9ba7f08f814042",
+  "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
+  "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
+  "cetusGlobalConfig": "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f",
+  "clock": "0x6",
+  "walletPolicy": {
+    "requiresWalletSignature": true,
+    "userPaysGas": true,
+    "sponsorshipEnabled": false,
+    "neverEmbedPrivateKeys": true
+  },
+  "routePolicy": {
+    "minimumNetImprovementBps": 1,
+    "requireBtenLeg": true,
+    "oneReceiptPerCompletedAtomicRoute": true,
+    "requireMinimumOutput": true,
+    "currentScope": "direct registered Cetus BTEN pairs only"
+  },
+  "adapterEntrypoints": {
+    "assetToBtenSecond": "bten::cetus_swap_to_bten",
+    "btenToAssetSecond": "bten::cetus_swap_from_bten",
+    "assetToBtenFirst": "bten::cetus_swap_to_bten_b2a",
+    "btenToAssetFirst": "bten::cetus_swap_from_bten_a2b"
+  },
+  "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and v9 state IDs are versioned there."
+}

@@ -4,6 +4,7 @@ module bten::bten_tests {
     use sui::coin;
     use sui::clock::{Self, Clock};
     use sui::test_scenario;
+    use sui::transfer;
 
     #[test]
     fun policy_and_one_block_allocation() {
@@ -155,6 +156,68 @@ module bten::bten_tests {
             let reward = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
             assert!(coin::value(&reward) == 500_000_000, 47);
             scenario.return_to_sender(reward);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    fun lp_program_migrates_paused_backlog_and_enforces_allowlist() {
+        let admin = @0xA;
+        let pool = @0xB;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::create_lp_program(&admin_cap, admin, scenario.ctx());
+            test_scenario::return_shared(registry);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut programme = scenario.take_shared<bten::LpProgramState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::register_lp_program_pool(&mut programme, &registry, &admin_cap, pool, 10_000);
+            bten::finalize_lp_program(&mut programme, &admin_cap);
+            bten::set_lp_program_paused(&mut programme, &admin_cap, false);
+            test_scenario::return_shared(programme);
+            test_scenario::return_shared(registry);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            clock::set_for_testing(&mut clock, 1_000);
+            let mut i: u64 = 0;
+            while (i < 10) {
+                bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
+                i = i + 1;
+            };
+            clock::set_for_testing(&mut clock, 601_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            let mut programme = scenario.take_shared<bten::LpProgramState>();
+            bten::accrue_lp_program(&mut state, &mut programme);
+            assert!(bten::bten_lp_balance(&state) == 0, 50);
+            assert!(bten::cetus_balance(&state) == 0, 51);
+            assert!(bten::haedal_balance(&state) == 0, 52);
+            assert!(bten::blue_balance(&state) == 0, 53);
+            assert!(bten::turbos_balance(&state) == 0, 54);
+            assert!(bten::sui_gas_balance(&state) == 0, 55);
+            assert!(bten::lp_program_protocol_balance(&programme) == 1_050_000_000, 56);
+            assert!(bten::lp_program_cetus_reward_balance(&programme) == 450_000_000, 57);
+            let cap = scenario.take_from_sender<bten::LpProgramCap>();
+            let funding = bten::take_protocol_liquidity(&mut programme, &cap, pool, 100_000_000, scenario.ctx());
+            transfer::public_transfer(funding, admin);
+            scenario.return_to_sender(cap);
+            test_scenario::return_shared(programme);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
         };
         scenario.end();
     }
