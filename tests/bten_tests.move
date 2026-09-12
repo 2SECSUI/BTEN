@@ -64,6 +64,102 @@ module bten::bten_tests {
     }
 
     #[test]
+    fun keeper_config_starts_paused_and_is_bounded() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::create_keeper_config(&admin_cap, keeper, 500_000_000, &clock, scenario.ctx());
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let config = scenario.take_shared<bten::KeeperConfig>();
+            assert!(bten::keeper_address(&config) == keeper, 40);
+            assert!(bten::keeper_is_paused(&config), 41);
+            assert!(bten::keeper_daily_staking_cap(&config) == 500_000_000, 42);
+            assert!(bten::keeper_staking_spent_today(&config) == 0, 43);
+            test_scenario::return_shared(config);
+        };
+        scenario.next_tx(keeper);
+        {
+            let cap = scenario.take_from_sender<bten::KeeperCap>();
+            scenario.return_to_sender(cap);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    fun keeper_can_only_withdraw_the_unpaused_staking_tranche() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::create_keeper_config(&admin_cap, keeper, 500_000_000, &clock, scenario.ctx());
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut config = scenario.take_shared<bten::KeeperConfig>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_keeper_paused(&mut config, &admin_cap, false);
+            test_scenario::return_shared(config);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            clock::set_for_testing(&mut clock, 1_000);
+            let mut i: u64 = 0;
+            while (i < 10) {
+                bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
+                i = i + 1;
+            };
+            clock::set_for_testing(&mut clock, 601_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            assert!(bten::staking_balance(&state) == 500_000_000, 44);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.next_tx(keeper);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut config = scenario.take_shared<bten::KeeperConfig>();
+            let clock = scenario.take_shared<Clock>();
+            let cap = scenario.take_from_sender<bten::KeeperCap>();
+            bten::withdraw_staking_tranche_to_keeper(&mut state, &mut config, &cap, 500_000_000, &clock, scenario.ctx());
+            assert!(bten::staking_balance(&state) == 0, 45);
+            assert!(bten::keeper_staking_spent_today(&config) == 500_000_000, 46);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(config);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(cap);
+        };
+        scenario.next_tx(keeper);
+        {
+            let reward = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
+            assert!(coin::value(&reward) == 500_000_000, 47);
+            scenario.return_to_sender(reward);
+        };
+        scenario.end();
+    }
+
+    #[test]
     #[expected_failure(abort_code = 11)]
     fun legacy_router_cap_cannot_record_routes() {
         let admin = @0xA;

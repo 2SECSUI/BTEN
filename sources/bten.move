@@ -83,6 +83,9 @@ module bten::bten {
     const E_FEE_POOL: u64 = 17;
     const E_DISTRIBUTION_CONFIG: u64 = 18;
     const E_TREASURY_PAUSED: u64 = 19;
+    const E_KEEPER_PAUSED: u64 = 20;
+    const E_KEEPER_SENDER: u64 = 21;
+    const E_KEEPER_CAP: u64 = 22;
 
     public struct BTEN has drop {}
 
@@ -93,6 +96,21 @@ module bten::bten {
     /// Held during setup so exact live pool IDs can be registered. Destroy it
     /// after the initial pool set is tested and the registry is finalized.
     public struct RegistryAdminCap has key, store { id: UID }
+
+    /// A deliberately narrow capability held by the remote keeper. It grants
+    /// no upgrade, registry, LP, or treasury authority.
+    public struct KeeperCap has key, store { id: UID }
+
+    /// Staking-only automation configuration. It begins paused and applies a
+    /// rolling 24-hour ceiling, so activation is an explicit admin action.
+    public struct KeeperConfig has key {
+        id: UID,
+        keeper: address,
+        paused: bool,
+        daily_staking_cap: u64,
+        accounting_day: u64,
+        spent_today: u64,
+    }
 
     public struct PoolRegistry has key {
         id: UID,
@@ -612,6 +630,44 @@ module bten::bten {
         });
     }
 
+    /// One-time setup for the remote keeper. The config is shared so a
+    /// keeper transaction can be audited on-chain; the narrow cap is sent to
+    /// the configured address. This function never transfers BTEN.
+    public entry fun create_keeper_config(
+        _admin: &RegistryAdminCap,
+        keeper: address,
+        daily_staking_cap: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(keeper != @0x0, E_KEEPER_SENDER);
+        assert!(daily_staking_cap > 0 && daily_staking_cap <= 5 * UNIT, E_KEEPER_CAP);
+        transfer::public_transfer(KeeperCap { id: object::new(ctx) }, keeper);
+        transfer::share_object(KeeperConfig {
+            id: object::new(ctx), keeper, paused: true, daily_staking_cap,
+            accounting_day: clock::timestamp_ms(clock) / 86_400_000,
+            spent_today: 0,
+        });
+    }
+
+    public fun set_keeper_paused(config: &mut KeeperConfig, _admin: &RegistryAdminCap, paused: bool) {
+        config.paused = paused;
+    }
+
+    public fun rotate_keeper(
+        config: &mut KeeperConfig,
+        _admin: &RegistryAdminCap,
+        keeper: address,
+        ctx: &mut TxContext,
+    ) {
+        assert!(keeper != @0x0, E_KEEPER_SENDER);
+        config.keeper = keeper;
+        config.paused = true;
+        // Any cap retained by the former keeper becomes unusable because the
+        // sender check above now points at the replacement address.
+        transfer::public_transfer(KeeperCap { id: object::new(ctx) }, keeper);
+    }
+
     public fun set_route_treasury_paused(
         treasury: &mut RouteTreasuryState,
         _admin: &RegistryAdminCap,
@@ -823,6 +879,30 @@ module bten::bten {
         transfer::public_transfer(funding, tx_context::sender(ctx));
     }
 
+    /// Remote keeper path for only the released staking allocation. It cannot
+    /// access route, LP, trader, or venue vaults and is bounded per day.
+    public entry fun withdraw_staking_tranche_to_keeper(
+        state: &mut EmissionState,
+        config: &mut KeeperConfig,
+        _keeper_cap: &KeeperCap,
+        amount: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!config.paused, E_KEEPER_PAUSED);
+        assert!(tx_context::sender(ctx) == config.keeper, E_KEEPER_SENDER);
+        assert!(amount > 0 && amount <= config.daily_staking_cap, E_KEEPER_CAP);
+        let day = clock::timestamp_ms(clock) / 86_400_000;
+        if (day > config.accounting_day) {
+            config.accounting_day = day;
+            config.spent_today = 0;
+        };
+        assert!(config.spent_today + amount <= config.daily_staking_cap, E_KEEPER_CAP);
+        config.spent_today = config.spent_today + amount;
+        let funding = coin::from_balance(balance::split(&mut state.staking_vault, amount), ctx);
+        transfer::public_transfer(funding, config.keeper);
+    }
+
     /// A keeper calls this after observing RouteRecorded events. The amount is
     /// calculated on-chain from the sealed round's points; it cannot be chosen
     /// by the keeper. This is the normal no-redemption path for traders.
@@ -842,6 +922,17 @@ module bten::bten {
         trader_round.reward_paid = trader_round.reward_paid + amount;
         transfer::public_transfer(coin::from_balance(balance::split(&mut state.trader_vault, amount), ctx), trader);
         event::emit(TraderPaid { round, trader, amount });
+    }
+
+    /// Transaction-friendly keeper entrypoint. Payout amounts and recipients
+    /// remain derived from sealed on-chain route points.
+    public entry fun auto_pay_trader_entry(
+        state: &mut EmissionState,
+        round: u64,
+        trader: address,
+        ctx: &mut TxContext,
+    ) {
+        auto_pay_trader(state, round, trader, ctx);
     }
 
     fun advance_slots(state: &mut EmissionState, now: u64) {
@@ -943,6 +1034,10 @@ module bten::bten {
     public fun route_treasury_lp_support(treasury: &RouteTreasuryState): u64 { treasury.lp_support_accrued }
     public fun route_treasury_safety(treasury: &RouteTreasuryState): u64 { treasury.safety_accrued }
     public fun route_treasury_is_paused(treasury: &RouteTreasuryState): bool { treasury.paused }
+    public fun keeper_address(config: &KeeperConfig): address { config.keeper }
+    public fun keeper_is_paused(config: &KeeperConfig): bool { config.paused }
+    public fun keeper_daily_staking_cap(config: &KeeperConfig): u64 { config.daily_staking_cap }
+    public fun keeper_staking_spent_today(config: &KeeperConfig): u64 { config.spent_today }
     public fun pool_bucket(registry: &PoolRegistry, pool_id: address): u8 {
         if (!table::contains(&registry.pools, pool_id)) { return 255 };
         *table::borrow(&registry.pools, pool_id)
