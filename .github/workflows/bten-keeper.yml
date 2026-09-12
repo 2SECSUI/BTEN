@@ -42,8 +42,15 @@ jobs:
         run: npm run validate-launch
       - name: Mainnet preflight
         run: node scripts/github_keeper.mjs
+      - name: External Cetus verifier preflight
+        run: node scripts/external_cetus_verifier.mjs
       - name: Permissionless maintenance
         if: github.event_name == 'schedule' || inputs.mode == 'execute'
         env:
           BTEN_KEEPER_PRIVATE_KEY: ${{ secrets.BTEN_KEEPER_PRIVATE_KEY }}
         run: node scripts/github_keeper.mjs --execute
+      - name: Attest verified direct Cetus routes
+        if: github.event_name == 'schedule' || inputs.mode == 'execute'
+        env:
+          BTEN_KEEPER_PRIVATE_KEY: ${{ secrets.BTEN_KEEPER_PRIVATE_KEY }}
+        run: node scripts/external_cetus_verifier.mjs --execute

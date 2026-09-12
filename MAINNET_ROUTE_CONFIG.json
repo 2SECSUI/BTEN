@@ -48,11 +48,17 @@
   "feeSubsidy": { "enabled": false, "requiresSuiSponsorBudget": true },
   "externalCetusVerifier": {
     "entrypoint": "bten::attest_external_cetus_route",
-    "state": "0x346b454f108c22bba64534cdfb80da741e7a79e6ddea5ec5b6f337720dcbe3a1",
+    "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
+    "cap": "0xd321f14d2620a79c1c7da73c0f4149b6abeb2a19251fd0e423c27fd1d9f10e1d",
     "dailyEventCap": 25,
-    "status": "created-paused-awaiting-public-event-indexer",
+    "activationAfterMs": "1789210768409",
+    "scanTransactionsPerPool": 50,
+    "maxEventsPerRun": 10,
+    "fixedFeePoints": "1",
+    "status": "active-public-event-reader",
+    "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
-    "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The contract cannot independently read historical Cetus events, so public indexer evidence is mandatory before activation."
+    "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The public reader scans only successful transactions affecting a frozen BTEN Cetus pool after V14 activation, validates the exact Cetus SwapEvent and sender, skips protected routes already recorded on-chain, uses one fixed point per transaction, and submits at most ten events per run within the on-chain daily cap. The contract cannot independently read historical Cetus events."
   },
   "activationRule": "Protected direct Cetus BTEN routes are wallet-signed and user-paid. V13 allocation accounting is live. One-sided protocol BTEN deposits are restricted to the finalized on-chain allowlist and atomically abort if a selected range needs any paired asset.",
   "protocolLiquidity": {

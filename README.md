@@ -26,9 +26,12 @@ CERT is intentionally absent from that public pool list and is not in the
 on-chain LP allowlist. These files contain only public chain data; they never
 contain a private key, capability, or sponsor credential.
 
-The direct-Cetus verifier is deployed but paused until its public event-reader
-workflow is live. Its bounded design and the separate future treasury-executor
-work are documented in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md).
+The direct-Cetus verifier is connected to a public, read-only pool-event
+reader. It accepts at
+most one fixed-point receipt per successful transaction on a frozen BTEN Cetus
+pool, never treats a protected BTEN adapter route as a second receipt, and is
+bounded by the on-chain daily cap. Its separate future treasury-executor work
+is documented in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md).
 
 ## Implemented core
 
