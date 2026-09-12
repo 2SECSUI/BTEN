@@ -127,8 +127,11 @@ async function submit(client, signer, candidate) {
     tx.pure.address(candidate.trader), tx.pure.u64(candidate.feePoints), tx.object(CLOCK),
   ] });
   const result = await client.signAndExecuteTransaction({ signer, transaction: tx, include: { effects: true, events: true } });
-  const status = result.effects?.status?.status ?? result.transaction?.effects?.status?.status;
-  if (String(status).toLowerCase() !== "success") throw new Error(`External attestation failed for ${candidate.digest}`);
+  const status = result.effects?.status ?? result.transaction?.effects?.status;
+  // Sui gRPC reports a boolean `success`; JSON-RPC uses a status string.
+  // Accept both representations, but never treat an absent status as success.
+  const succeeded = status?.success === true || String(status?.status ?? status).toLowerCase() === "success";
+  if (!succeeded) throw new Error(`External attestation failed for ${candidate.digest}`);
   return result.digest ?? result.transaction?.digest ?? null;
 }
 
