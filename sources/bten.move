@@ -586,6 +586,92 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
+    /// Atomically route SUI through BTEN and into a BTEN-first Cetus partner
+    /// pool. This records one receipt only after both flash swaps settle and
+    /// the trader's final minimum output is met.
+    public entry fun cetus_sui_to_asset_via_bten_a2b<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        bten_asset_pool: &mut Pool<BTEN, A>,
+        mut input: Coin<SUI>,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        bten_asset_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_cetus_pool(registry, sui_bten_pool);
+        assert_registered_cetus_pool(registry, bten_asset_pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_bten, receive_sui, sui_receipt) = pool::flash_swap<BTEN, SUI>(config, sui_bten_pool, false, true, requested, sui_bten_sqrt_price_limit, clock);
+        let paid_sui = pool::swap_pay_amount(&sui_receipt);
+        let pay_sui = coin::into_balance(coin::split(&mut input, paid_sui, ctx));
+        pool::repay_flash_swap(config, sui_bten_pool, balance::zero<BTEN>(), pay_sui, sui_receipt);
+        coin::join(&mut input, coin::from_balance(receive_sui, ctx));
+        let mut bten = coin::from_balance(receive_bten, ctx);
+        let bten_in = coin::value(&bten);
+        assert!(bten_in > 0, E_ZERO_INPUT);
+        let (receive_bten_change, receive_asset, asset_receipt) = pool::flash_swap<BTEN, A>(config, bten_asset_pool, true, true, bten_in, bten_asset_sqrt_price_limit, clock);
+        let paid_bten = pool::swap_pay_amount(&asset_receipt);
+        assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
+        let pay_bten = coin::into_balance(coin::split(&mut bten, paid_bten, ctx));
+        pool::repay_flash_swap(config, bten_asset_pool, pay_bten, balance::zero<A>(), asset_receipt);
+        coin::join(&mut bten, coin::from_balance(receive_bten_change, ctx));
+        record_atomic_route(state, paid_sui, clock, tx_context::sender(ctx));
+        transfer::public_transfer(input, tx_context::sender(ctx));
+        transfer::public_transfer(bten, tx_context::sender(ctx));
+        transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
+    }
+
+    /// Same atomic SUI -> BTEN -> asset route when the partner asset is coin A
+    /// and BTEN is coin B. The type ordering is enforced by Move.
+    public entry fun cetus_sui_to_asset_via_bten_b2a<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        asset_bten_pool: &mut Pool<A, BTEN>,
+        mut input: Coin<SUI>,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        asset_bten_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_cetus_pool(registry, sui_bten_pool);
+        assert_registered_cetus_pool(registry, asset_bten_pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_bten, receive_sui, sui_receipt) = pool::flash_swap<BTEN, SUI>(config, sui_bten_pool, false, true, requested, sui_bten_sqrt_price_limit, clock);
+        let paid_sui = pool::swap_pay_amount(&sui_receipt);
+        let pay_sui = coin::into_balance(coin::split(&mut input, paid_sui, ctx));
+        pool::repay_flash_swap(config, sui_bten_pool, balance::zero<BTEN>(), pay_sui, sui_receipt);
+        coin::join(&mut input, coin::from_balance(receive_sui, ctx));
+        let mut bten = coin::from_balance(receive_bten, ctx);
+        let bten_in = coin::value(&bten);
+        assert!(bten_in > 0, E_ZERO_INPUT);
+        let (receive_asset, receive_bten_change, asset_receipt) = pool::flash_swap<A, BTEN>(config, asset_bten_pool, false, true, bten_in, asset_bten_sqrt_price_limit, clock);
+        let paid_bten = pool::swap_pay_amount(&asset_receipt);
+        assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
+        let pay_bten = coin::into_balance(coin::split(&mut bten, paid_bten, ctx));
+        pool::repay_flash_swap(config, asset_bten_pool, balance::zero<A>(), pay_bten, asset_receipt);
+        coin::join(&mut bten, coin::from_balance(receive_bten_change, ctx));
+        record_atomic_route(state, paid_sui, clock, tx_context::sender(ctx));
+        transfer::public_transfer(input, tx_context::sender(ctx));
+        transfer::public_transfer(bten, tx_context::sender(ctx));
+        transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
+    }
+
+    fun assert_registered_cetus_pool<A, B>(registry: &PoolRegistry, pool: &Pool<A, B>) {
+        let pool_id = object::id(pool);
+        let pool_address = object::id_to_address(&pool_id);
+        assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
+        assert!(*table::borrow(&registry.pools, pool_address) == BUCKET_CETUS, E_POOL_NOT_REGISTERED);
+    }
+
     /// Shared private receipt path. It cannot be reached without completing a
     /// Cetus flash-swap in one transaction, because the receipt has no drop.
     fun record_atomic_route(

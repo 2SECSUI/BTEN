@@ -69,6 +69,14 @@ Block10 should compare a direct Cetus quote with its BTEN route and present the
 BTEN route only when its final net output is higher. This prevents a subsidised
 or lower-fee route from being selected when price impact would make it worse.
 
+The next reviewed upgrade adds atomic SUI-to-asset paths through BTEN for both
+Cetus pool type orderings. They complete `SUI -> BTEN -> asset` in one
+transaction, enforce the final asset minimum output, and record one receipt
+only after both flash-swap repayments succeed. The public route-choice rule is
+implemented in [`scripts/public_route_selector.mjs`](scripts/public_route_selector.mjs):
+direct output remains the default unless the BTEN path is net-better by the
+configured threshold.
+
 Run the non-signing route check with:
 
 ```powershell

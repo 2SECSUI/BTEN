@@ -22,7 +22,7 @@
     "requireBtenLeg": true,
     "oneReceiptPerCompletedAtomicRoute": true,
     "requireMinimumOutput": true,
-    "currentScope": "direct registered Cetus BTEN pairs only"
+    "currentScope": "direct registered Cetus BTEN pairs only until the reviewed two-hop upgrade is deployed"
   },
   "routeSelection": {
     "compareDirectAndBtenPaths": true,
@@ -42,7 +42,9 @@
     "assetToBtenSecond": "bten::cetus_swap_to_bten",
     "btenToAssetSecond": "bten::cetus_swap_from_bten",
     "assetToBtenFirst": "bten::cetus_swap_to_bten_b2a",
-    "btenToAssetFirst": "bten::cetus_swap_from_bten_a2b"
+    "btenToAssetFirst": "bten::cetus_swap_from_bten_a2b",
+    "suiToAssetViaBtenFirst": "bten::cetus_sui_to_asset_via_bten_a2b (pending reviewed upgrade)",
+    "suiToAssetViaBtenSecond": "bten::cetus_sui_to_asset_via_bten_b2a (pending reviewed upgrade)"
   },
   "protocolLiquidity": {
     "entrypoints": ["bten::deploy_protocol_liquidity_out_of_range_a", "bten::deploy_protocol_liquidity_out_of_range_b"],
