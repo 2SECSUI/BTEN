@@ -3,12 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate-launch": "node scripts/validate_launch_config.mjs"
+    "validate-launch": "node scripts/validate_launch_config.mjs",
+    "quote:aftermath": "node scripts/aftermath_router_quote.mjs",
+    "quote:hop": "node scripts/hop_router_quote.mjs"
   },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
-    "@mysten/sui": "2.29.0"
+    "@hop.ag/sdk": "^5.0.9",
+    "@mysten/sui": "2.29.0",
+    "aftermath-ts-sdk": "^4.1.1"
   }
 }

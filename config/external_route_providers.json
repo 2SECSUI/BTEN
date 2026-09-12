@@ -1,0 +1,60 @@
+{
+  "purpose": "Public provider manifest for Block10 route discovery. These providers receive no BTEN capability, treasury balance, keeper key, or browser private key.",
+  "providers": [
+    {
+      "name": "Aftermath Smart Order Router",
+      "status": "quote-only-integrated-live-quote-passed",
+      "sdk": "aftermath-ts-sdk",
+      "integration": "scripts/aftermath_router_quote.mjs",
+      "executionRule": "Use its output only as a direct-route comparator. Protected BTEN routes must execute through the BTEN Move adapter."
+    },
+    {
+      "name": "Hop Aggregator",
+      "status": "quote-only-integrated-pending-api-connectivity-test",
+      "sdk": "@hop.ag/sdk",
+      "integration": "scripts/hop_router_quote.mjs",
+      "executionRule": "Use its output only as a direct-route comparator. Do not construct or submit its transaction for a BTEN-gated route."
+    },
+    {
+      "name": "7K Aggregator",
+      "status": "external-link-pending-sdk-v2-compatibility",
+      "url": "https://docs.7k.ag/developers/sdk",
+      "scope": "Quote comparison only after a stable @mysten/sui v2 compatible release is reviewed.",
+      "gateRule": "Never counts as a BTEN gated route without a separate audited protected adapter."
+    },
+    {
+      "name": "FlowX Finance",
+      "status": "external-link-pending-sdk-v2-compatibility",
+      "url": "https://docs.flowx.finance/developer/flowx-sdk/swap-aggregator",
+      "scope": "Quote comparison only. The current published SDK brings legacy Sui v1 dependencies and is intentionally not included in BTEN.",
+      "gateRule": "Never counts as a BTEN gated route without a separate audited protected adapter."
+    },
+    {
+      "name": "OKX Web3 DEX Router",
+      "status": "external-link-pending-api-credential-configuration",
+      "url": "https://web3.okx.com/onchainos/dev-docs-v5/dex-api/dex-sdk-sui",
+      "scope": "Quote comparison only after a dedicated OKX Web3 API configuration is supplied.",
+      "gateRule": "Never counts as a BTEN gated route without a separate audited protected adapter."
+    },
+    {
+      "name": "Router Nitro",
+      "status": "external-link-pending-official-sdk-review",
+      "url": "https://www.routernitro.com/",
+      "scope": "User-initiated cross-chain bridge or swap only.",
+      "gateRule": "Never counts as a BTEN gated route. Cross-chain completion cannot be atomically proved by the current Sui BTEN package."
+    },
+    {
+      "name": "YouSUI",
+      "status": "external-link-pending-official-sdk-review",
+      "url": "https://yousui.io/bridge",
+      "scope": "User-initiated Sui swap or bridge only.",
+      "gateRule": "Never counts as a BTEN gated route unless a separate audited Sui-side protected adapter is built and deployed."
+    }
+  ],
+  "securityRules": [
+    "No provider transaction is auto-submitted.",
+    "The user's wallet signs every transaction.",
+    "No provider receives a BTEN admin capability, upgrade capability, treasury fund, or GitHub keeper secret.",
+    "A link or third-party quote is not evidence of a completed BTEN-gated route."
+  ]
+}

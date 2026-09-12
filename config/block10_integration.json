@@ -2,6 +2,7 @@
   "network": "mainnet",
   "dapp": "https://block10.grok.me",
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
+  "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
   "currentPackage": "0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230",
   "publishedVersion": 15,
@@ -29,12 +30,19 @@
     "selectBtenOnlyWhenNetOutputIsHigher": true,
     "minimumNetImprovementBps": 1,
     "quoteIncludesVenueFeePriceImpactAndGas": true,
-    "fallback": "Use the direct Cetus path when BTEN is not net-cheaper."
+    "fallback": "Use the direct Cetus path when BTEN is not net-cheaper.",
+    "aftermathSmartOrderRouter": {
+      "enabled": true,
+      "mode": "quote-only",
+      "package": "aftermath-ts-sdk",
+      "script": "scripts/aftermath_router_quote.mjs",
+      "rule": "Use it as an independent direct-route comparator only. Never execute its built transaction for a BTEN-gated route."
+    }
   },
   "routeRebate": {
     "policyFile": "config/route_rebate_policy.json",
     "fundingSource": "RouteTreasuryState.rebate_accrued only",
-    "status": "policy-ready-pending-reviewed-output-token-executor-upgrade",
+    "status": "source-implemented-pending-audit-and-mainnet-upgrade",
     "disclosureRequired": true
   },
   "traderReward": {
@@ -50,7 +58,9 @@
     "assetToBtenFirst": "bten::cetus_swap_to_bten_b2a",
     "btenToAssetFirst": "bten::cetus_swap_from_bten_a2b",
     "suiToAssetViaBtenFirst": "bten::cetus_sui_to_asset_via_bten_a2b (pending reviewed upgrade)",
-    "suiToAssetViaBtenSecond": "bten::cetus_sui_to_asset_via_bten_b2a (pending reviewed upgrade)"
+    "suiToAssetViaBtenSecond": "bten::cetus_sui_to_asset_via_bten_b2a (pending reviewed upgrade)",
+    "suiToAssetViaBtenRebateFirst": "bten::cetus_sui_to_asset_via_bten_rebate_a2b (source-only; pending audit and mainnet upgrade)",
+    "suiToAssetViaBtenRebateSecond": "bten::cetus_sui_to_asset_via_bten_rebate_b2a (source-only; pending audit and mainnet upgrade)"
   },
   "protocolLiquidity": {
     "entrypoints": ["bten::deploy_protocol_liquidity_out_of_range_a", "bten::deploy_protocol_liquidity_out_of_range_b"],

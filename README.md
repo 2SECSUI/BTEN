@@ -69,6 +69,24 @@ Block10 should compare a direct Cetus quote with its BTEN route and present the
 BTEN route only when its final net output is higher. This prevents a subsidised
 or lower-fee route from being selected when price impact would make it worse.
 
+The Aftermath Smart Order Router is also included as a read-only direct-route
+quote source through `aftermath-ts-sdk`. It improves comparison coverage across
+Sui liquidity venues, but Block10 must never execute an Aftermath-built route
+when presenting a BTEN-gated path: the wallet-signed BTEN adapter transaction
+remains the only execution path that can create a BTEN receipt.
+
+Hop Aggregator is also installed as a quote-only comparator. Its route builder
+is deliberately not used by Block10 for gated trades. 7K, FlowX, and OKX are
+listed as external providers, but not bundled: their current integration paths
+either require a separate API configuration or have an incompatible legacy SDK
+dependency. See `config/external_route_providers.json` for their exact status.
+
+Router Nitro and YouSUI are listed in
+[`config/external_route_providers.json`](config/external_route_providers.json)
+as wallet-facing external destinations only. Neither has a reviewed BTEN
+transaction adapter, so neither bridge nor swap can count as a BTEN gate. This
+keeps cross-chain settlement risk and BTEN reward accounting separate.
+
 The next reviewed upgrade adds atomic SUI-to-asset paths through BTEN for both
 Cetus pool type orderings. They complete `SUI -> BTEN -> asset` in one
 transaction, enforce the final asset minimum output, and record one receipt
