@@ -62,10 +62,9 @@
       "bucket": "staking",
       "bucketId": 6,
       "allocationBps": 1000,
-      "status": "managed-by-rolling-keeper",
-      "delivery": "aftermath-rolling-keeper",
-      "knownFarm": "0x462c6ea2b16c1ab8d5afac0af198f52aede5f0dbdfd45009b77d4007161fed7f",
-      "reason": "Aftermath reward schedules require its funding call, not a raw BTEN transfer. The rolling keeper only funds an exhausted schedule from the fixed staking vault."
+      "status": "native-farm-active",
+      "delivery": "bten-native-staking-farm",
+      "reason": "Aftermath is not part of BTEN. The native farm receives only newly released fixed staking allocations after the upgrade and its farm state is created."
     }
   ],
   "roundingDust": "At the current 50-BTEN subsidy there is no split dust. At future halvings, integer dust remains in the Haedal vault under the existing immutable-state layout until a dedicated dust migration is approved."

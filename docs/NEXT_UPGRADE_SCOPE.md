@@ -31,7 +31,7 @@ equivalent to the atomic adapter.
 ## Treasury execution
 
 Before any automated external deposits are enabled, the package must use
-explicit allowlists for the destination pool/farm/position IDs and enforce:
+explicit allowlists for the destination pool/position IDs and enforce:
 
 - a per-call amount cap;
 - a rolling daily cap;
@@ -40,6 +40,6 @@ explicit allowlists for the destination pool/farm/position IDs and enforce:
   fails; and
 - public execution events with the destination and amount.
 
-The final Aftermath farm object and any external recipient must be supplied
-and independently checked before this capability is built. No user wallet or
-arbitrary destination is an eligible executor target.
+BTEN staking uses the native farm, not an external farm object. Any future
+external recipient must be separately supplied and independently checked;
+no user wallet or arbitrary destination is an eligible executor target.

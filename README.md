@@ -13,12 +13,15 @@ The public machine-readable integration contract for Block10 is
 only public package/state IDs and adapter entrypoints; it never contains a
 wallet secret, capability, or sponsor key. The v9 LP programme policy and pool
 weights are in [`config/lp_program_policy.json`](config/lp_program_policy.json).
+The native BTEN staking-farm integration is in
+[`config/bten_staking_farm.json`](config/bten_staking_farm.json); it is enabled
+only after the package upgrade and farm-creation transaction are confirmed.
 Run `npm run validate-launch` before consuming either file.
 
 ### Live mainnet data for Block10
 
-The current package is v14 at
-`0x9095d30a16f0d5e173e4539b38c7942dc2222e97f116b6f8e07c343a85349e49`.
+The current package is v15 at
+`0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230`.
 Grok should consume `config/block10_integration.json` first, then
 `MAINNET_ROUTE_CONFIG.json` for the exact ten finalized Cetus pool IDs,
 their BTEN-only adjacent-price position IDs, and the allocation status.
@@ -54,10 +57,11 @@ is documented in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md).
 
 ## Current mainnet adapter status
 
-Mainnet package version 13 is upgradeable at
-`0x646612b6c4c040bfae0e7d519fc5ef6bc0f1555502d5f8136d08e59ede2c0191`.
-It was deployed in transaction `Gv6ofDX7Lme9D443rdRHvbPGhoofMhDQxtmN8xJhwadQ`.
-V13 adds allowlisted one-sided LP executors for both Cetus token orderings.
+Mainnet package version 15 is upgradeable at
+`0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230`.
+It was upgraded in transaction `99172L13dxrsm3UoJ8eXQQFEKWtKGftRKupZjDfJcai7`.
+V15 adds the native single-sided BTEN staking farm alongside the allowlisted
+one-sided LP executors for both Cetus token orderings.
 They create BTEN-only positions immediately outside the current price and
 abort atomically if any paired asset would be required.
 

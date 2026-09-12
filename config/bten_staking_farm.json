@@ -1,0 +1,37 @@
+{
+  "network": "mainnet",
+  "status": "active",
+  "packageSource": "Published.toml",
+  "farmObjectId": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
+  "activationTransaction": "6gom1GHH29kzVtrmAQuTNvUF2RDSQMqRkjQbg7E4kcut",
+  "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
+  "rewardSource": "Only newly released 10% BTEN staking allocations after the first stake.",
+  "userFlow": {
+    "stake": "Split the wallet BTEN coin for the chosen raw amount, then call bten::stake_bten with EmissionState and BtenStakingFarm.",
+    "withdraw": "Call bten::withdraw_bten_and_rewards with the desired raw principal amount. It returns principal plus all accrued rewards in one BTEN coin.",
+    "claim": "Call bten::claim_bten_staking_rewards to collect rewards without reducing stake.",
+    "emergency": "If the farm is paused, call bten::emergency_withdraw_bten_principal. It returns principal only and never touches the reward vault."
+  },
+  "entrypoints": {
+    "create": "bten::create_bten_staking_farm",
+    "stake": "bten::stake_bten",
+    "withdraw": "bten::withdraw_bten_and_rewards",
+    "claim": "bten::claim_bten_staking_rewards",
+    "sync": "bten::sync_bten_staking_farm_rewards",
+    "emergencyWithdraw": "bten::emergency_withdraw_bten_principal"
+  },
+  "views": [
+    "bten::bten_farm_total_staked",
+    "bten::bten_farm_principal_balance",
+    "bten::bten_farm_reward_balance",
+    "bten::bten_farm_stake_of",
+    "bten::bten_farm_is_paused",
+    "bten::bten_farm_started"
+  ],
+  "security": {
+    "userPaysGas": true,
+    "adminCapabilityIsNeverPublic": true,
+    "farmNeverReceivesHistoricStakingRewards": true,
+    "rewardVaultIsSeparateFromUserPrincipal": true
+  }
+}

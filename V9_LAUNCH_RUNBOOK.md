@@ -31,8 +31,8 @@ capability, LP position, or treasury balance is stored in GitHub.
 4. Use `accrue_route_lp_support_to_program` only after route-treasury syncing;
    it moves only the accounted LP-support share into protocol liquidity.
 5. Use every programme balance only for protocol-owned liquidity in the
-   registered pool set. Continue Aftermath only through exhausted-schedule
-   replacement funding.
+   registered pool set. Create the native BTEN staking farm, then let its
+   permissionless sync move only newly released staking allocations.
 
 ## Verification and monitoring
 
@@ -41,7 +41,7 @@ capability, LP position, or treasury balance is stored in GitHub.
   logo, Move sources, lock file, and manifest hashes, then submit that exact
   archive to Suiscan after the upgrade digest is known.
 - Monitor gate receipts, released height, LP programme balances, Cetus funding
-  events, Aftermath schedule exhaustion, route-treasury balances, sponsor cap,
+  events, native-farm stake/reward balances, route-treasury balances, sponsor cap,
   and emergency pauses.
 - Do not make the package immutable until all enabled executors have passed
   independent review and live low-value tests.

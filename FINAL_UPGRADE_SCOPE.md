@@ -21,9 +21,9 @@ package upgrade, dry-runs, and small-value mainnet tests all succeed.
   into the v9 LP programme, including their paused-vault backlog. Every BTEN
   is protocol-owned registered-pool liquidity, weighted by
   `config/lp_program_policy.json`; there is no separate LP-reward hold.
-- Staking rewards will use rolling Aftermath schedules rather than one funding
-  transaction per block; the replacement-farm adapter remains disabled until
-  its exact funding call passes a live protected simulation.
+- Staking rewards use the native single-sided BTEN farm. Users stake BTEN
+  principal and receive principal plus accrued mined rewards when withdrawing.
+  The farm starts at its first stake so no historic allocation is claimable.
 
 ## Route treasury
 

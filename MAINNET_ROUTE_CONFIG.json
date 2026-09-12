@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v14-live-external-verifier-configured",
-  "publishedVersion": 14,
-  "currentPackage": "0x9095d30a16f0d5e173e4539b38c7942dc2222e97f116b6f8e07c343a85349e49",
+  "status": "v15-live-native-staking-farm-configured",
+  "publishedVersion": 15,
+  "currentPackage": "0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -11,6 +11,12 @@
   "poolRegistryFinalized": true,
   "lpProgrammeState": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
   "lpProgramme": { "finalized": true, "paused": false, "weightTotalBps": 10000 },
+  "nativeStakingFarm": {
+    "state": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
+    "activationTransaction": "6gom1GHH29kzVtrmAQuTNvUF2RDSQMqRkjQbg7E4kcut",
+    "status": "active-empty",
+    "rewardPolicy": "Only newly released 10% staking allocations after the first stake are synced; user principal and rewards are held separately."
+  },
   "venues": [
     {
       "name": "cetus",

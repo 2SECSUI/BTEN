@@ -99,6 +99,11 @@ module bten::bten {
     const E_EXTERNAL_EVENT_CAP: u64 = 31;
     const E_EXTERNAL_EVENT_DIGEST: u64 = 32;
     const MAX_EXTERNAL_EVENTS_PER_DAY: u64 = 250;
+    // Rewards are tracked at high precision so small stakers receive their
+    // fair share without rounding a whole BTEN unit on each block sync.
+    const FARM_ACC_SCALE: u128 = 1_000_000_000_000_000_000;
+    const E_FARM_PAUSED: u64 = 33;
+    const E_FARM_STAKE: u64 = 34;
 
     public struct BTEN has drop {}
 
@@ -153,6 +158,34 @@ module bten::bten {
     /// Narrow capability for the treasury-owned LP execution wallet. It has
     /// no mint, upgrade, registry, staking, or sponsor authority.
     public struct LpProgramCap has key, store { id: UID }
+
+    /// Controls only the native BTEN staking farm's pause state. It cannot
+    /// mint, change emission, redirect LP funds, or withdraw user deposits.
+    public struct FarmAdminCap has key, store { id: UID }
+
+    /// A single user's principal and reward checkpoint. Principal is always
+    /// backed one-for-one by `staked_principal`; rewards are backed separately
+    /// by `reward_vault` and originate only from the fixed staking allocation.
+    public struct FarmStake has copy, drop, store {
+        principal: u64,
+        reward_debt: u128,
+        pending_rewards: u64,
+    }
+
+    /// Native, single-sided BTEN staking farm. It starts on the first stake,
+    /// preventing a late depositor from claiming allocations released before
+    /// the farm had any participant.
+    public struct BtenStakingFarm has key {
+        id: UID,
+        paused: bool,
+        started: bool,
+        next_height: u64,
+        total_staked: u64,
+        acc_reward_per_stake: u128,
+        staked_principal: Balance<BTEN>,
+        reward_vault: Balance<BTEN>,
+        stakes: Table<address, FarmStake>,
+    }
 
     /// Accounting and allowlist for the BTEN LP programme. The actual Cetus
     /// add-liquidity calls consume coins from this object in a
@@ -339,6 +372,26 @@ module bten::bten {
         pool_id: address,
         bten_in: u64,
         recipient: address,
+    }
+
+    public struct BtenStaked has copy, drop {
+        staker: address,
+        amount: u64,
+        total_staked: u64,
+    }
+
+    public struct BtenUnstaked has copy, drop {
+        staker: address,
+        principal: u64,
+        reward: u64,
+        total_staked: u64,
+    }
+
+    public struct BtenFarmRewardsSynced has copy, drop {
+        from_height: u64,
+        through_height: u64,
+        rewards_added: u64,
+        total_staked: u64,
     }
 
     #[test_only]
@@ -879,6 +932,169 @@ module bten::bten {
         paused: bool,
     ) { programme.paused = paused; }
 
+    /// Creates the native BTEN single-sided staking farm. It is deliberately
+    /// separate from external farms: user principal never leaves this shared
+    /// object, and only newly released 10% staking allocations can fund it.
+    public entry fun create_bten_staking_farm(
+        state: &EmissionState,
+        _admin: &RegistryAdminCap,
+        operator: address,
+        ctx: &mut TxContext,
+    ) {
+        assert!(operator != @0x0, E_BAD_AMOUNT);
+        transfer::public_transfer(FarmAdminCap { id: object::new(ctx) }, operator);
+        transfer::share_object(BtenStakingFarm {
+            id: object::new(ctx), paused: false, started: false,
+            next_height: state.block_height, total_staked: 0,
+            acc_reward_per_stake: 0, staked_principal: balance::zero<BTEN>(),
+            reward_vault: balance::zero<BTEN>(), stakes: table::new(ctx),
+        });
+    }
+
+    public fun set_bten_staking_farm_paused(
+        farm: &mut BtenStakingFarm,
+        _admin: &FarmAdminCap,
+        paused: bool,
+    ) { farm.paused = paused; }
+
+    /// Syncs only rewards from blocks released after the farm started. This
+    /// entry is permissionless and deterministic: it cannot select an amount,
+    /// recipient, or destination outside the native farm reward vault.
+    public entry fun sync_bten_staking_farm_rewards(
+        state: &mut EmissionState,
+        farm: &mut BtenStakingFarm,
+    ) { sync_bten_staking_farm_rewards_internal(state, farm); }
+
+    /// Deposits BTEN principal. The checkpoint is settled before principal is
+    /// changed, so new stake cannot earn rewards for earlier released blocks.
+    public entry fun stake_bten(
+        state: &mut EmissionState,
+        farm: &mut BtenStakingFarm,
+        stake: Coin<BTEN>,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!farm.paused, E_FARM_PAUSED);
+        let amount = coin::value(&stake);
+        assert!(amount > 0, E_BAD_AMOUNT);
+        sync_bten_staking_farm_rewards_internal(state, farm);
+        let staker = tx_context::sender(ctx);
+        if (!table::contains(&farm.stakes, staker)) {
+            table::add(&mut farm.stakes, staker, FarmStake { principal: 0, reward_debt: 0, pending_rewards: 0 });
+        };
+        let account = table::borrow_mut(&mut farm.stakes, staker);
+        settle_farm_account(farm.acc_reward_per_stake, account);
+        account.principal = account.principal + amount;
+        account.reward_debt = accrued_farm_reward(account.principal, farm.acc_reward_per_stake);
+        farm.total_staked = farm.total_staked + amount;
+        balance::join(&mut farm.staked_principal, coin::into_balance(stake));
+        event::emit(BtenStaked { staker, amount, total_staked: farm.total_staked });
+    }
+
+    /// Returns the requested BTEN principal plus every accrued reward in one
+    /// BTEN coin. This is the normal no-separate-redemption exit path.
+    public entry fun withdraw_bten_and_rewards(
+        state: &mut EmissionState,
+        farm: &mut BtenStakingFarm,
+        principal: u64,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!farm.paused, E_FARM_PAUSED);
+        assert!(principal > 0, E_BAD_AMOUNT);
+        sync_bten_staking_farm_rewards_internal(state, farm);
+        let staker = tx_context::sender(ctx);
+        assert!(table::contains(&farm.stakes, staker), E_FARM_STAKE);
+        let account = table::borrow_mut(&mut farm.stakes, staker);
+        settle_farm_account(farm.acc_reward_per_stake, account);
+        assert!(principal <= account.principal, E_FARM_STAKE);
+        account.principal = account.principal - principal;
+        farm.total_staked = farm.total_staked - principal;
+        account.reward_debt = accrued_farm_reward(account.principal, farm.acc_reward_per_stake);
+        let reward = account.pending_rewards;
+        account.pending_rewards = 0;
+        let mut payout = coin::from_balance(balance::split(&mut farm.staked_principal, principal), ctx);
+        if (reward > 0) {
+            coin::join(&mut payout, coin::from_balance(balance::split(&mut farm.reward_vault, reward), ctx));
+        };
+        transfer::public_transfer(payout, staker);
+        event::emit(BtenUnstaked { staker, principal, reward, total_staked: farm.total_staked });
+    }
+
+    /// Allows a user to take accrued rewards while retaining their principal.
+    public entry fun claim_bten_staking_rewards(
+        state: &mut EmissionState,
+        farm: &mut BtenStakingFarm,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!farm.paused, E_FARM_PAUSED);
+        sync_bten_staking_farm_rewards_internal(state, farm);
+        let staker = tx_context::sender(ctx);
+        assert!(table::contains(&farm.stakes, staker), E_FARM_STAKE);
+        let account = table::borrow_mut(&mut farm.stakes, staker);
+        settle_farm_account(farm.acc_reward_per_stake, account);
+        let reward = account.pending_rewards;
+        assert!(reward > 0, E_NOTHING_TO_PAY);
+        account.pending_rewards = 0;
+        transfer::public_transfer(coin::from_balance(balance::split(&mut farm.reward_vault, reward), ctx), staker);
+    }
+
+    /// Safety exit for a paused farm. It returns only user principal and never
+    /// touches the reward vault, so an emergency pause cannot trap deposits or
+    /// accidentally distribute rewards while operators investigate.
+    public entry fun emergency_withdraw_bten_principal(
+        farm: &mut BtenStakingFarm,
+        ctx: &mut TxContext,
+    ) {
+        assert!(farm.paused, E_FARM_PAUSED);
+        let staker = tx_context::sender(ctx);
+        assert!(table::contains(&farm.stakes, staker), E_FARM_STAKE);
+        let account = table::borrow_mut(&mut farm.stakes, staker);
+        let principal = account.principal;
+        assert!(principal > 0, E_FARM_STAKE);
+        account.principal = 0;
+        account.reward_debt = 0;
+        farm.total_staked = farm.total_staked - principal;
+        transfer::public_transfer(coin::from_balance(balance::split(&mut farm.staked_principal, principal), ctx), staker);
+        event::emit(BtenUnstaked { staker, principal, reward: 0, total_staked: farm.total_staked });
+    }
+
+    fun sync_bten_staking_farm_rewards_internal(state: &mut EmissionState, farm: &mut BtenStakingFarm) {
+        if (!farm.started) {
+            farm.started = true;
+            farm.next_height = state.block_height;
+            return
+        };
+        let first = farm.next_height;
+        let mut total: u64 = 0;
+        while (farm.next_height < state.block_height) {
+            // Do not backdate rewards to a future first staker. If nobody is
+            // currently staked, leave this block's allocation in the native
+            // staking vault and advance the cursor without dividing by zero.
+            if (farm.total_staked > 0) {
+                let reward = subsidy_at_height(farm.next_height) * STAKING_BPS / BPS;
+                assert!(balance::value(&state.staking_vault) >= reward, E_FARM_STAKE);
+                balance::join(&mut farm.reward_vault, balance::split(&mut state.staking_vault, reward));
+                farm.acc_reward_per_stake = farm.acc_reward_per_stake + ((reward as u128) * FARM_ACC_SCALE / (farm.total_staked as u128));
+                total = total + reward;
+            };
+            farm.next_height = farm.next_height + 1;
+        };
+        if (total > 0) {
+            event::emit(BtenFarmRewardsSynced { from_height: first, through_height: farm.next_height, rewards_added: total, total_staked: farm.total_staked });
+        };
+    }
+
+    fun accrued_farm_reward(principal: u64, accumulator: u128): u128 {
+        (principal as u128) * accumulator / FARM_ACC_SCALE
+    }
+
+    fun settle_farm_account(accumulator: u128, account: &mut FarmStake) {
+        let gross = accrued_farm_reward(account.principal, accumulator);
+        assert!(gross >= account.reward_debt, E_FARM_STAKE);
+        let earned = gross - account.reward_debt;
+        if (earned > 0) { account.pending_rewards = account.pending_rewards + (earned as u64); };
+        account.reward_debt = gross;
+    }
+
     /// Collects the 25% BTEN LP vault plus every redirected 1% venue vault,
     /// including any backlog accumulated while those venue buckets were
     /// paused. Every BTEN is routed to protocol-owned liquidity across the
@@ -1398,6 +1614,18 @@ module bten::bten {
     public fun route_treasury_lp_support(treasury: &RouteTreasuryState): u64 { treasury.lp_support_accrued }
     public fun route_treasury_safety(treasury: &RouteTreasuryState): u64 { treasury.safety_accrued }
     public fun route_treasury_is_paused(treasury: &RouteTreasuryState): bool { treasury.paused }
+
+    /// Public farm views for the Block10 dapp. Pending rewards are settled
+    /// through the entry functions, so this value is the funded reward vault
+    /// balance rather than an off-chain estimate.
+    public fun bten_farm_is_paused(farm: &BtenStakingFarm): bool { farm.paused }
+    public fun bten_farm_started(farm: &BtenStakingFarm): bool { farm.started }
+    public fun bten_farm_total_staked(farm: &BtenStakingFarm): u64 { farm.total_staked }
+    public fun bten_farm_reward_balance(farm: &BtenStakingFarm): u64 { balance::value(&farm.reward_vault) }
+    public fun bten_farm_principal_balance(farm: &BtenStakingFarm): u64 { balance::value(&farm.staked_principal) }
+    public fun bten_farm_stake_of(farm: &BtenStakingFarm, staker: address): u64 {
+        if (table::contains(&farm.stakes, staker)) { table::borrow(&farm.stakes, staker).principal } else { 0 }
+    }
     public fun keeper_address(config: &KeeperConfig): address { config.keeper }
     public fun keeper_is_paused(config: &KeeperConfig): bool { config.paused }
     public fun keeper_daily_staking_cap(config: &KeeperConfig): u64 { config.daily_staking_cap }

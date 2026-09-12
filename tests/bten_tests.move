@@ -298,4 +298,85 @@ module bten::bten_tests {
         scenario.return_to_sender(router_cap);
         scenario.end();
     }
+
+    #[test]
+    fun native_bten_farm_returns_principal_and_new_block_reward() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        // Create an unpaused native farm, then release the first block. The
+        // farm has no staker yet, so that historical staking allocation stays
+        // in EmissionState rather than becoming a late-depositor windfall.
+        scenario.next_tx(admin);
+        {
+            let state = scenario.take_shared<bten::EmissionState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_bten_staking_farm(&state, &admin_cap, admin, scenario.ctx());
+            test_scenario::return_shared(state);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            clock::set_for_testing(&mut clock, 1_000);
+            let mut i = 0;
+            while (i < 10) { bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx()); i = i + 1; };
+            clock::set_for_testing(&mut clock, 601_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        // Use 1 BTEN as stake principal from the already-released staking
+        // allocation; the remaining first-block allocation remains untouched.
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::withdraw_staking_rewards_to_sender(&mut state, &admin_cap, 100_000_000, scenario.ctx());
+            test_scenario::return_shared(state);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let stake = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut farm = scenario.take_shared<bten::BtenStakingFarm>();
+            bten::stake_bten(&mut state, &mut farm, stake, scenario.ctx());
+            assert!(bten::bten_farm_total_staked(&farm) == 100_000_000, 70);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(farm);
+        };
+        // The next released block contributes its 10% (5 BTEN) allocation.
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            let mut i = 0;
+            while (i < 10) { bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx()); i = i + 1; };
+            clock::set_for_testing(&mut clock, 1_201_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut farm = scenario.take_shared<bten::BtenStakingFarm>();
+            bten::withdraw_bten_and_rewards(&mut state, &mut farm, 100_000_000, scenario.ctx());
+            assert!(bten::bten_farm_total_staked(&farm) == 0, 71);
+            assert!(bten::bten_farm_reward_balance(&farm) == 0, 72);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(farm);
+        };
+        scenario.next_tx(admin);
+        {
+            let payout = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
+            assert!(coin::value(&payout) == 600_000_000, 73);
+            scenario.return_to_sender(payout);
+        };
+        scenario.end();
+    }
 }
