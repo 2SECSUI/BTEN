@@ -14,9 +14,9 @@
     "enabled": true
   },
   "lpProgrammeAccrual": {
-    "enabled": false,
-    "state": null,
-    "reason": "v9 creates this shared state paused; this permissionless keeper may accrue balances into it but never releases LP or farm funding."
+    "enabled": true,
+    "state": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
+    "reason": "The finalized, unpaused V9 LP programme may receive accrued BTEN. The keeper cannot withdraw, swap, add liquidity, fund farms, or access any capability."
   },
   "privilegedExecutors": {
     "enabled": false,

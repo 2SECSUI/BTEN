@@ -22,6 +22,13 @@
     "requireMinimumOutput": true,
     "currentScope": "direct registered Cetus BTEN pairs only"
   },
+  "routeSelection": {
+    "compareDirectAndBtenPaths": true,
+    "selectBtenOnlyWhenNetOutputIsHigher": true,
+    "minimumNetImprovementBps": 1,
+    "quoteIncludesVenueFeePriceImpactAndGas": true,
+    "fallback": "Use the direct Cetus path when BTEN is not net-cheaper."
+  },
   "adapterEntrypoints": {
     "assetToBtenSecond": "bten::cetus_swap_to_bten",
     "btenToAssetSecond": "bten::cetus_swap_from_bten",

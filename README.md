@@ -42,6 +42,10 @@ It was deployed in transaction `8uzMxePBEGuAKQzHqjPfwicdNWZxXRxKS5G2jmbD5vMi`.
 V9 adds an allowlisted LP programme; moving funds into a venue still requires
 the matching protocol-owned LP transaction and paired asset.
 
+Block10 should compare a direct Cetus quote with its BTEN route and present the
+BTEN route only when its final net output is higher. This prevents a subsidised
+or lower-fee route from being selected when price impact would make it worse.
+
 Run the non-signing route check with:
 
 ```powershell
