@@ -127,12 +127,15 @@ async function submit(client, signer, candidate) {
     tx.pure.address(candidate.trader), tx.pure.u64(candidate.feePoints), tx.object(CLOCK),
   ] });
   const result = await client.signAndExecuteTransaction({ signer, transaction: tx, include: { effects: true, events: true } });
-  const status = result.effects?.status ?? result.transaction?.effects?.status;
-  // Sui gRPC reports a boolean `success`; JSON-RPC uses a status string.
-  // Accept both representations, but never treat an absent status as success.
-  const succeeded = status?.success === true || String(status?.status ?? status).toLowerCase() === "success";
-  if (!succeeded) throw new Error(`External attestation failed for ${candidate.digest}`);
-  return result.digest ?? result.transaction?.digest ?? null;
+  const submittedDigest = result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null;
+  const eventKey = `${Buffer.from(candidate.digestBytes).toString("base64")}:${candidate.eventSequence}`;
+  // The public BTEN event is the canonical success proof. This avoids coupling
+  // keeper correctness to differing Sui gRPC response-shapes across runners.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if ((await recentAttestations()).has(eventKey)) return submittedDigest;
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  throw new Error(`No on-chain attestation event was found for ${candidate.digest}`);
 }
 
 const pools = mainnet.venues.flatMap((venue) => venue.name === "cetus" && venue.enabled ? venue.pools : []);
