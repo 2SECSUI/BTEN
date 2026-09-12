@@ -78,10 +78,13 @@ direct output remains the default unless the BTEN path is net-better by the
 configured threshold.
 
 `config/route_rebate_policy.json` defines the optional, disclosed route-rebate
-limits. It can draw only from the route treasury's separately accrued rebate
-allocation; it cannot use LP, staking, trader, sponsor, protocol-liquidity, or
-safety funds. A payout executor is intentionally not live until it can convert
-the capped BTEN rebate into the trader's final output token atomically.
+limits. The next source upgrade includes atomic final-token rebate executors
+for both Cetus pool orderings. They can draw only from the route treasury's
+separately accrued rebate allocation; they cannot use LP, staking, trader,
+sponsor, protocol-liquidity, or safety funds. They are not deployed or enabled
+on mainnet: audit and a low-value live test are mandatory first. The Block10
+quote selector must still prove that the rebate makes the BTEN path net-better,
+because Move cannot inspect arbitrary direct DEX routes.
 
 Run the non-signing route check with:
 

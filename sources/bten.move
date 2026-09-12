@@ -46,6 +46,11 @@ module bten::bten {
     const ROUTE_SAFETY_BPS: u64 = 1_000;
     const LP_PROTOCOL_LIQUIDITY_BPS: u64 = 10_000;
     const MAX_LP_RELEASE_PER_CALL: u64 = 50 * UNIT;
+    // Hard ceilings for the optional route rebate executor.  The shared
+    // configuration can only choose stricter values.
+    const MAX_REBATE_PER_SWAP: u64 = UNIT / 100;
+    const MAX_REBATE_PER_DAY: u64 = UNIT / 4;
+    const MAX_REBATE_BPS_OF_INTERMEDIATE: u64 = 750;
 
     const ROUTE_VAULT_BPS: u64 = 5_000;
     const TRADER_BPS: u64 = 1_000;
@@ -104,6 +109,8 @@ module bten::bten {
     const FARM_ACC_SCALE: u128 = 1_000_000_000_000_000_000;
     const E_FARM_PAUSED: u64 = 33;
     const E_FARM_STAKE: u64 = 34;
+    const E_REBATE_STATE_CONFIG: u64 = 35;
+    const E_REBATE_CAP: u64 = 36;
 
     public struct BTEN has drop {}
 
@@ -247,6 +254,18 @@ module bten::bten {
         paused: bool,
     }
 
+    /// Capped accounting for a rebate paid from the separately accrued rebate
+    /// allocation. It is deliberately a new shared object so upgrades never
+    /// change the layout of the live RouteTreasuryState.
+    public struct RouteRebateState has key {
+        id: UID,
+        per_swap_cap_bten: u64,
+        daily_cap_bten: u64,
+        max_rebate_bps_of_intermediate: u64,
+        accounting_day: u64,
+        paid_today_bten: u64,
+    }
+
     /// A receipt key is immutable once the qualifying atomic route succeeds.
     /// It lets a keeper pay the trader later without making the trader submit
     /// a redemption transaction.
@@ -346,6 +365,16 @@ module bten::bten {
         pool_id: address,
         category: u8,
         amount: u64,
+    }
+
+    /// The final output is protected by the route's min_asset_out. Direct
+    /// quote comparison is performed by the public quote selector, because a
+    /// Move contract cannot inspect arbitrary completed DEX routes.
+    public struct RouteRebatePaid has copy, drop {
+        trader: address,
+        rebate_bten: u64,
+        final_asset_out: u64,
+        paid_today_bten: u64,
     }
 
     public struct ExternalCetusRouteAttested has copy, drop {
@@ -660,6 +689,137 @@ module bten::bten {
         pool::repay_flash_swap(config, asset_bten_pool, balance::zero<A>(), pay_bten, asset_receipt);
         coin::join(&mut bten, coin::from_balance(receive_bten_change, ctx));
         record_atomic_route(state, paid_sui, clock, tx_context::sender(ctx));
+        transfer::public_transfer(input, tx_context::sender(ctx));
+        transfer::public_transfer(bten, tx_context::sender(ctx));
+        transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
+    }
+
+    /// Creates the immutable-cap rebate configuration. The executor is
+    /// permissionless once created: it has no arbitrary recipient, no admin
+    /// withdrawal, and can use only RouteTreasuryState.rebate_accrued.
+    public entry fun create_route_rebate_state(
+        _admin: &RegistryAdminCap,
+        per_swap_cap_bten: u64,
+        daily_cap_bten: u64,
+        max_rebate_bps_of_intermediate: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(per_swap_cap_bten > 0 && per_swap_cap_bten <= MAX_REBATE_PER_SWAP, E_REBATE_STATE_CONFIG);
+        assert!(daily_cap_bten >= per_swap_cap_bten && daily_cap_bten <= MAX_REBATE_PER_DAY, E_REBATE_STATE_CONFIG);
+        assert!(max_rebate_bps_of_intermediate > 0 && max_rebate_bps_of_intermediate <= MAX_REBATE_BPS_OF_INTERMEDIATE, E_REBATE_STATE_CONFIG);
+        transfer::share_object(RouteRebateState {
+            id: object::new(ctx), per_swap_cap_bten, daily_cap_bten,
+            max_rebate_bps_of_intermediate,
+            accounting_day: clock::timestamp_ms(clock) / DAY_MS,
+            paid_today_bten: 0,
+        });
+    }
+
+    /// Atomic SUI -> BTEN -> asset route with a bounded BTEN rebate. The
+    /// caller supplies the final minimum output and the public dapp must offer
+    /// this entry only after its disclosed direct-vs-BTEN quote is net better.
+    /// The contract itself enforces the amount source, caps, registered pools,
+    /// final output minimum, and exactly one route receipt.
+    public entry fun cetus_sui_to_asset_via_bten_rebate_a2b<A>(
+        state: &mut EmissionState,
+        treasury: &mut RouteTreasuryState,
+        rebate: &mut RouteRebateState,
+        registry: &PoolRegistry,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        bten_asset_pool: &mut Pool<BTEN, A>,
+        mut input: Coin<SUI>,
+        requested_rebate_bten: u64,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        bten_asset_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!treasury.paused, E_TREASURY_PAUSED);
+        assert_registered_cetus_pool(registry, sui_bten_pool);
+        assert_registered_cetus_pool(registry, bten_asset_pool);
+        let day = clock::timestamp_ms(clock) / DAY_MS;
+        if (day > rebate.accounting_day) { rebate.accounting_day = day; rebate.paid_today_bten = 0; };
+        assert!(requested_rebate_bten > 0 && requested_rebate_bten <= treasury.rebate_accrued, E_REBATE_CAP);
+        assert!(requested_rebate_bten <= rebate.per_swap_cap_bten, E_REBATE_CAP);
+        assert!(rebate.paid_today_bten + requested_rebate_bten <= rebate.daily_cap_bten, E_REBATE_CAP);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_bten, receive_sui, sui_receipt) = pool::flash_swap<BTEN, SUI>(config, sui_bten_pool, false, true, requested, sui_bten_sqrt_price_limit, clock);
+        let paid_sui = pool::swap_pay_amount(&sui_receipt);
+        pool::repay_flash_swap(config, sui_bten_pool, balance::zero<BTEN>(), coin::into_balance(coin::split(&mut input, paid_sui, ctx)), sui_receipt);
+        coin::join(&mut input, coin::from_balance(receive_sui, ctx));
+        let mut bten = coin::from_balance(receive_bten, ctx);
+        let user_bten = coin::value(&bten);
+        assert!(requested_rebate_bten <= user_bten * rebate.max_rebate_bps_of_intermediate / BPS, E_REBATE_CAP);
+        coin::join(&mut bten, coin::from_balance(balance::split(&mut state.route_fee_vault, requested_rebate_bten), ctx));
+        let (bten_change, receive_asset, asset_receipt) = pool::flash_swap<BTEN, A>(config, bten_asset_pool, true, true, coin::value(&bten), bten_asset_sqrt_price_limit, clock);
+        let paid_bten = pool::swap_pay_amount(&asset_receipt);
+        assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, bten_asset_pool, coin::into_balance(coin::split(&mut bten, paid_bten, ctx)), balance::zero<A>(), asset_receipt);
+        coin::join(&mut bten, coin::from_balance(bten_change, ctx));
+        let rebate_paid = if (paid_bten > user_bten) { paid_bten - user_bten } else { 0 };
+        let rebate_refund = requested_rebate_bten - rebate_paid;
+        balance::join(&mut state.route_fee_vault, coin::into_balance(coin::split(&mut bten, rebate_refund, ctx)));
+        treasury.rebate_accrued = treasury.rebate_accrued - rebate_paid;
+        rebate.paid_today_bten = rebate.paid_today_bten + rebate_paid;
+        record_atomic_route(state, paid_sui, clock, tx_context::sender(ctx));
+        event::emit(RouteRebatePaid { trader: tx_context::sender(ctx), rebate_bten: rebate_paid, final_asset_out: balance::value(&receive_asset), paid_today_bten: rebate.paid_today_bten });
+        transfer::public_transfer(input, tx_context::sender(ctx));
+        transfer::public_transfer(bten, tx_context::sender(ctx));
+        transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
+    }
+
+    /// Equivalent capped-rebate route for registered partner pools whose
+    /// canonical Cetus ordering is asset/BTEN.
+    public entry fun cetus_sui_to_asset_via_bten_rebate_b2a<A>(
+        state: &mut EmissionState,
+        treasury: &mut RouteTreasuryState,
+        rebate: &mut RouteRebateState,
+        registry: &PoolRegistry,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        asset_bten_pool: &mut Pool<A, BTEN>,
+        mut input: Coin<SUI>,
+        requested_rebate_bten: u64,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        asset_bten_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!treasury.paused, E_TREASURY_PAUSED);
+        assert_registered_cetus_pool(registry, sui_bten_pool);
+        assert_registered_cetus_pool(registry, asset_bten_pool);
+        let day = clock::timestamp_ms(clock) / DAY_MS;
+        if (day > rebate.accounting_day) { rebate.accounting_day = day; rebate.paid_today_bten = 0; };
+        assert!(requested_rebate_bten > 0 && requested_rebate_bten <= treasury.rebate_accrued, E_REBATE_CAP);
+        assert!(requested_rebate_bten <= rebate.per_swap_cap_bten, E_REBATE_CAP);
+        assert!(rebate.paid_today_bten + requested_rebate_bten <= rebate.daily_cap_bten, E_REBATE_CAP);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_bten, receive_sui, sui_receipt) = pool::flash_swap<BTEN, SUI>(config, sui_bten_pool, false, true, requested, sui_bten_sqrt_price_limit, clock);
+        let paid_sui = pool::swap_pay_amount(&sui_receipt);
+        pool::repay_flash_swap(config, sui_bten_pool, balance::zero<BTEN>(), coin::into_balance(coin::split(&mut input, paid_sui, ctx)), sui_receipt);
+        coin::join(&mut input, coin::from_balance(receive_sui, ctx));
+        let mut bten = coin::from_balance(receive_bten, ctx);
+        let user_bten = coin::value(&bten);
+        assert!(requested_rebate_bten <= user_bten * rebate.max_rebate_bps_of_intermediate / BPS, E_REBATE_CAP);
+        coin::join(&mut bten, coin::from_balance(balance::split(&mut state.route_fee_vault, requested_rebate_bten), ctx));
+        let (receive_asset, bten_change, asset_receipt) = pool::flash_swap<A, BTEN>(config, asset_bten_pool, false, true, coin::value(&bten), asset_bten_sqrt_price_limit, clock);
+        let paid_bten = pool::swap_pay_amount(&asset_receipt);
+        assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, asset_bten_pool, balance::zero<A>(), coin::into_balance(coin::split(&mut bten, paid_bten, ctx)), asset_receipt);
+        coin::join(&mut bten, coin::from_balance(bten_change, ctx));
+        let rebate_paid = if (paid_bten > user_bten) { paid_bten - user_bten } else { 0 };
+        let rebate_refund = requested_rebate_bten - rebate_paid;
+        balance::join(&mut state.route_fee_vault, coin::into_balance(coin::split(&mut bten, rebate_refund, ctx)));
+        treasury.rebate_accrued = treasury.rebate_accrued - rebate_paid;
+        rebate.paid_today_bten = rebate.paid_today_bten + rebate_paid;
+        record_atomic_route(state, paid_sui, clock, tx_context::sender(ctx));
+        event::emit(RouteRebatePaid { trader: tx_context::sender(ctx), rebate_bten: rebate_paid, final_asset_out: balance::value(&receive_asset), paid_today_bten: rebate.paid_today_bten });
         transfer::public_transfer(input, tx_context::sender(ctx));
         transfer::public_transfer(bten, tx_context::sender(ctx));
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));

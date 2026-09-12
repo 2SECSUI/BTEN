@@ -1,10 +1,17 @@
 {
-  "status": "policy-ready-pending-reviewed-output-token-executor-upgrade",
+  "status": "source-implemented-pending-audit-and-mainnet-upgrade",
   "fundingSource": "RouteTreasuryState.rebate_accrued only",
   "neverUse": ["btenLpVault", "stakingVault", "traderVault", "sponsorAccrued", "protocolLiquidityAccrued", "safetyAccrued"],
   "selection": "Offer only when a fresh same-output-token quote proves BTEN route plus rebate is at least 1 bp better than direct.",
   "maxRebateBpsOfIntermediateBten": 750,
   "perSwapCapBtenRaw": "1000000",
   "dailyCapBtenRaw": "25000000",
-  "disclosure": "The Block10 quote must show direct output, BTEN route output, rebate amount, final net output, and the selected path."
+  "disclosure": "The Block10 quote must show direct output, BTEN route output, rebate amount, final net output, and the selected path.",
+  "executor": {
+    "createState": "bten::bten::create_route_rebate_state",
+    "assetPoolBtenFirst": "bten::bten::cetus_sui_to_asset_via_bten_rebate_a2b",
+    "assetPoolBtenSecond": "bten::bten::cetus_sui_to_asset_via_bten_rebate_b2a",
+    "onChainGuarantees": ["registered Cetus pools", "final minimum output", "one route receipt after both swaps repay", "rebate_accrued-only funding", "per-swap and daily BTEN caps", "unused rebate BTEN returned to route_fee_vault"],
+    "quoteSelectorRequirement": "The dapp must prove and disclose the direct-vs-BTEN same-output-token comparison; the Move package cannot read arbitrary external DEX routes."
+  }
 }
