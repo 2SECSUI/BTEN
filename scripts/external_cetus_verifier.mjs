@@ -126,7 +126,16 @@ async function submit(client, signer, candidate) {
     tx.pure.address(candidate.pool), tx.pure.vector("u8", candidate.digestBytes), tx.pure.u64(candidate.eventSequence),
     tx.pure.address(candidate.trader), tx.pure.u64(candidate.feePoints), tx.object(CLOCK),
   ] });
-  const result = await client.signAndExecuteTransaction({ signer, transaction: tx, include: { effects: true, events: true } });
+  let result;
+  try {
+    result = await client.signAndExecuteTransaction({ signer, transaction: tx, include: { effects: true, events: true } });
+  } catch (error) {
+    // The on-chain processed table is the authoritative replay guard. A
+    // previously-attested public event may age out of the bounded GraphQL
+    // query, so treat only that precise expected abort as an idempotent skip.
+    if (String(error?.message ?? error).includes("abort code: 30")) return null;
+    throw error;
+  }
   const submittedDigest = result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null;
   const eventKey = `${Buffer.from(candidate.digestBytes).toString("base64")}:${candidate.eventSequence}`;
   // The public BTEN event is the canonical success proof. This avoids coupling
