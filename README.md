@@ -36,10 +36,11 @@ Run `npm run validate-launch` before consuming either file.
 
 ## Current mainnet adapter status
 
-Mainnet package version 8 is upgradeable at
-`0xfb4a37274bc784bc31cd03bbb6ab3e176d077ce22722ca2d7a9ba7f08f814042`.
-The v9 branch adds a paused, allowlisted LP programme and keeps all external
-funding operations off until their exact mainnet recipient calls are tested.
+Mainnet package version 9 is upgradeable at
+`0x2bd9a906dd086696ca0e943401894b8d636c4efd19b518eba4e402e3d55375f0`.
+It was deployed in transaction `8uzMxePBEGuAKQzHqjPfwicdNWZxXRxKS5G2jmbD5vMi`.
+V9 adds an allowlisted LP programme; moving funds into a venue still requires
+the matching protocol-owned LP transaction and paired asset.
 
 Run the non-signing route check with:
 

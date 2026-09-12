@@ -1,17 +1,17 @@
 {
   "network": "mainnet",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "packageId": "0xfb4a37274bc784bc31cd03bbb6ab3e176d077ce22722ca2d7a9ba7f08f814042",
+  "packageId": "0x2bd9a906dd086696ca0e943401894b8d636c4efd19b518eba4e402e3d55375f0",
   "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-  "packageVersion": 8,
-  "upgradeTransaction": "3kp6BLn2vMVe7s433qrkA56oMtFF5LgAwmeag9sr2fX6",
+  "packageVersion": 9,
+  "upgradeTransaction": "8uzMxePBEGuAKQzHqjPfwicdNWZxXRxKS5G2jmbD5vMi",
   "buildCommand": "sui move build",
   "testCommand": "sui move test",
   "bytecode": "build/bten/bytecode_modules/bten.mv",
   "source": "sources/bten.move",
   "includedFiles": ["Move.toml", "Move.lock", "Published.toml", "sources/bten.move", "bytecode_modules/bten.mv", "assets/bten-logo.jpg"],
-  "archive": "verification/BTEN-mainnet-v8-verification.zip",
-  "archiveSha256": "D265017C548C75AFD3497DB75BF92B4FC385086C3544B79482DD50E7EF8489CA",
+  "archive": "verification/BTEN-mainnet-v9-verification.zip",
+  "archiveSha256": "AD8C28D2A0727A9CE0CF3E9CB34518EDC6F667F78048A9104BB50976D831814B",
   "logoUrl": "https://raw.githubusercontent.com/2SECSUI/BTEN/main/assets/bten-logo.jpg",
   "notes": "This bundle is for independent source/bytecode verification. It does not contain keys, recovery phrases, sponsor tokens, runtime ledgers, or private sponsor-service configuration."
 }
