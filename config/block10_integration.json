@@ -29,6 +29,13 @@
     "quoteIncludesVenueFeePriceImpactAndGas": true,
     "fallback": "Use the direct Cetus path when BTEN is not net-cheaper."
   },
+  "traderReward": {
+    "source": "previous sealed block trader allocation",
+    "entrypoint": "bten::auto_pay_trader_entry",
+    "distribution": "proportional to qualifying route points in that sealed round",
+    "dappFlow": "After a protected swap, check whether the wallet has an unpaid prior-round allocation; if so, add the payout call to the same wallet-signed transaction. Do not submit the payout call when no allocation exists.",
+    "currentInitialBlockAllocationBten": 5
+  },
   "adapterEntrypoints": {
     "assetToBtenSecond": "bten::cetus_swap_to_bten",
     "btenToAssetSecond": "bten::cetus_swap_from_bten",
