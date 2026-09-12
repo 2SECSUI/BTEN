@@ -1,7 +1,7 @@
 param(
   [Parameter(Mandatory = $true)][string]$PackageId,
   [Parameter(Mandatory = $true)][string]$UpgradeDigest,
-  [string]$ReleaseLabel = "v13",
+  [string]$ReleaseLabel = "v14",
   [string]$OutputDirectory = "verification"
 )
 

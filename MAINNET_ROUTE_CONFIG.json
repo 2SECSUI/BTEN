@@ -1,13 +1,14 @@
 {
   "network": "mainnet",
-  "status": "v13-live-one-sided-lp-allocation",
-  "publishedVersion": 13,
-  "currentPackage": "0x646612b6c4c040bfae0e7d519fc5ef6bc0f1555502d5f8136d08e59ede2c0191",
+  "status": "v14-live-external-verifier-configured",
+  "publishedVersion": 14,
+  "currentPackage": "0x9095d30a16f0d5e173e4539b38c7942dc2222e97f116b6f8e07c343a85349e49",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
+  "poolRegistryFinalized": true,
   "lpProgrammeState": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
   "lpProgramme": { "finalized": true, "paused": false, "weightTotalBps": 10000 },
   "venues": [
@@ -45,6 +46,14 @@
   },
   "genesis": { "released": true, "lastSettledBlockHeight": 2 },
   "feeSubsidy": { "enabled": false, "requiresSuiSponsorBudget": true },
+  "externalCetusVerifier": {
+    "entrypoint": "bten::attest_external_cetus_route",
+    "state": "0x346b454f108c22bba64534cdfb80da741e7a79e6ddea5ec5b6f337720dcbe3a1",
+    "dailyEventCap": 25,
+    "status": "created-paused-awaiting-public-event-indexer",
+    "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
+    "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The contract cannot independently read historical Cetus events, so public indexer evidence is mandatory before activation."
+  },
   "activationRule": "Protected direct Cetus BTEN routes are wallet-signed and user-paid. V13 allocation accounting is live. One-sided protocol BTEN deposits are restricted to the finalized on-chain allowlist and atomically abort if a selected range needs any paired asset.",
   "protocolLiquidity": {
     "executor": ["bten::deploy_protocol_liquidity_out_of_range_a", "bten::deploy_protocol_liquidity_out_of_range_b"],

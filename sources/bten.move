@@ -93,6 +93,12 @@ module bten::bten {
     const E_LP_PROGRAM_FINAL: u64 = 25;
     const E_LP_PROGRAM_WEIGHTS: u64 = 26;
     const E_REDIRECTED_BUCKET: u64 = 27;
+    const E_EXTERNAL_VERIFIER_PAUSED: u64 = 28;
+    const E_EXTERNAL_VERIFIER_SENDER: u64 = 29;
+    const E_EXTERNAL_EVENT_REPLAY: u64 = 30;
+    const E_EXTERNAL_EVENT_CAP: u64 = 31;
+    const E_EXTERNAL_EVENT_DIGEST: u64 = 32;
+    const MAX_EXTERNAL_EVENTS_PER_DAY: u64 = 250;
 
     public struct BTEN has drop {}
 
@@ -107,6 +113,31 @@ module bten::bten {
     /// A deliberately narrow capability held by the remote keeper. It grants
     /// no upgrade, registry, LP, or treasury authority.
     public struct KeeperCap has key, store { id: UID }
+
+    /// A narrow attestation capability for the optional direct-Cetus indexer.
+    /// It grants no authority over upgrades, minting, LP positions, treasury
+    /// balances, registry entries, or user coins.
+    public struct ExternalRouteVerifierCap has key, store { id: UID }
+
+    /// The key is permanently retained after an accepted external event, so a
+    /// transaction/event pair can never advance a BTEN gate twice.
+    public struct ExternalEventKey has copy, drop, store {
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+    }
+
+    /// Direct Cetus swaps cannot be read by Move after they have executed.
+    /// This state therefore makes the trusted verifier assumption explicit,
+    /// bounded, pausable, and fully auditable on-chain.
+    public struct ExternalRouteVerifierState has key {
+        id: UID,
+        keeper: address,
+        paused: bool,
+        daily_event_cap: u64,
+        accounting_day: u64,
+        events_today: u64,
+        processed: Table<ExternalEventKey, bool>,
+    }
 
     /// Staking-only automation configuration. It begins paused and applies a
     /// rolling 24-hour ceiling, so activation is an explicit admin action.
@@ -282,6 +313,15 @@ module bten::bten {
         pool_id: address,
         category: u8,
         amount: u64,
+    }
+
+    public struct ExternalCetusRouteAttested has copy, drop {
+        pool_id: address,
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+        trader: address,
+        fee_points: u64,
+        events_today: u64,
     }
 
     /// Evidence for a protected protocol-owned Cetus liquidity deployment.
@@ -726,6 +766,74 @@ module bten::bten {
         _admin: &RegistryAdminCap,
         paused: bool,
     ) { treasury.paused = paused; }
+
+    /// Sets up the optional verifier for direct Cetus swaps. It begins paused;
+    /// the administrator must explicitly activate it after the indexer has
+    /// passed independent replay and event-validation checks.
+    public entry fun create_external_route_verifier(
+        registry: &PoolRegistry,
+        _admin: &RegistryAdminCap,
+        keeper: address,
+        daily_event_cap: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(registry.finalized, E_REGISTRY_FINAL);
+        assert!(keeper != @0x0, E_EXTERNAL_VERIFIER_SENDER);
+        assert!(daily_event_cap > 0 && daily_event_cap <= MAX_EXTERNAL_EVENTS_PER_DAY, E_EXTERNAL_EVENT_CAP);
+        transfer::public_transfer(ExternalRouteVerifierCap { id: object::new(ctx) }, keeper);
+        transfer::share_object(ExternalRouteVerifierState {
+            id: object::new(ctx), keeper, paused: true, daily_event_cap,
+            accounting_day: clock::timestamp_ms(clock) / DAY_MS, events_today: 0,
+            processed: table::new(ctx),
+        });
+    }
+
+    public fun set_external_route_verifier_paused(
+        verifier: &mut ExternalRouteVerifierState,
+        _admin: &RegistryAdminCap,
+        paused: bool,
+    ) { verifier.paused = paused; }
+
+    /// Records one publicly auditable, off-chain verified Cetus SwapEvent.
+    /// The verifier must validate the event against the public Sui RPC before
+    /// calling this function. The contract enforces the registered-pool scope,
+    /// one-time digest/event key, keeper identity, and a rolling daily cap.
+    public entry fun attest_external_cetus_route(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        _cap: &ExternalRouteVerifierCap,
+        pool_id: address,
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+        trader: address,
+        fee_points: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!verifier.paused, E_EXTERNAL_VERIFIER_PAUSED);
+        assert!(tx_context::sender(ctx) == verifier.keeper, E_EXTERNAL_VERIFIER_SENDER);
+        assert!(table::contains(&registry.pools, pool_id), E_POOL_NOT_REGISTERED);
+        assert!(*table::borrow(&registry.pools, pool_id) == BUCKET_CETUS, E_POOL_NOT_REGISTERED);
+        assert!(vector::length(&transaction_digest) == 32, E_EXTERNAL_EVENT_DIGEST);
+        assert!(fee_points > 0, E_BAD_AMOUNT);
+        let day = clock::timestamp_ms(clock) / DAY_MS;
+        if (day > verifier.accounting_day) {
+            verifier.accounting_day = day;
+            verifier.events_today = 0;
+        };
+        assert!(verifier.events_today < verifier.daily_event_cap, E_EXTERNAL_EVENT_CAP);
+        let key = ExternalEventKey { transaction_digest, event_sequence };
+        assert!(!table::contains(&verifier.processed, key), E_EXTERNAL_EVENT_REPLAY);
+        table::add(&mut verifier.processed, key, true);
+        verifier.events_today = verifier.events_today + 1;
+        record_atomic_route(state, fee_points, clock, trader);
+        event::emit(ExternalCetusRouteAttested {
+            pool_id, transaction_digest, event_sequence, trader, fee_points,
+            events_today: verifier.events_today,
+        });
+    }
 
     /// Creates the LP programme in a paused state and assigns its narrowly
     /// scoped execution cap to the declared treasury operator.
@@ -1294,6 +1402,10 @@ module bten::bten {
     public fun keeper_is_paused(config: &KeeperConfig): bool { config.paused }
     public fun keeper_daily_staking_cap(config: &KeeperConfig): u64 { config.daily_staking_cap }
     public fun keeper_staking_spent_today(config: &KeeperConfig): u64 { config.spent_today }
+    public fun external_verifier_address(config: &ExternalRouteVerifierState): address { config.keeper }
+    public fun external_verifier_is_paused(config: &ExternalRouteVerifierState): bool { config.paused }
+    public fun external_verifier_daily_cap(config: &ExternalRouteVerifierState): u64 { config.daily_event_cap }
+    public fun external_verifier_events_today(config: &ExternalRouteVerifierState): u64 { config.events_today }
     public fun lp_program_is_paused(programme: &LpProgramState): bool { programme.paused }
     public fun lp_program_is_finalized(programme: &LpProgramState): bool { programme.finalized }
     public fun lp_program_weight(programme: &LpProgramState, pool_id: address): u64 {

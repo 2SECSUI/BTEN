@@ -17,8 +17,8 @@ Run `npm run validate-launch` before consuming either file.
 
 ### Live mainnet data for Block10
 
-The current package is v13 at
-`0x646612b6c4c040bfae0e7d519fc5ef6bc0f1555502d5f8136d08e59ede2c0191`.
+The current package is v14 at
+`0x9095d30a16f0d5e173e4539b38c7942dc2222e97f116b6f8e07c343a85349e49`.
 Grok should consume `config/block10_integration.json` first, then
 `MAINNET_ROUTE_CONFIG.json` for the exact ten finalized Cetus pool IDs,
 their BTEN-only adjacent-price position IDs, and the allocation status.
@@ -26,9 +26,9 @@ CERT is intentionally absent from that public pool list and is not in the
 on-chain LP allowlist. These files contain only public chain data; they never
 contain a private key, capability, or sponsor credential.
 
-The planned verified-indexer and bounded treasury-executor work is documented
-in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md). It is explicitly
-not live in V13.
+The direct-Cetus verifier is deployed but paused until its public event-reader
+workflow is live. Its bounded design and the separate future treasury-executor
+work are documented in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md).
 
 ## Implemented core
 

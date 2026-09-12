@@ -1,17 +1,17 @@
 {
   "network": "mainnet",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "packageId": "0x646612b6c4c040bfae0e7d519fc5ef6bc0f1555502d5f8136d08e59ede2c0191",
+  "packageId": "0x9095d30a16f0d5e173e4539b38c7942dc2222e97f116b6f8e07c343a85349e49",
   "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-  "packageVersion": 13,
-  "upgradeTransaction": "Gv6ofDX7Lme9D443rdRHvbPGhoofMhDQxtmN8xJhwadQ",
+  "packageVersion": 14,
+  "upgradeTransaction": "EPY8xhbhnkrMkCG3vdqpaSNdYFSc1G17rp3TfH9cHHnc",
   "buildCommand": "sui move build",
   "testCommand": "sui move test",
   "bytecode": "build/bten/bytecode_modules/bten.mv",
   "source": "sources/bten.move",
   "includedFiles": ["Move.toml", "Move.lock", "Published.toml", "sources/bten.move", "bytecode_modules/bten.mv", "assets/bten-logo.jpg"],
-  "archive": "verification/BTEN-mainnet-v13-verification.zip",
-  "archiveSha256": "64376FA178F05C60D10204AA8C23BB18A9F33702BDF8E556FB19C89E9CF873FD",
+  "archive": "verification/BTEN-mainnet-v14-verification.zip",
+  "archiveSha256": "A78B1203E8E59D2B978F90B96B7DEF21588714B6100624FE43D60FF47BFC5277",
   "logoUrl": "https://raw.githubusercontent.com/2SECSUI/BTEN/main/assets/bten-logo.jpg",
-  "notes": "V13 source was verified against the deployed package with the Sui CLI. This bundle is for independent source/bytecode verification. It does not contain keys, recovery phrases, sponsor tokens, runtime ledgers, or private sponsor-service configuration."
+  "notes": "V14 source was verified against the deployed package with the Sui CLI. This bundle is for independent source/bytecode verification. It does not contain keys, recovery phrases, sponsor tokens, runtime ledgers, or private sponsor-service configuration."
 }
