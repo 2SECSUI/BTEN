@@ -44,8 +44,7 @@ module bten::bten {
     const ROUTE_REBATE_BPS: u64 = 2_000;
     const ROUTE_LP_SUPPORT_BPS: u64 = 1_000;
     const ROUTE_SAFETY_BPS: u64 = 1_000;
-    const LP_PROTOCOL_LIQUIDITY_BPS: u64 = 7_000;
-    const LP_CETUS_REWARDS_BPS: u64 = 3_000;
+    const LP_PROTOCOL_LIQUIDITY_BPS: u64 = 10_000;
     const MAX_LP_RELEASE_PER_CALL: u64 = 50 * UNIT;
 
     const ROUTE_VAULT_BPS: u64 = 5_000;
@@ -125,7 +124,7 @@ module bten::bten {
     public struct LpProgramCap has key, store { id: UID }
 
     /// Accounting and allowlist for the BTEN LP programme. The actual Cetus
-    /// add-liquidity/reward-program calls consume coins from this object in a
+    /// add-liquidity calls consume coins from this object in a
     /// single operator-signed transaction after their quote is simulated.
     public struct LpProgramState has key {
         id: UID,
@@ -134,7 +133,6 @@ module bten::bten {
         finalized: bool,
         paused: bool,
         protocol_liquidity: Balance<BTEN>,
-        cetus_rewards: Balance<BTEN>,
     }
 
     public struct PoolRegistry has key {
@@ -276,6 +274,7 @@ module bten::bten {
     public struct LpProgrammeAccrued has copy, drop {
         total: u64,
         protocol_liquidity: u64,
+        /// Retained in the public event schema for indexers; v9 always emits 0.
         cetus_rewards: u64,
     }
 
@@ -722,9 +721,8 @@ module bten::bten {
         transfer::public_transfer(LpProgramCap { id: object::new(ctx) }, treasury_operator);
         transfer::share_object(LpProgramState {
             id: object::new(ctx), pools: table::new(ctx), weight_total: 0,
-            finalized: false, paused: true,
+            finalized: false, paused: false,
             protocol_liquidity: balance::zero<BTEN>(),
-            cetus_rewards: balance::zero<BTEN>(),
         });
     }
 
@@ -758,8 +756,8 @@ module bten::bten {
 
     /// Collects the 25% BTEN LP vault plus every redirected 1% venue vault,
     /// including any backlog accumulated while those venue buckets were
-    /// paused. The split is exact at the programme boundary: 70% protocol
-    /// liquidity and 30% Cetus-native LP reward programmes.
+    /// paused. Every BTEN is routed to protocol-owned liquidity across the
+    /// fixed registered-pool set; no allocation is held for a separate farm.
     public entry fun accrue_lp_program(
         state: &mut EmissionState,
         programme: &mut LpProgramState,
@@ -772,12 +770,10 @@ module bten::bten {
         balance::join(&mut total, drain_bten(&mut state.magma_vault));
         balance::join(&mut total, drain_bten(&mut state.sui_gas_vault));
         let amount = balance::value(&total);
-        assert!(LP_PROTOCOL_LIQUIDITY_BPS + LP_CETUS_REWARDS_BPS == BPS, E_LP_PROGRAM_WEIGHTS);
+        assert!(LP_PROTOCOL_LIQUIDITY_BPS == BPS, E_LP_PROGRAM_WEIGHTS);
         let protocol_amount = amount * LP_PROTOCOL_LIQUIDITY_BPS / BPS;
-        let reward_amount = amount - protocol_amount;
-        balance::join(&mut programme.protocol_liquidity, balance::split(&mut total, protocol_amount));
-        balance::join(&mut programme.cetus_rewards, total);
-        event::emit(LpProgrammeAccrued { total: amount, protocol_liquidity: protocol_amount, cetus_rewards: reward_amount });
+        balance::join(&mut programme.protocol_liquidity, total);
+        event::emit(LpProgrammeAccrued { total: amount, protocol_liquidity: protocol_amount, cetus_rewards: 0 });
     }
 
     /// Moves only the already-accounted route-reserve LP-support allocation
@@ -812,24 +808,6 @@ module bten::bten {
         assert!(amount > 0 && amount <= MAX_LP_RELEASE_PER_CALL, E_BAD_AMOUNT);
         let funding = coin::from_balance(balance::split(&mut programme.protocol_liquidity, amount), ctx);
         event::emit(LpProgrammeReleased { pool_id, category: 0, amount });
-        funding
-    }
-
-    /// Takes a bounded, allowlisted BTEN reward allocation for the exact
-    /// Cetus reward programme configured for this pool. It remains paused
-    /// until the programme's deposit transaction is simulated on mainnet.
-    public fun take_cetus_reward_funding(
-        programme: &mut LpProgramState,
-        _cap: &LpProgramCap,
-        pool_id: address,
-        amount: u64,
-        ctx: &mut TxContext,
-    ): Coin<BTEN> {
-        assert!(!programme.paused, E_LP_PROGRAM_PAUSED);
-        assert!(programme.finalized && table::contains(&programme.pools, pool_id), E_LP_PROGRAM_POOL);
-        assert!(amount > 0 && amount <= MAX_LP_RELEASE_PER_CALL, E_BAD_AMOUNT);
-        let funding = coin::from_balance(balance::split(&mut programme.cetus_rewards, amount), ctx);
-        event::emit(LpProgrammeReleased { pool_id, category: 1, amount });
         funding
     }
 
@@ -1212,7 +1190,6 @@ module bten::bten {
         *table::borrow(&programme.pools, pool_id)
     }
     public fun lp_program_protocol_balance(programme: &LpProgramState): u64 { balance::value(&programme.protocol_liquidity) }
-    public fun lp_program_cetus_reward_balance(programme: &LpProgramState): u64 { balance::value(&programme.cetus_rewards) }
     public fun pool_bucket(registry: &PoolRegistry, pool_id: address): u8 {
         if (!table::contains(&registry.pools, pool_id)) { return 255 };
         *table::borrow(&registry.pools, pool_id)

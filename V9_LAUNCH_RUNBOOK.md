@@ -16,9 +16,9 @@ capability, LP position, or treasury balance is stored in GitHub.
 4. Create the paused `KeeperConfig` for the funded GitHub keeper. Do not give
    it `RegistryAdminCap`, `UpgradeCap`, `LpProgramCap`, farm ownership, or LP
    positions.
-5. Run a protected quote and low-value simulation for each exact Cetus reward
-   programme. Write its object ID into the policy only after its funding call
-   succeeds. Enable one pool at a time.
+5. Run a protected quote and low-value add-liquidity simulation for each
+   registered pool. Execute only when the live quote, tick range, and paired
+   asset requirement are satisfied.
 
 ## Activation sequence
 
@@ -30,8 +30,8 @@ capability, LP position, or treasury balance is stored in GitHub.
    including their historical backlog, into the 70/30 programme.
 4. Use `accrue_route_lp_support_to_program` only after route-treasury syncing;
    it moves only the accounted LP-support share into protocol liquidity.
-5. Keep the 30% Cetus reward balance paused until a verified per-pool Cetus
-   reward programme exists. Continue Aftermath only through exhausted-schedule
+5. Use every programme balance only for protocol-owned liquidity in the
+   registered pool set. Continue Aftermath only through exhausted-schedule
    replacement funding.
 
 ## Verification and monitoring

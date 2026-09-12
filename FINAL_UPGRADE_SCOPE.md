@@ -18,11 +18,9 @@ package upgrade, dry-runs, and small-value mainnet tests all succeed.
   per-allocation pause controls.
 - Trader rewards remain point-weighted and automatic after round settlement.
 - The 25% BTEN LP allocation and all five 1% venue allocations are redirected
-  into the v9 LP programme, including their paused-vault backlog. It sends 70%
-  to protocol-owned registered-pool liquidity and 30% to verified Cetus-native
-  reward programmes, weighted by `config/lp_program_policy.json`.
-- Cetus reward funding remains disabled per pool until the exact venue objects,
-  deposit call, and low-value mainnet transaction have been verified.
+  into the v9 LP programme, including their paused-vault backlog. Every BTEN
+  is protocol-owned registered-pool liquidity, weighted by
+  `config/lp_program_policy.json`; there is no separate LP-reward hold.
 - Staking rewards will use rolling Aftermath schedules rather than one funding
   transaction per block; the replacement-farm adapter remains disabled until
   its exact funding call passes a live protected simulation.

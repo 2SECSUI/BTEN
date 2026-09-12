@@ -209,8 +209,7 @@ module bten::bten_tests {
             assert!(bten::blue_balance(&state) == 0, 53);
             assert!(bten::turbos_balance(&state) == 0, 54);
             assert!(bten::sui_gas_balance(&state) == 0, 55);
-            assert!(bten::lp_program_protocol_balance(&programme) == 1_050_000_000, 56);
-            assert!(bten::lp_program_cetus_reward_balance(&programme) == 450_000_000, 57);
+            assert!(bten::lp_program_protocol_balance(&programme) == 1_500_000_000, 56);
             let cap = scenario.take_from_sender<bten::LpProgramCap>();
             let funding = bten::take_protocol_liquidity(&mut programme, &cap, pool, 100_000_000, scenario.ctx());
             transfer::public_transfer(funding, admin);
