@@ -31,6 +31,12 @@
     "quoteIncludesVenueFeePriceImpactAndGas": true,
     "fallback": "Use the direct Cetus path when BTEN is not net-cheaper."
   },
+  "routeRebate": {
+    "policyFile": "config/route_rebate_policy.json",
+    "fundingSource": "RouteTreasuryState.rebate_accrued only",
+    "status": "policy-ready-pending-reviewed-output-token-executor-upgrade",
+    "disclosureRequired": true
+  },
   "traderReward": {
     "source": "previous sealed block trader allocation",
     "entrypoint": "bten::auto_pay_trader_entry",

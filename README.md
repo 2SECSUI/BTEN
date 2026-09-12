@@ -77,6 +77,12 @@ implemented in [`scripts/public_route_selector.mjs`](scripts/public_route_select
 direct output remains the default unless the BTEN path is net-better by the
 configured threshold.
 
+`config/route_rebate_policy.json` defines the optional, disclosed route-rebate
+limits. It can draw only from the route treasury's separately accrued rebate
+allocation; it cannot use LP, staking, trader, sponsor, protocol-liquidity, or
+safety funds. A payout executor is intentionally not live until it can convert
+the capped BTEN rebate into the trader's final output token atomically.
+
 Run the non-signing route check with:
 
 ```powershell

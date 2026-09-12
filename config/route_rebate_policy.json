@@ -1,0 +1,10 @@
+{
+  "status": "policy-ready-pending-reviewed-output-token-executor-upgrade",
+  "fundingSource": "RouteTreasuryState.rebate_accrued only",
+  "neverUse": ["btenLpVault", "stakingVault", "traderVault", "sponsorAccrued", "protocolLiquidityAccrued", "safetyAccrued"],
+  "selection": "Offer only when a fresh same-output-token quote proves BTEN route plus rebate is at least 1 bp better than direct.",
+  "maxRebateBpsOfIntermediateBten": 750,
+  "perSwapCapBtenRaw": "1000000",
+  "dailyCapBtenRaw": "25000000",
+  "disclosure": "The Block10 quote must show direct output, BTEN route output, rebate amount, final net output, and the selected path."
+}
