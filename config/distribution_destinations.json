@@ -1,0 +1,72 @@
+{
+  "network": "mainnet",
+  "status": "deployed-all-buckets-paused",
+  "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
+  "deploymentTransaction": "gAegYi4JGp9oDQzUzWaiGkrMW4Rj5cXfMFHK84epCUR",
+  "policy": "A destination is enabled only after its exact on-chain deposit call has passed a mainnet dry-run. Disabled allocation buckets remain in EmissionState and are never retroactively delivered.",
+  "releaseTrigger": "The next successful 10-route gate settlement calls settle_and_distribute. A permissionless keeper can call distribute_released_blocks for a prior legacy settlement.",
+  "nativePaths": {
+    "routeReserve": "Capped BTEN-to-SUI refill into the fixed sponsor wallet; not a generic recipient transfer.",
+    "traderRewards": "Point-weighted automatic payments after a sealed settlement round; not a generic recipient transfer."
+  },
+  "destinations": [
+    {
+      "bucket": "btenLp",
+      "bucketId": 0,
+      "allocationBps": 2500,
+      "status": "paused",
+      "delivery": "requires-multi-pool-distributor",
+      "reason": "A pool address cannot receive LP rewards. The distributor must calculate active registered positions and deposit via the chosen farm or reward module."
+    },
+    {
+      "bucket": "cetus",
+      "bucketId": 1,
+      "allocationBps": 100,
+      "status": "paused",
+      "delivery": "requires-cetus-incentive-adapter",
+      "reason": "Requires a verified Cetus incentive/farm recipient and its deposit transaction."
+    },
+    {
+      "bucket": "bluefin",
+      "bucketId": 2,
+      "allocationBps": 100,
+      "status": "paused",
+      "delivery": "requires-bluefin-partner-recipient",
+      "reason": "No verified Bluefin on-chain recipient has been configured."
+    },
+    {
+      "bucket": "turbos",
+      "bucketId": 3,
+      "allocationBps": 100,
+      "status": "paused",
+      "delivery": "requires-turbos-incentive-adapter",
+      "reason": "Requires a verified Turbos farm/vault recipient and its deposit transaction."
+    },
+    {
+      "bucket": "suiGas",
+      "bucketId": 4,
+      "allocationBps": 100,
+      "status": "paused",
+      "delivery": "policy-pending",
+      "reason": "The live sponsor is already funded by the separately capped route-reserve conversion. This bucket must not double-fund it until governance selects a final policy."
+    },
+    {
+      "bucket": "haedal",
+      "bucketId": 5,
+      "allocationBps": 100,
+      "status": "paused",
+      "delivery": "requires-haedal-partner-recipient",
+      "reason": "No verified Haedal incentive recipient has been configured."
+    },
+    {
+      "bucket": "staking",
+      "bucketId": 6,
+      "allocationBps": 1000,
+      "status": "managed-by-rolling-keeper",
+      "delivery": "aftermath-rolling-keeper",
+      "knownFarm": "0x462c6ea2b16c1ab8d5afac0af198f52aede5f0dbdfd45009b77d4007161fed7f",
+      "reason": "Aftermath reward schedules require its funding call, not a raw BTEN transfer. The rolling keeper only funds an exhausted schedule from the fixed staking vault."
+    }
+  ],
+  "roundingDust": "At the current 50-BTEN subsidy there is no split dust. At future halvings, integer dust remains in the Haedal vault under the existing immutable-state layout until a dedicated dust migration is approved."
+}
