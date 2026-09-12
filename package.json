@@ -1,0 +1,11 @@
+{
+  "name": "bten-automation",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@mysten/sui": "2.29.0"
+  }
+}

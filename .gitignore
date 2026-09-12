@@ -3,6 +3,7 @@ build/
 .move/
 runtime/
 *.log
+node_modules/
 
 # Never commit credentials, keys, recovery material, or sponsor authorization data
 *.env

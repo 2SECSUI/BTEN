@@ -1,0 +1,18 @@
+{
+  "network": "mainnet",
+  "keeperAddress": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
+  "opsAddress": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "maxSuiBalanceMist": "4000000000",
+  "settlement": {
+    "enabled": true,
+    "maximumBlocksPerRun": 10,
+    "gasBudgetMist": "30000000"
+  },
+  "treasurySync": {
+    "enabled": true
+  },
+  "privilegedExecutors": {
+    "enabled": false,
+    "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."
+  }
+}

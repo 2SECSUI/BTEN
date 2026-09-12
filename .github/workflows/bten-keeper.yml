@@ -1,0 +1,47 @@
+name: BTEN keeper
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Use dry-run to inspect, or execute for permissionless settlement and accounting only."
+        required: true
+        default: "dry-run"
+        type: choice
+        options: [dry-run, execute]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bten-mainnet-keeper
+  cancel-in-progress: false
+
+jobs:
+  keep:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: mainnet-automation
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts
+      - name: Mainnet preflight
+        run: node scripts/github_keeper.mjs
+      - name: Permissionless maintenance
+        if: github.event_name == 'schedule' || inputs.mode == 'execute'
+        env:
+          BTEN_KEEPER_PRIVATE_KEY: ${{ secrets.BTEN_KEEPER_PRIVATE_KEY }}
+        run: node scripts/github_keeper.mjs --execute
