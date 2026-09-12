@@ -1,13 +1,14 @@
 param(
   [Parameter(Mandatory = $true)][string]$PackageId,
   [Parameter(Mandatory = $true)][string]$UpgradeDigest,
+  [string]$ReleaseLabel = "v13",
   [string]$OutputDirectory = "verification"
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $output = Join-Path $root $OutputDirectory
-$stage = Join-Path $env:TEMP ("bten-v9-verification-" + [guid]::NewGuid().ToString('N'))
+$stage = Join-Path $env:TEMP ("bten-" + $ReleaseLabel + "-verification-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 try {
   # The currently pinned Sui CLI accepts --dependencies-are-root on publish,
@@ -31,7 +32,7 @@ try {
     generatedAtUtc = [DateTime]::UtcNow.ToString('o'); files = $files
   } | ConvertTo-Json -Depth 5 | Set-Content -NoNewline (Join-Path $stage 'manifest.json')
   New-Item -ItemType Directory -Force -Path $output | Out-Null
-  $zip = Join-Path $output 'BTEN-mainnet-v9-verification.zip'
+  $zip = Join-Path $output ("BTEN-mainnet-" + $ReleaseLabel + "-verification.zip")
   if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
   Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
   Write-Output $zip

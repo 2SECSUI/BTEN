@@ -19,8 +19,13 @@ import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 
+const root = path.resolve(import.meta.dirname, "..");
+const mainnet = JSON.parse(fs.readFileSync(path.join(root, "MAINNET_ROUTE_CONFIG.json"), "utf8"));
 const OWNER = "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a";
-const PACKAGE = "0x2bd9a906dd086696ca0e943401894b8d636c4efd19b518eba4e402e3d55375f0";
+// Always target the currently published BTEN package; the state object types
+// remain stable across upgrades, while hard-coding a prior package breaks the
+// rolling-farm path after a release.
+const PACKAGE = mainnet.currentPackage;
 const STATE = "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253";
 const ADMIN = "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9";
 const FARM = "0x462c6ea2b16c1ab8d5afac0af198f52aede5f0dbdfd45009b77d4007161fed7f";

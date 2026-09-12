@@ -284,6 +284,23 @@ module bten::bten {
         amount: u64,
     }
 
+    /// Evidence for a protected protocol-owned Cetus liquidity deployment.
+    public struct ProtocolLiquidityDeployed has copy, drop {
+        pool_id: address,
+        bten_in: u64,
+        sui_in_mist: u64,
+        recipient: address,
+    }
+
+    /// Evidence for a one-sided, out-of-range protocol-owned LP deployment.
+    /// The range is checked by the Cetus receipt: a non-BTEN payment aborts
+    /// the whole transaction before any balance is repaid.
+    public struct ProtocolLiquidityOutOfRangeDeployed has copy, drop {
+        pool_id: address,
+        bten_in: u64,
+        recipient: address,
+    }
+
     #[test_only]
     public fun initialize_for_testing(ctx: &mut TxContext) { init(BTEN {}, ctx) }
 
@@ -809,6 +826,100 @@ module bten::bten {
         let funding = coin::from_balance(balance::split(&mut programme.protocol_liquidity, amount), ctx);
         event::emit(LpProgrammeReleased { pool_id, category: 0, amount });
         funding
+    }
+
+    /// Atomically deploys an allowlisted BTEN allocation to the BTEN/SUI
+    /// Cetus pool. The owner of the narrow LP cap supplies SUI, the quote's
+    /// maximum SUI is enforced before repayment, and the resulting position
+    /// plus every unused coin returns to the transaction sender.
+    public entry fun deploy_protocol_liquidity_to_sui_cetus(
+        programme: &mut LpProgramState,
+        cap: &LpProgramCap,
+        config: &GlobalConfig,
+        pool: &mut Pool<BTEN, SUI>,
+        mut sui: Coin<SUI>,
+        pool_id: address,
+        bten_amount: u64,
+        max_sui_mist: u64,
+        tick_lower: u32,
+        tick_upper: u32,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let recipient = tx_context::sender(ctx);
+        assert!(tick_lower < tick_upper, E_BAD_AMOUNT);
+        assert!(max_sui_mist > 0 && coin::value(&sui) >= max_sui_mist, E_BAD_AMOUNT);
+        let mut bten = take_protocol_liquidity(programme, cap, pool_id, bten_amount, ctx);
+        let mut position = pool::open_position(config, pool, tick_lower, tick_upper, ctx);
+        // Cetus uses `true` to fix CoinTypeA. BTEN is CoinTypeA in the
+        // registered BTEN/SUI pool, so this keeps `bten_amount` meaningful.
+        let receipt = pool::add_liquidity_fix_coin(config, pool, &mut position, bten_amount, true, clock);
+        let (bten_due, sui_due) = pool::add_liquidity_pay_amount(&receipt);
+        assert!(bten_due <= bten_amount && sui_due <= max_sui_mist, E_BAD_AMOUNT);
+        let bten_payment = coin::into_balance(coin::split(&mut bten, bten_due, ctx));
+        let sui_payment = coin::into_balance(coin::split(&mut sui, sui_due, ctx));
+        pool::repay_add_liquidity(config, pool, bten_payment, sui_payment, receipt);
+        transfer::public_transfer(bten, recipient);
+        transfer::public_transfer(sui, recipient);
+        transfer::public_transfer(position, recipient);
+        event::emit(ProtocolLiquidityDeployed { pool_id, bten_in: bten_due, sui_in_mist: sui_due, recipient });
+    }
+
+    /// Adds one-sided BTEN liquidity where BTEN is Cetus CoinTypeA.  The
+    /// caller supplies an out-of-range tick interval; a range that requires
+    /// any paired asset is rejected atomically.
+    public entry fun deploy_protocol_liquidity_out_of_range_a<A>(
+        programme: &mut LpProgramState,
+        cap: &LpProgramCap,
+        config: &GlobalConfig,
+        pool: &mut Pool<BTEN, A>,
+        pool_id: address,
+        bten_amount: u64,
+        tick_lower: u32,
+        tick_upper: u32,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let recipient = tx_context::sender(ctx);
+        assert!(tick_lower < tick_upper, E_BAD_AMOUNT);
+        let mut bten = take_protocol_liquidity(programme, cap, pool_id, bten_amount, ctx);
+        let mut position = pool::open_position(config, pool, tick_lower, tick_upper, ctx);
+        let receipt = pool::add_liquidity_fix_coin(config, pool, &mut position, bten_amount, true, clock);
+        let (bten_due, paired_due) = pool::add_liquidity_pay_amount(&receipt);
+        assert!(bten_due <= bten_amount && paired_due == 0, E_BAD_AMOUNT);
+        let bten_payment = coin::into_balance(coin::split(&mut bten, bten_due, ctx));
+        pool::repay_add_liquidity(config, pool, bten_payment, balance::zero<A>(), receipt);
+        transfer::public_transfer(bten, recipient);
+        transfer::public_transfer(position, recipient);
+        event::emit(ProtocolLiquidityOutOfRangeDeployed { pool_id, bten_in: bten_due, recipient });
+    }
+
+    /// Adds one-sided BTEN liquidity where BTEN is Cetus CoinTypeB.  As with
+    /// the CoinTypeA variant, the paired side must quote to exactly zero.
+    public entry fun deploy_protocol_liquidity_out_of_range_b<A>(
+        programme: &mut LpProgramState,
+        cap: &LpProgramCap,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, BTEN>,
+        pool_id: address,
+        bten_amount: u64,
+        tick_lower: u32,
+        tick_upper: u32,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let recipient = tx_context::sender(ctx);
+        assert!(tick_lower < tick_upper, E_BAD_AMOUNT);
+        let mut bten = take_protocol_liquidity(programme, cap, pool_id, bten_amount, ctx);
+        let mut position = pool::open_position(config, pool, tick_lower, tick_upper, ctx);
+        let receipt = pool::add_liquidity_fix_coin(config, pool, &mut position, bten_amount, false, clock);
+        let (paired_due, bten_due) = pool::add_liquidity_pay_amount(&receipt);
+        assert!(paired_due == 0 && bten_due <= bten_amount, E_BAD_AMOUNT);
+        let bten_payment = coin::into_balance(coin::split(&mut bten, bten_due, ctx));
+        pool::repay_add_liquidity(config, pool, balance::zero<A>(), bten_payment, receipt);
+        transfer::public_transfer(bten, recipient);
+        transfer::public_transfer(position, recipient);
+        event::emit(ProtocolLiquidityOutOfRangeDeployed { pool_id, bten_in: bten_due, recipient });
     }
 
     /// Permissionless accounting sync after a settlement. Each released

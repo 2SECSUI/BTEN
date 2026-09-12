@@ -15,6 +15,17 @@ wallet secret, capability, or sponsor key. The v9 LP programme policy and pool
 weights are in [`config/lp_program_policy.json`](config/lp_program_policy.json).
 Run `npm run validate-launch` before consuming either file.
 
+### Live mainnet data for Block10
+
+The current package is v13 at
+`0x646612b6c4c040bfae0e7d519fc5ef6bc0f1555502d5f8136d08e59ede2c0191`.
+Grok should consume `config/block10_integration.json` first, then
+`MAINNET_ROUTE_CONFIG.json` for the exact ten finalized Cetus pool IDs,
+their BTEN-only adjacent-price position IDs, and the allocation status.
+CERT is intentionally absent from that public pool list and is not in the
+on-chain LP allowlist. These files contain only public chain data; they never
+contain a private key, capability, or sponsor credential.
+
 ## Implemented core
 
 - 21,000,000 BTEN hard cap with eight decimals.
@@ -36,11 +47,12 @@ Run `npm run validate-launch` before consuming either file.
 
 ## Current mainnet adapter status
 
-Mainnet package version 9 is upgradeable at
-`0x2bd9a906dd086696ca0e943401894b8d636c4efd19b518eba4e402e3d55375f0`.
-It was deployed in transaction `8uzMxePBEGuAKQzHqjPfwicdNWZxXRxKS5G2jmbD5vMi`.
-V9 adds an allowlisted LP programme; moving funds into a venue still requires
-the matching protocol-owned LP transaction and paired asset.
+Mainnet package version 13 is upgradeable at
+`0x646612b6c4c040bfae0e7d519fc5ef6bc0f1555502d5f8136d08e59ede2c0191`.
+It was deployed in transaction `Gv6ofDX7Lme9D443rdRHvbPGhoofMhDQxtmN8xJhwadQ`.
+V13 adds allowlisted one-sided LP executors for both Cetus token orderings.
+They create BTEN-only positions immediately outside the current price and
+abort atomically if any paired asset would be required.
 
 Block10 should compare a direct Cetus quote with its BTEN route and present the
 BTEN route only when its final net output is higher. This prevents a subsidised
@@ -117,10 +129,10 @@ signing service is ever asked to sponsor a transaction.
   alerts on an insufficient sponsor balance, pending block/receipt state and
   unexpected sponsorship activation. It never signs or submits a transaction.
 
-`MAINNET_ROUTE_CONFIG.json` is the prepared, inactive mainnet route manifest.
-It contains only the verified BTEN contract IDs and approved Cetus/Turbos
-venues; it intentionally has no pools, genesis release, sponsor, or keeper
-enabled.
+`MAINNET_ROUTE_CONFIG.json` is the live public mainnet route and liquidity
+manifest. It contains the verified BTEN contract IDs, ten finalized
+allowlisted Cetus pools, and the V13 position records. It does not expose a
+sponsor key or grant any wallet permission.
 ## Public assets and supply policy
 
 Official public assets for BlockTen (BTEN).
