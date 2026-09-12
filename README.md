@@ -20,8 +20,8 @@ Run `npm run validate-launch` before consuming either file.
 
 ### Live mainnet data for Block10
 
-The current package is v15 at
-`0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230`.
+The current package is v16 at
+`0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41`.
 Grok should consume `config/block10_integration.json` first, then
 `MAINNET_ROUTE_CONFIG.json` for the exact ten finalized Cetus pool IDs,
 their BTEN-only adjacent-price position IDs, and the allocation status.
@@ -57,9 +57,9 @@ is documented in [`docs/NEXT_UPGRADE_SCOPE.md`](docs/NEXT_UPGRADE_SCOPE.md).
 
 ## Current mainnet adapter status
 
-Mainnet package version 15 is upgradeable at
-`0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230`.
-It was upgraded in transaction `99172L13dxrsm3UoJ8eXQQFEKWtKGftRKupZjDfJcai7`.
+Mainnet package version 16 is upgradeable at
+`0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41`.
+It was upgraded in transaction `HckDUZGSTjyeLYtxn1we2NCg6DetjVXmcaeKbQ6p7b17`.
 V15 adds the native single-sided BTEN staking farm alongside the allowlisted
 one-sided LP executors for both Cetus token orderings.
 They create BTEN-only positions immediately outside the current price and
@@ -95,13 +95,15 @@ implemented in [`scripts/public_route_selector.mjs`](scripts/public_route_select
 direct output remains the default unless the BTEN path is net-better by the
 configured threshold.
 
-`config/route_rebate_policy.json` defines the optional, disclosed route-rebate
-limits. The next source upgrade includes atomic final-token rebate executors
-for both Cetus pool orderings. They can draw only from the route treasury's
-separately accrued rebate allocation; they cannot use LP, staking, trader,
-sponsor, protocol-liquidity, or safety funds. They are not deployed or enabled
-on mainnet: audit and a low-value live test are mandatory first. The Block10
-quote selector must still prove that the rebate makes the BTEN path net-better,
+`config/route_rebate_policy.json` defines the active, disclosed route-rebate
+limits. Atomic final-token rebate executors support both Cetus pool orderings
+and draw only from the route treasury's separately accrued rebate allocation;
+they cannot use LP, staking, trader, sponsor, protocol-liquidity, or safety
+funds. The shared rebate state is
+`0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8`.
+Its first live protected SUI-to-WAL test paid 0.00025 BTEN of reserve and
+delivered 0.56128621 WAL with exactly one BTEN receipt. The Block10 quote
+selector must still prove that the rebate makes the BTEN path net-better,
 because Move cannot inspect arbitrary direct DEX routes.
 
 Run the non-signing route check with:

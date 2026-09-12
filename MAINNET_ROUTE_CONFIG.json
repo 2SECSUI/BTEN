@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v15-live-native-staking-farm-configured",
-  "publishedVersion": 15,
-  "currentPackage": "0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230",
+  "status": "v16-live-route-rebate-tested",
+  "publishedVersion": 16,
+  "currentPackage": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -65,6 +65,16 @@
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
     "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The public reader scans only successful transactions affecting a frozen BTEN Cetus pool after V14 activation, validates the exact Cetus SwapEvent and sender, skips protected routes already recorded on-chain, uses one fixed point per transaction, and submits at most ten events per run within the on-chain daily cap. The contract cannot independently read historical Cetus events."
+  },
+  "routeRebate": {
+    "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
+    "status": "active-tested",
+    "perSwapCapBtenRaw": "1000000",
+    "dailyCapBtenRaw": "25000000",
+    "maxBpsOfIntermediateBten": 750,
+    "activationTransaction": "Eo7btQFQBmUWXihFWbvozGvzk51Uw3WvvXNqHgtgqBXj",
+    "liveProtectedRouteTest": "5xKTwPQ1Qbsnk86sFVhx4Rf1fpVjYZAyfjeTo7hev4Hd",
+    "testResult": "0.002 SUI -> 0.56128621 WAL; 0.00025 BTEN rebate paid; one RouteRecorded receipt."
   },
   "activationRule": "Protected direct Cetus BTEN routes are wallet-signed and user-paid. V13 allocation accounting is live. One-sided protocol BTEN deposits are restricted to the finalized on-chain allowlist and atomically abort if a selected range needs any paired asset.",
   "protocolLiquidity": {

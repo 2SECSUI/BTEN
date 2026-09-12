@@ -1,17 +1,17 @@
 {
   "network": "mainnet",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "packageId": "0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230",
+  "packageId": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
   "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-  "packageVersion": 15,
-  "upgradeTransaction": "99172L13dxrsm3UoJ8eXQQFEKWtKGftRKupZjDfJcai7",
+  "packageVersion": 16,
+  "upgradeTransaction": "HckDUZGSTjyeLYtxn1we2NCg6DetjVXmcaeKbQ6p7b17",
   "buildCommand": "sui move build",
   "testCommand": "sui move test",
   "bytecode": "build/bten/bytecode_modules/bten.mv",
   "source": "sources/bten.move",
   "includedFiles": ["Move.toml", "Move.lock", "Published.toml", "sources/bten.move", "bytecode_modules/bten.mv", "assets/bten-logo.jpg"],
-  "archive": "verification/BTEN-mainnet-v15-verification.zip",
-  "archiveSha256": "E475C35CC255ED2AD07290DB27B51F847CA8CE17187CCB4650A6E136928C6270",
+  "archive": "verification/BTEN-mainnet-v16-verification.zip",
+  "archiveSha256": "7F9B668433BB62FD8C0594E18100C4413181C430298C7D9B3D1AFBC72497E165",
   "logoUrl": "https://raw.githubusercontent.com/2SECSUI/BTEN/main/assets/bten-logo.jpg",
-  "notes": "V15 source was built and tested locally, and its upgrade was dry-run with dependency verification before mainnet deployment. This bundle is for independent source/bytecode verification. It does not contain keys, recovery phrases, sponsor tokens, runtime ledgers, or private sponsor-service configuration."
+  "notes": "V16 source was built and tested locally, its upgrade was dry-run with dependency verification, and the live capped rebate state plus a protected SUI-to-WAL route were tested on mainnet. This bundle is for independent source/bytecode verification. It does not contain keys, recovery phrases, sponsor tokens, runtime ledgers, or private sponsor-service configuration."
 }

@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0x6d94dc303e9cff1f6ce26444e300b4b1f78dd93fb1d53ac2500051fb74c79230",
-  "publishedVersion": 15,
+  "currentPackage": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
+  "publishedVersion": 16,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -42,7 +42,8 @@
   "routeRebate": {
     "policyFile": "config/route_rebate_policy.json",
     "fundingSource": "RouteTreasuryState.rebate_accrued only",
-    "status": "source-implemented-pending-audit-and-mainnet-upgrade",
+    "status": "active-tested",
+    "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
     "disclosureRequired": true
   },
   "traderReward": {
