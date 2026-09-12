@@ -10,6 +10,8 @@ test("keeper policy is a separate, bounded wallet", () => {
   assert.match(policy.keeperAddress, /^0x[0-9a-f]{64}$/i);
   assert.notEqual(policy.keeperAddress.toLowerCase(), policy.opsAddress.toLowerCase());
   assert.equal(policy.maxSuiBalanceMist, "4000000000");
+  assert.match(policy.distributionState, /^0x[0-9a-f]{64}$/i);
+  assert.match(policy.routeTreasuryState, /^0x[0-9a-f]{64}$/i);
   assert.equal(policy.settlement.enabled, true);
   assert.equal(policy.privilegedExecutors.enabled, false);
 });

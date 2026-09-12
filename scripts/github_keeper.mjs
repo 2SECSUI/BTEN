@@ -17,8 +17,6 @@ import { Transaction } from "@mysten/sui/transactions";
 const root = path.resolve(import.meta.dirname, "..");
 const mainnet = JSON.parse(fs.readFileSync(path.join(root, "MAINNET_ROUTE_CONFIG.json"), "utf8"));
 const policy = JSON.parse(fs.readFileSync(path.join(root, "config", "keeper_policy.json"), "utf8"));
-const distribution = JSON.parse(fs.readFileSync(path.join(root, "config", "distribution_destinations.json"), "utf8"));
-const treasury = JSON.parse(fs.readFileSync(path.join(root, "config", "route_treasury_policy.json"), "utf8"));
 const EXECUTE = process.argv.includes("--execute");
 const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const PACKAGE = "0xfb4a37274bc784bc31cd03bbb6ab3e176d077ce22722ca2d7a9ba7f08f814042";
@@ -61,7 +59,7 @@ async function execute(client, signer, transaction) {
   return { digest: result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null, effects: result.effects ?? result.transaction?.effects ?? result.Transaction?.effects };
 }
 
-const [state, treasuryState] = await Promise.all([moveFields(mainnet.emissionState), moveFields(treasury.routeTreasuryState)]);
+const [state, treasuryState] = await Promise.all([moveFields(mainnet.emissionState), moveFields(policy.routeTreasuryState)]);
 const now = Math.floor(Date.now() / 1000);
 const elapsedSlots = Math.max(0, Math.floor((now - Number(state.last_slot_ts)) / SLOT_SECONDS));
 const pending = Number(state.pending_blocks) + elapsedSlots;
@@ -87,17 +85,17 @@ if (eligibleBlocks > 0 && policy.settlement.enabled) {
   const tx = new Transaction();
   tx.setSender(policy.keeperAddress);
   tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-  tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(distribution.distributionState), tx.object(CLOCK)] });
+  tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.distributionState), tx.object(CLOCK)] });
   report.submitted.push({ action: "settle_and_distribute", ...(await execute(client, signer, tx)) });
 }
 if (policy.treasurySync.enabled) {
   const refreshed = await moveFields(mainnet.emissionState);
-  const refreshedTreasury = await moveFields(treasury.routeTreasuryState);
+  const refreshedTreasury = await moveFields(policy.routeTreasuryState);
   if (Number(refreshedTreasury.next_height) < Number(refreshed.block_height)) {
     const tx = new Transaction();
     tx.setSender(policy.keeperAddress);
     tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-    tx.moveCall({ target: `${PACKAGE}::bten::sync_route_treasury`, arguments: [tx.object(mainnet.emissionState), tx.object(treasury.routeTreasuryState)] });
+    tx.moveCall({ target: `${PACKAGE}::bten::sync_route_treasury`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.routeTreasuryState)] });
     report.submitted.push({ action: "sync_route_treasury", ...(await execute(client, signer, tx)) });
   }
 }

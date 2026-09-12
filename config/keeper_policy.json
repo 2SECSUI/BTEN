@@ -3,6 +3,8 @@
   "keeperAddress": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
   "opsAddress": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
   "maxSuiBalanceMist": "4000000000",
+  "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
+  "routeTreasuryState": "0xf1992cffa7d4980cd03f37a114bd49fc01a1edef09213cffaec7c0f081fa23ce",
   "settlement": {
     "enabled": true,
     "maximumBlocksPerRun": 10,
