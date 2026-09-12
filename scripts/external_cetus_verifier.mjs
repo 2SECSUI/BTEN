@@ -20,6 +20,7 @@ const EXECUTE = process.argv.includes("--execute");
 const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const CLOCK = "0x6";
 const CETUS_SWAP_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent";
+const EXTERNAL_ATTESTATION = `${mainnet.currentPackage}::bten::ExternalCetusRouteAttested`;
 const verifier = mainnet.externalCetusVerifier;
 
 if (!verifier?.state || !verifier?.cap || !verifier?.activationAfterMs) throw new Error("External Cetus verifier configuration is incomplete");
@@ -66,6 +67,17 @@ async function recentPoolTransactions(pool) {
     { pool, limit: verifier.scanTransactionsPerPool ?? 50 },
   );
   return data.transactions.nodes;
+}
+
+async function recentAttestations() {
+  const data = await graphql(
+    `query($type:String!){ events(last:50,filter:{type:$type}) { nodes { contents { json } } } }`,
+    { type: EXTERNAL_ATTESTATION },
+  );
+  return new Set((data.events.nodes ?? []).map((event) => {
+    const json = event.contents?.json ?? {};
+    return `${json.transaction_digest}:${json.event_sequence}`;
+  }));
 }
 
 function candidateFromTransaction(transaction, pool) {
@@ -116,17 +128,18 @@ async function submit(client, signer, candidate) {
   ] });
   const result = await client.signAndExecuteTransaction({ signer, transaction: tx, include: { effects: true, events: true } });
   const status = result.effects?.status?.status ?? result.transaction?.effects?.status?.status;
-  if (status !== "success") throw new Error(`External attestation failed for ${candidate.digest}`);
+  if (String(status).toLowerCase() !== "success") throw new Error(`External attestation failed for ${candidate.digest}`);
   return result.digest ?? result.transaction?.digest ?? null;
 }
 
 const pools = mainnet.venues.flatMap((venue) => venue.name === "cetus" && venue.enabled ? venue.pools : []);
-const state = await moveFields(verifier.state);
-const batches = await Promise.all(
-  pools.map(async (pool) => (await recentPoolTransactions(pool))
+const [state, attestations, batches] = await Promise.all([
+  moveFields(verifier.state),
+  recentAttestations(),
+  Promise.all(pools.map(async (pool) => (await recentPoolTransactions(pool))
     .map((tx) => candidateFromTransaction(tx, pool))
-    .filter(Boolean)),
-);
+    .filter(Boolean))),
+]);
 const byDigest = new Map();
 for (const candidate of batches.flat()) {
   // A routed transaction can touch multiple BTEN pools; it earns one gate only.
@@ -134,11 +147,14 @@ for (const candidate of batches.flat()) {
   if (!current || candidate.eventSequence < current.eventSequence) byDigest.set(candidate.digest, candidate);
 }
 const remainingDaily = Math.max(0, Number(state.daily_event_cap) - Number(state.events_today));
-const candidates = [...byDigest.values()].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)).slice(0, Math.min(remainingDaily, verifier.maxEventsPerRun ?? 10));
+const candidates = [...byDigest.values()]
+  .filter((candidate) => !attestations.has(`${Buffer.from(candidate.digestBytes).toString("base64")}:${candidate.eventSequence}`))
+  .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+  .slice(0, Math.min(remainingDaily, verifier.maxEventsPerRun ?? 10));
 const report = {
   mode: EXECUTE ? "execute" : "dry-run",
   verifier: { state: verifier.state, paused: Boolean(state.paused), eventsToday: String(state.events_today), dailyEventCap: String(state.daily_event_cap) },
-  policy: { activationAfterMs: String(verifier.activationAfterMs), fixedFeePoints: "1", oneReceiptPerTransaction: true, scannedPools: pools.length },
+  policy: { activationAfterMs: String(verifier.activationAfterMs), fixedFeePoints: "1", oneReceiptPerTransaction: true, scannedPools: pools.length, alreadyAttestedInPublicLog: attestations.size },
   candidates: candidates.map(({ digest, eventSequence, pool, trader, timestamp, feePoints }) => ({ digest, eventSequence, pool, trader, timestamp, feePoints })),
   submitted: [],
 };
