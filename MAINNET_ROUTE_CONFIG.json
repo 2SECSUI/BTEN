@@ -102,11 +102,17 @@
       "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
       "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested"
     ],
-    "liveTapeRule": "Ungated Cetus/aggregator volume that hits registered BTEN pools must be attested so the live tape treats it as gated. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
+    "liveTapeRule": "Every live-tape row is gated. Cetus/aggregator volume that hits registered BTEN pools is attested so inclusion is complete; absence of RouteRecorded never flips the tape label to ungated. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
     "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
     "attestationKeyFormat": "base64(32-byte-digest):event_sequence",
     "paused": false,
-    "enabled": true
+    "enabled": true,
+    "exampleAggregatorDigests": [
+      "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
+      "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
+    ],
+    "exampleExternalAggregatorDigest": "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v",
+    "liveTapeClassification": "gated"
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -262,7 +268,28 @@
     "treatAllLiveTapeAsGated": true,
     "blockTransactions": false,
     "dapp": "https://block10.grok.me",
-    "rule": "Every trade on the live tape is classified/counted as gated via RouteRecorded or ExternalCetusRouteAttested (or equivalent)."
+    "rule": "Every trade on the live tape is classified as gated. Missing RouteRecorded must not label a row ungated; registered BTEN Cetus pool volume without RouteRecorded is still gated (pending or completed external attestation).",
+    "liveTapeClassification": {
+      "everyLiveTapeRow": "gated",
+      "neverLabel": "ungated",
+      "routeRecordedRequiredForTapeLabel": false,
+      "missingRouteRecordedDoesNotMeanUngated": true,
+      "registeredBtenCetusPoolWithoutRouteRecorded": "gated",
+      "attestationStatus": {
+        "withRouteRecorded": "gated",
+        "withExternalCetusRouteAttested": "gated",
+        "pendingExternalAttestation": "gated",
+        "completedExternalAttestation": "gated",
+        "aggregatorOrDirectCetusOnRegisteredBtenPool": "gated"
+      },
+      "note": "Every row on the block10.grok.me live tape is classified as gated. Presence or absence of RouteRecorded must never flip the tape label to ungated. Routes that touch registered BTEN Cetus pools without RouteRecorded remain gated (pending or completed external attestation)."
+    },
+    "neverLabelUngated": true,
+    "routeRecordedAbsenceDoesNotUngate": true,
+    "exampleAggregatorDigests": [
+      "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
+      "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
+    ]
   },
   "managedRebalance": {
     "enabled": true,
@@ -270,6 +297,7 @@
     "state": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
     "operatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
     "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
-    "policyFile": "config/managed_rebalance_policy.json"
+    "policyFile": "config/managed_rebalance_policy.json",
+    "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76"
   }
 }

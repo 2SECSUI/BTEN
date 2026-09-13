@@ -101,7 +101,7 @@
     "status": "active-public-event-reader",
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
-    "dappRequirement": "Live-tape trades through registered Cetus BTEN pools count as gated once ExternalCetusRouteAttested (or RouteRecorded) exists. Attestation is inclusion, not rejection.",
+    "dappRequirement": "Every live-tape row is gated. Trades through registered Cetus BTEN pools remain gated with or without RouteRecorded; ExternalCetusRouteAttested completes external attestation but does not change the tape label away from gated. Attestation is inclusion, not rejection.",
     "liveTapeRule": "treatAllLiveTapeAsGated",
     "enabled": true,
     "paused": false
@@ -146,7 +146,8 @@
     "operatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
     "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
     "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9",
-    "package": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098"
+    "package": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+    "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76"
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",
@@ -180,11 +181,37 @@
     "treatAllLiveTapeAsGated": true,
     "liveTape": {
       "url": "https://block10.grok.me",
-      "rule": "Every trade shown on the live tape counts as gated. Classification uses RouteRecorded, ExternalCetusRouteAttested, or equivalent \u2014 never a ban/reject of tape volume.",
-      "ungatedCetusBtenVolume": "auto-attest via bten::attest_external_cetus_route so aggregator/direct Cetus legs on registered BTEN pools appear and count as gated",
-      "exampleUngatedAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h"
+      "rule": "Every trade shown on the live tape counts as gated. Classification uses RouteRecorded, ExternalCetusRouteAttested, pending/completed external attestation, or treatAllLiveTapeAsGated \u2014 never a ban/reject of tape volume, and never an ungated tape label.",
+      "ungatedCetusBtenVolume": "auto-attest via bten::attest_external_cetus_route so aggregator/direct Cetus legs on registered BTEN pools appear and count as gated (tape label remains gated even before attestation completes)",
+      "exampleUngatedAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
+      "liveTapeClassification": "gated",
+      "neverLabelUngated": true,
+      "routeRecordedAbsenceDoesNotUngate": true,
+      "registeredBtenPoolVolumeWithoutRouteRecorded": "gated",
+      "externalCetusBtenVolume": "auto-attest via bten::attest_external_cetus_route so aggregator/direct Cetus legs on registered BTEN pools appear and count as gated (tape label remains gated even before attestation completes)",
+      "exampleAggregatorDigests": [
+        "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
+        "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
+      ],
+      "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
+      "exampleExternalAggregatorDigest": "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
     },
-    "rule": "Block10 treats all live-tape trades as gated. Do not block or forbid transactions. Prefer BTEN package adapters for dapp-built flows; external Cetus/aggregator volume on registered BTEN pools is gated by external attestation (one receipt per digest)."
+    "rule": "Block10 treats all live-tape trades as gated. Do not block or forbid transactions. Prefer BTEN package adapters for dapp-built flows; external Cetus/aggregator volume on registered BTEN pools is gated by external attestation (one receipt per digest). Never label a live-tape row as ungated based on missing RouteRecorded.",
+    "liveTapeClassification": {
+      "everyLiveTapeRow": "gated",
+      "neverLabel": "ungated",
+      "routeRecordedRequiredForTapeLabel": false,
+      "missingRouteRecordedDoesNotMeanUngated": true,
+      "registeredBtenCetusPoolWithoutRouteRecorded": "gated",
+      "attestationStatus": {
+        "withRouteRecorded": "gated",
+        "withExternalCetusRouteAttested": "gated",
+        "pendingExternalAttestation": "gated",
+        "completedExternalAttestation": "gated",
+        "aggregatorOrDirectCetusOnRegisteredBtenPool": "gated"
+      },
+      "note": "Every row on the block10.grok.me live tape is classified as gated. Presence or absence of RouteRecorded must never flip the tape label to ungated. Routes that touch registered BTEN Cetus pools without RouteRecorded remain gated (pending or completed external attestation)."
+    }
   },
   "package": {
     "id": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
