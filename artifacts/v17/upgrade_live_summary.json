@@ -1,0 +1,15 @@
+{
+  "status": "executed",
+  "fromVersion": 16,
+  "toVersion": 17,
+  "previousPackage": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
+  "newPackage": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "packageDigest": "B6HKoc8FX2xRvDmEL3Pbx4vhSFgoG12oe3VoSKmVndS3",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
+  "gasMist": 207505340,
+  "gasSui": 0.207505,
+  "checkpoint": 322288471,
+  "executedAt": "2026-09-13",
+  "gitBefore": "d30df5d"
+}

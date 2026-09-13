@@ -1,6 +1,6 @@
 ﻿# BTEN v17 scope
 
-Target: mainnet package version 17. Live chain remains v16 until upgrade.
+Target: mainnet package version 17. **Live as of upgrade tx 3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8** → 0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e.
 
 ## Included
 
@@ -23,7 +23,8 @@ Reads GitHub `main` configs. After merge/push, refresh the Grok dapp so it picks
 ## Publish checklist
 
 - [ ] `sui move test` / build with `--dependencies-are-root`
-- [x] Dry-run upgrade (V17_UPGRADE_DRY_RUN.md) — success, not executed
+- [x] Dry-run upgrade (V17_UPGRADE_DRY_RUN.md)
+- [x] **Mainnet upgrade executed** — see V17_UPGRADE_RESULT.md
 - [ ] Small-value mainnet proofs (single hop, composable seal, via_bten, rebate)
 - [ ] Sponsor authorizer live with caps
 - [x] Turbos interface vendored/adapters wired; [ ] at least one Turbos pool registered

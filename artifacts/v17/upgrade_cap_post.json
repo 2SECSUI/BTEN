@@ -1,0 +1,17 @@
+﻿{
+  "objectId": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "version": 18,
+  "digest": "CNKBSpgWVZb1vKFV51Nqyng32MLEDjcMQQu11x7MyndU",
+  "objType": "0x0000000000000000000000000000000000000000000000000000000000000002::package::UpgradeCap",
+  "owner": {
+    "AddressOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+  },
+  "prevTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
+  "storageRebate": 1634000,
+  "content": {
+    "id": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "package": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+    "policy": 0.0,
+    "version": "17"
+  }
+}

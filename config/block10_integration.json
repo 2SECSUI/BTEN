@@ -155,5 +155,16 @@
   "gatePolicy": {
     "allDappTransactionsBtenGated": true,
     "rule": "Block10 never executes an ungated swap/rebalance for managed flow. All value-moving txs are BTEN-gated with min-out and one receipt per finished route."
-  }
+  },
+  "package": {
+    "id": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+    "version": 17,
+    "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
+    "previousId": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41"
+  },
+  "status": "live",
+  "packageStatus": "v17-live",
+  "livePackageVersion": 17,
+  "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8"
 }
