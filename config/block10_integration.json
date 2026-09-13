@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
-  "publishedVersion": 17,
+  "currentPackage": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "publishedVersion": 18,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -102,20 +102,22 @@
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
     "dappRequirement": "Live-tape trades through registered Cetus BTEN pools count as gated once ExternalCetusRouteAttested (or RouteRecorded) exists. Attestation is inclusion, not rejection.",
-    "liveTapeRule": "treatAllLiveTapeAsGated"
+    "liveTapeRule": "treatAllLiveTapeAsGated",
+    "enabled": true,
+    "paused": false
   },
   "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there.",
   "pendingPackageVersion": 18,
-  "v17Status": "live",
+  "v17Status": "superseded-by-v18",
   "sponsorship": {
     "enabled": true,
     "policyFile": "config/sponsor_policy.json",
-    "status": "v17-enabled-capped",
+    "status": "v18-enabled-capped",
     "fallback": "user-pays-gas"
   },
   "managedRebalance": {
     "policyFile": "config/managed_rebalance_policy.json",
-    "status": "v18-move-scaffold",
+    "status": "live",
     "dappPages": [
       "Manage",
       "Import position",
@@ -139,11 +141,16 @@
       "operatorReturn": "bten::operator_return_position",
       "settleExit": "bten::settle_exit_with_coins"
     },
-    "pendingPackage": "deploy ManagedVault with next upgrade after dry-run"
+    "enabled": true,
+    "state": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
+    "operatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
+    "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
+    "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9",
+    "package": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098"
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",
-    "status": "adapters-wired",
+    "status": "ready-for-use",
     "vendorRef": "mainnet-v0.1.8",
     "entrypoints": {
       "assetToBtenSecond": "bten::turbos_swap_to_bten",
@@ -153,7 +160,8 @@
       "assetToBtenSecondReturn": "bten::turbos_swap_to_bten_return",
       "btenToAssetSecondReturn": "bten::turbos_swap_from_bten_return"
     },
-    "note": "Gated Turbos entry + composable return adapters compile against vendored stubs; register pools before routing."
+    "note": "Gated Turbos adapters live; v18 register_additional_pool is ready-for-use. Register a Turbos BTEN pool (bucket=3) before routing.",
+    "registerAdditionalPool": "ready-for-use"
   },
   "productGoals": {
     "involveBtenWhenCheaper": true,
@@ -179,19 +187,24 @@
     "rule": "Block10 treats all live-tape trades as gated. Do not block or forbid transactions. Prefer BTEN package adapters for dapp-built flows; external Cetus/aggregator volume on registered BTEN pools is gated by external attestation (one receipt per digest)."
   },
   "package": {
-    "id": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
-    "version": 17,
-    "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
-    "previousId": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41"
+    "id": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+    "version": 18,
+    "upgradeTx": "3gBGpjAa9hxJGpSo8mcSAwjr5hTyrBDXzmgkuWtRSQDR",
+    "previousId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+    "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "upgradeCapPolicy": "compatible",
+    "stillUpgradeable": true
   },
   "status": "live",
-  "packageStatus": "v17-live",
-  "livePackageVersion": 17,
-  "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
-  "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
+  "packageStatus": "v18-live",
+  "livePackageVersion": 18,
+  "livePackageId": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "upgradeTx": "3gBGpjAa9hxJGpSo8mcSAwjr5hTyrBDXzmgkuWtRSQDR",
   "magmaBluefinAdapters": {
     "planFile": "config/magma_bluefin_adapter_plan.json",
-    "status": "plan-only-no-vendor-interfaces-in-repo",
-    "note": "Magma BTEN pairs already trade on Cetus registered pools; Bluefin gated adapters wait on a vendored interface + register_additional_pool."
-  }
+    "status": "register_additional_pool-ready-native-adapters-plan-only",
+    "note": "v18 register_additional_pool is live (bucket=2 Bluefin, Magma stays on attested Cetus). Native Magma/Bluefin CLMM adapters still wait on vendor interfaces.",
+    "registerAdditionalPool": "ready-for-use"
+  },
+  "v18Status": "live"
 }

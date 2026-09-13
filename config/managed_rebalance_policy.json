@@ -1,7 +1,7 @@
 {
   "product": "Block10 Managed Rebalance Vaults",
   "dapp": "https://block10.grok.me",
-  "status": "v18-move-scaffold",
+  "status": "live",
   "network": "mainnet",
   "summary": "Users import any Cetus LP position (any pool/pair). Block10 rebalances; 2% of per-asset realized profit above import basis goes to ops wallets.",
   "fee": {
@@ -67,7 +67,7 @@
     "configFile": "config/managed_rebalance_policy.json",
     "integrationKey": "managedRebalance"
   },
-  "onChainStatus": "ManagedVaultState + ManagedEnrollment in package source; deploy with next upgrade (v18).",
+  "onChainStatus": "live",
   "gatePolicy": {
     "allTransactionsBtenGated": true,
     "blockTransactions": false,
@@ -117,5 +117,12 @@
     "operatorTake": "bten::operator_take_position",
     "operatorReturn": "bten::operator_return_position",
     "settleExit": "bten::settle_exit_with_coins"
-  }
+  },
+  "enabled": true,
+  "package": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "managedVaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
+  "managedVaultOperatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
+  "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
+  "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9",
+  "opsWallet": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
 }

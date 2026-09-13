@@ -1,5 +1,5 @@
-﻿{
-  "status": "v17-enabled-capped",
+{
+  "status": "v18-enabled-capped",
   "network": "mainnet",
   "enabled": true,
   "provider": "cetus-self-hosted",

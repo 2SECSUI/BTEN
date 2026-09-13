@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v17-live-cetus-proofed",
-  "publishedVersion": 17,
-  "currentPackage": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "status": "v18-live",
+  "publishedVersion": 18,
+  "currentPackage": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -56,8 +56,9 @@
       "name": "turbos",
       "enabled": false,
       "pools": [],
-      "status": "adapters-wired-awaiting-register_additional_pool",
-      "note": "Move adapters live in v17. PoolRegistry is finalized; v18 register_additional_pool enables post-finalize Turbos/Bluefin/Haedal (and new Cetus) registrations."
+      "status": "ready-for-use",
+      "note": "v18 register_additional_pool is live. Adapters wired. Register a Turbos BTEN pool (bucket=3) then set enabled=true.",
+      "registerAdditionalPool": "ready-for-use"
     }
   ],
   "eligibility": {
@@ -69,7 +70,7 @@
     "enabled": true,
     "provider": "cetus-self-hosted",
     "policyFile": "config/sponsor_policy.json",
-    "status": "v17-enabled-capped",
+    "status": "v18-enabled-capped",
     "requiresEligibleRoute": true,
     "requiresPerSwapAndDailyCaps": true
   },
@@ -94,15 +95,18 @@
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
     "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The public reader scans successful transactions affecting registered BTEN Cetus pools after activation, validates the Cetus SwapEvent and sender, skips routes already RouteRecorded on-chain, normalizes digest keys to base64 for GraphQL/on-chain comparison, uses one fixed point and one receipt per digest (including multi-pool aggregator PTBs), and stays within the on-chain daily cap. Attestation includes volume on the live tape as gated \u2014 it does not block transactions.",
-    "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+    "livePackageId": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
+      "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098::bten::ExternalCetusRouteAttested",
       "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
       "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested"
     ],
     "liveTapeRule": "Ungated Cetus/aggregator volume that hits registered BTEN pools must be attested so the live tape treats it as gated. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
     "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
-    "attestationKeyFormat": "base64(32-byte-digest):event_sequence"
+    "attestationKeyFormat": "base64(32-byte-digest):event_sequence",
+    "paused": false,
+    "enabled": true
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -222,7 +226,7 @@
     "managedRebalancePolicy": "config/managed_rebalance_policy.json",
     "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   },
-  "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
+  "upgradeTx": "3gBGpjAa9hxJGpSo8mcSAwjr5hTyrBDXzmgkuWtRSQDR",
   "v17Proofs": {
     "cetusSuiToBten": {
       "tx": "2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw",
@@ -233,20 +237,39 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "livePackageId": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
+  "previousPackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
   "v18": {
-    "pendingPackageVersion": 18,
-    "registerAdditionalPool": true,
-    "managedVault": "already in source at 3cabeb7; deploy with upgrade",
+    "live": true,
+    "packageVersion": 18,
+    "packageId": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+    "upgradeTx": "3gBGpjAa9hxJGpSo8mcSAwjr5hTyrBDXzmgkuWtRSQDR",
+    "registerAdditionalPool": "ready-for-use",
+    "managedVault": {
+      "status": "live",
+      "state": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
+      "operatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
+      "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
+      "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9"
+    },
     "magmaBluefinAdapterPlan": "config/magma_bluefin_adapter_plan.json",
-    "liveTape": "treatAllLiveTapeAsGated"
+    "liveTape": "treatAllLiveTapeAsGated",
+    "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable"
   },
   "liveTape": {
     "treatAllLiveTapeAsGated": true,
     "blockTransactions": false,
     "dapp": "https://block10.grok.me",
     "rule": "Every trade on the live tape is classified/counted as gated via RouteRecorded or ExternalCetusRouteAttested (or equivalent)."
+  },
+  "managedRebalance": {
+    "enabled": true,
+    "status": "live",
+    "state": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
+    "operatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
+    "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
+    "policyFile": "config/managed_rebalance_policy.json"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "status": "adapters-wired-awaiting-register_additional_pool",
+  "status": "ready-for-use",
   "vendor": {
     "source": "turbos-finance/turbos-sui-move-interface",
     "ref": "mainnet-v0.1.8",
@@ -20,9 +20,12 @@
   },
   "registryBucket": 3,
   "next": [
-    "Upgrade with register_additional_pool",
     "Create/find Turbos BTEN pair pool",
-    "Register pool bucket=3 via register_additional_pool and smoke turbos_swap_to_bten"
+    "Register pool bucket=3 via bten::register_additional_pool",
+    "Smoke turbos_swap_to_bten"
   ],
-  "blocker": "PoolRegistry finalized=true; v18 register_additional_pool removes the need to reopen bootstrap register_pool."
+  "blocker": null,
+  "registerAdditionalPool": "ready-for-use",
+  "package": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "note": "v18 live. register_additional_pool ready-for-use. No Turbos BTEN pool registered yet."
 }
