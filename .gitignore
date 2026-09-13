@@ -16,3 +16,5 @@ secrets/
 monitoring/live/
 
 tools/
+
+composable_test_out.txt

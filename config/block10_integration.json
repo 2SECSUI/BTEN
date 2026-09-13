@@ -115,7 +115,10 @@
       "Import position",
       "Performance"
     ],
-    "summary": "Users import BTEN-pair pools; Block10 rebalances; 2% of realized profits to protocol."
+    "summary": "Import BTEN-pair pools; rebalance only on BTEN-gated routes; importers share BTEN LP rewards; protocol takes 2% of realized profits.",
+    "importedPoolsEarnBtenLpRewards": true,
+    "lpRewardShare": true,
+    "allTransactionsBtenGated": true
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",
@@ -124,7 +127,13 @@
   },
   "productGoals": {
     "involveBtenWhenCheaper": true,
+    "allTransactionsBtenGated": true,
     "tinyCutToBtenLpPools": true,
+    "importedPoolsShareBtenLpRewards": true,
     "managedVaultsProfitShareBps": 200
+  },
+  "gatePolicy": {
+    "allDappTransactionsBtenGated": true,
+    "rule": "Block10 never executes an ungated swap/rebalance for managed flow. All value-moving txs are BTEN-gated with min-out and one receipt per finished route."
   }
 }

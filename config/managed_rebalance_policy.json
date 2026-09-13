@@ -1,28 +1,38 @@
-﻿{
+{
   "product": "Block10 Managed Rebalance Vaults",
   "dapp": "https://block10.grok.me",
   "status": "v17-specified",
   "network": "mainnet",
-  "summary": "Users import Cetus BTEN-pair positions (or create them). Block10/BTEN operators rebalance for net-cheaper inventory and route depth. Protocol takes 2% of realized profits only.",
+  "summary": "Users import Cetus BTEN-pair positions. Block10 rebalances only via BTEN-gated routes. Enrolled positions earn a share of BTEN LP rewards. Protocol takes 2% of realized profits only.",
   "fee": {
     "profitShareBps": 200,
     "basis": "realized_profit_only",
     "definition": "Profit = USD value withdrawn or compounded above the user's imported cost basis for that position. No fee on principal. Fee is taken in the profit asset(s) at harvest/rebalance settle.",
     "recipient": "BTEN protocol treasury / BTEN LP support per distribution_destinations.json",
-    "neverFee": ["imported_principal", "unrealized_mark_to_market_only"]
+    "neverFee": [
+      "imported_principal",
+      "unrealized_mark_to_market_only"
+    ]
   },
   "userFlow": {
     "import": "Wallet-sign transfer or share of an eligible Cetus BTEN-pair position NFT / position object into the managed programme.",
     "create": "Optional: open a new in-range or adjacent BTEN pair position and enroll it.",
     "rebalance": "Operator/daemon may withdraw OOR, swap with min-out guards, and redeposit in-range using the same safety rules as bten_lp_rebalance_daemon.mjs.",
-    "withdraw": "User can exit; accrued 2% fee is settled on realized profit before return of remainder."
+    "withdraw": "User can exit; accrued 2% fee is settled on realized profit before return of remainder.",
+    "rewards": "While enrolled, position liquidity accrues a share of BTEN LP rewards from settled gated volume; claim/auto-pay follows programme rules. Exit settles the 2% realized-profit fee, then returns remainder."
   },
   "eligibility": {
     "requireBtenPair": true,
     "requireRegisteredCetusPool": true,
-    "excludePairs": ["BTEN/vSUI"],
-    "venues": ["cetus"],
-    "futureVenues": ["turbos"]
+    "excludePairs": [
+      "BTEN/vSUI"
+    ],
+    "venues": [
+      "cetus"
+    ],
+    "futureVenues": [
+      "turbos"
+    ]
   },
   "operator": {
     "rebalancer": "laptop/bten_lp_rebalance_daemon.mjs pattern extended to enrolled user positions",
@@ -34,10 +44,44 @@
     }
   },
   "dappRequirements": {
-    "pages": ["Manage", "Import position", "Performance / profit & fee"],
-    "mustShow": ["cost basis", "current value", "realized profit", "2% fee accrued", "net user equity"],
+    "pages": [
+      "Manage",
+      "Import position",
+      "Performance / profit & fee"
+    ],
+    "mustShow": [
+      "cost basis",
+      "current value",
+      "realized profit",
+      "2% fee accrued",
+      "net user equity",
+      "BTEN LP reward share accrued",
+      "gate status (BTEN-gated only)"
+    ],
     "configFile": "config/managed_rebalance_policy.json",
     "integrationKey": "managedRebalance"
   },
-  "onChainStatus": "policy-first; Move vault escrow/fee settlement ships with v17 programme objects when enrolled positions require trust-minimised custody"
+  "onChainStatus": "policy-first; Move vault escrow/fee settlement ships with v17 programme objects when enrolled positions require trust-minimised custody",
+  "gatePolicy": {
+    "allTransactionsBtenGated": true,
+    "rule": "Every user action on Block10 that moves value (swap, rebalance hop, harvest, enroll, withdraw settle) must use a protected BTEN-gated path with min-out and one receipt per finished route. No ungated DEX shortcut for managed-vault flow.",
+    "allowedPaths": [
+      "cetus entry adapters",
+      "cetus via_bten / rebate",
+      "composable open -> *_return hops -> seal_composable_route",
+      "future turbos adapters with the same seal rule"
+    ],
+    "forbidden": [
+      "direct non-BTEN venue execution from Block10 managed flow",
+      "unsigned operator swaps without gate receipt"
+    ]
+  },
+  "lpRewards": {
+    "importedPoolsShareBtenLpRewards": true,
+    "source": "BTEN LP allocation from settled blocks (EmissionState bten_lp / LpProgramState)",
+    "rule": "Users who enroll/import eligible BTEN-pair positions receive a proportional share of BTEN LP rewards while enrolled, weighted by eligible programme liquidity.",
+    "protocolProfitFeeBps": 200,
+    "feeDoesNotReplaceLpShare": true,
+    "note": "2% realized-profit fee is separate from LP reward share. Importers keep LP reward eligibility; protocol takes 2% of realized rebalance profits only."
+  }
 }
