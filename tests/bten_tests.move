@@ -379,4 +379,71 @@ module bten::bten_tests {
         };
         scenario.end();
     }
+
+    #[test]
+    fun composable_route_seals_once_for_accrued_hops() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let clock = scenario.take_shared<Clock>();
+            let mut ticket = bten::open_composable_route(scenario.ctx());
+            assert!(bten::composable_route_paid_points(&ticket) == 0, 100);
+            // Two hops accrue points; sealing must mint exactly one gate receipt.
+            bten::accrue_composable_route_for_testing(&mut ticket, 10, scenario.ctx());
+            bten::accrue_composable_route_for_testing(&mut ticket, 25, scenario.ctx());
+            assert!(bten::composable_route_paid_points(&ticket) == 35, 101);
+            assert!(bten::batch_trades(&state) == 0, 102);
+            bten::seal_composable_route(&mut state, ticket, &clock, scenario.ctx());
+            assert!(bten::batch_trades(&state) == 1, 103);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 14)]
+    fun composable_route_seal_rejects_zero_accrual() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let clock = scenario.take_shared<Clock>();
+            let ticket = bten::open_composable_route(scenario.ctx());
+            bten::seal_composable_route(&mut state, ticket, &clock, scenario.ctx());
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 37)]
+    fun composable_route_seal_rejects_foreign_trader() {
+        let admin = @0xA;
+        let other = @0xB;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let clock = scenario.take_shared<Clock>();
+            // Pre-accrued ticket owned by other; admin cannot seal it.
+            let mut ticket = bten::open_composable_route_as_for_testing(other);
+            bten::force_accrue_composable_route_for_testing(&mut ticket, 7);
+            bten::seal_composable_route(&mut state, ticket, &clock, scenario.ctx());
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
 }

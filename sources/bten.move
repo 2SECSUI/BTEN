@@ -977,6 +977,37 @@ module bten::bten {
         record_atomic_route(state, fee_points, clock, tx_context::sender(ctx));
     }
 
+    #[test_only]
+    public fun open_composable_route_as_for_testing(trader: address): ComposableRouteTicket {
+        ComposableRouteTicket { trader, paid_points: 0 }
+    }
+
+    #[test_only]
+    public fun accrue_composable_route_for_testing(
+        ticket: &mut ComposableRouteTicket,
+        paid: u64,
+        ctx: &TxContext,
+    ) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
+        assert!(paid > 0, E_ZERO_INPUT);
+        ticket.paid_points = ticket.paid_points + paid;
+    }
+
+    #[test_only]
+    public fun force_accrue_composable_route_for_testing(ticket: &mut ComposableRouteTicket, paid: u64) {
+        ticket.paid_points = ticket.paid_points + paid;
+    }
+
+    #[test_only]
+    public fun composable_route_paid_points(ticket: &ComposableRouteTicket): u64 {
+        ticket.paid_points
+    }
+
+    #[test_only]
+    public fun destroy_composable_route_for_testing(ticket: ComposableRouteTicket) {
+        let ComposableRouteTicket { trader: _, paid_points: _ } = ticket;
+    }
+
     /// The Bitcoin-style genesis block: 50 BTEN is available to bootstrap
     /// routing and liquidity before any trade-gated ten-minute block is due.
     /// It occupies height zero, so it is included in the fixed emission cap.

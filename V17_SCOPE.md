@@ -29,3 +29,9 @@ Reads GitHub `main` configs. After merge/push, refresh the Grok dapp so it picks
 - [ ] Turbos interface vendored + at least one pool registered
 - [ ] Verification zip + Published.toml version 17
 - [ ] Push configs to `2SECSUI/BTEN` main for the live dapp
+
+## Managed vaults (confirmed)
+
+- **All Block10 / managed-vault transactions are BTEN-gated** (protected adapters or composable seal; no ungated shortcuts).
+- **Imported pools share BTEN LP rewards** while enrolled (separate from the **2% realized-profit** protocol fee).
+
