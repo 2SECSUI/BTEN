@@ -1,0 +1,35 @@
+﻿{
+  "status": "v17-enabled-capped",
+  "network": "mainnet",
+  "enabled": true,
+  "provider": "cetus-self-hosted",
+  "sponsorWallet": "from FeeSubsidyState.sponsor / ops-configured sponsor",
+  "eligibility": {
+    "requireBtenPath": true,
+    "requireRegisteredPool": true,
+    "requireNetCheaperThanDirectBps": 1,
+    "requireAtomicMinimumOutput": true,
+    "allowedEntrypoints": [
+      "bten::cetus_swap_to_bten",
+      "bten::cetus_swap_from_bten",
+      "bten::cetus_swap_to_bten_b2a",
+      "bten::cetus_swap_from_bten_a2b",
+      "bten::cetus_sui_to_asset_via_bten_a2b",
+      "bten::cetus_sui_to_asset_via_bten_b2a",
+      "bten::cetus_sui_to_asset_via_bten_rebate_a2b",
+      "bten::cetus_sui_to_asset_via_bten_rebate_b2a",
+      "bten::seal_composable_route"
+    ]
+  },
+  "caps": {
+    "perSwapSuiMist": "50000000",
+    "dailySuiMist": "2000000000",
+    "refillFromRouteReserve": true,
+    "refillEntrypoint": "bten::refill_sponsor_from_route_reserve"
+  },
+  "authorizer": {
+    "script": "scripts/sponsor_authorizer.mjs",
+    "rule": "Accept only structured attestations for protected registered BTEN routes. Never accept raw arbitrary bytes. Never expose the sponsor key to the dapp."
+  },
+  "dappRule": "Sponsorship is optional. User-paid gas remains the default fallback. Block10 may request sponsorship only when the selected path is BTEN-gated and net-cheaper."
+}

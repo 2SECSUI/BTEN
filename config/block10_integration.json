@@ -15,15 +15,17 @@
   "walletPolicy": {
     "requiresWalletSignature": true,
     "userPaysGas": true,
-    "sponsorshipEnabled": false,
-    "neverEmbedPrivateKeys": true
+    "sponsorshipEnabled": true,
+    "neverEmbedPrivateKeys": true,
+    "sponsorshipPolicyFile": "config/sponsor_policy.json"
   },
   "routePolicy": {
     "minimumNetImprovementBps": 1,
     "requireBtenLeg": true,
     "oneReceiptPerCompletedAtomicRoute": true,
     "requireMinimumOutput": true,
-    "currentScope": "direct registered Cetus BTEN pairs only until the reviewed two-hop upgrade is deployed"
+    "currentScope": "direct Cetus BTEN pairs + atomic via_bten multi-hop + composable return hops sealed once; Turbos adapters included in v17 plan",
+    "composableReceiptRule": "open_composable_route -> one or more *_return hops -> seal_composable_route once"
   },
   "routeSelection": {
     "compareDirectAndBtenPaths": true,
@@ -37,7 +39,12 @@
       "package": "aftermath-ts-sdk",
       "script": "scripts/aftermath_router_quote.mjs",
       "rule": "Use it as an independent direct-route comparator only. Never execute its built transaction for a BTEN-gated route."
-    }
+    },
+    "compareVenues": [
+      "cetus-direct",
+      "cetus-bten",
+      "turbos-bten-when-live"
+    ]
   },
   "routeRebate": {
     "policyFile": "config/route_rebate_policy.json",
@@ -58,13 +65,22 @@
     "btenToAssetSecond": "bten::cetus_swap_from_bten",
     "assetToBtenFirst": "bten::cetus_swap_to_bten_b2a",
     "btenToAssetFirst": "bten::cetus_swap_from_bten_a2b",
-    "suiToAssetViaBtenFirst": "bten::cetus_sui_to_asset_via_bten_a2b (pending reviewed upgrade)",
-    "suiToAssetViaBtenSecond": "bten::cetus_sui_to_asset_via_bten_b2a (pending reviewed upgrade)",
-    "suiToAssetViaBtenRebateFirst": "bten::cetus_sui_to_asset_via_bten_rebate_a2b (source-only; pending audit and mainnet upgrade)",
-    "suiToAssetViaBtenRebateSecond": "bten::cetus_sui_to_asset_via_bten_rebate_b2a (source-only; pending audit and mainnet upgrade)"
+    "suiToAssetViaBtenFirst": "bten::cetus_sui_to_asset_via_bten_a2b",
+    "suiToAssetViaBtenSecond": "bten::cetus_sui_to_asset_via_bten_b2a",
+    "suiToAssetViaBtenRebateFirst": "bten::cetus_sui_to_asset_via_bten_rebate_a2b",
+    "suiToAssetViaBtenRebateSecond": "bten::cetus_sui_to_asset_via_bten_rebate_b2a",
+    "openComposableRoute": "bten::open_composable_route",
+    "sealComposableRoute": "bten::seal_composable_route",
+    "assetToBtenSecondReturn": "bten::cetus_swap_to_bten_return",
+    "btenToAssetSecondReturn": "bten::cetus_swap_from_bten_return",
+    "assetToBtenFirstReturn": "bten::cetus_swap_to_bten_b2a_return",
+    "btenToAssetFirstReturn": "bten::cetus_swap_from_bten_a2b_return"
   },
   "protocolLiquidity": {
-    "entrypoints": ["bten::deploy_protocol_liquidity_out_of_range_a", "bten::deploy_protocol_liquidity_out_of_range_b"],
+    "entrypoints": [
+      "bten::deploy_protocol_liquidity_out_of_range_a",
+      "bten::deploy_protocol_liquidity_out_of_range_b"
+    ],
     "policy": "BTEN-only positions are opened immediately adjacent to the live price. The Move call aborts atomically unless the paired asset quote is exactly zero.",
     "allocationSource": "MAINNET_ROUTE_CONFIG.json#protocolLiquidity.positions",
     "operator": "The ops wallet owns the Cetus position objects; this is not a user-facing deposit flow."
@@ -76,9 +92,39 @@
   },
   "externalCetusGate": {
     "entrypoint": "bten::attest_external_cetus_route",
-    "status": "configured-but-paused",
+    "status": "active-public-event-reader",
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
+    "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
     "dappRequirement": "Never claim an arbitrary Cetus swap counted until the public verifier log and on-chain attestation event both exist."
   },
-  "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there."
+  "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there.",
+  "pendingPackageVersion": 17,
+  "v17Status": "source-ready-pending-mainnet-upgrade",
+  "sponsorship": {
+    "enabled": true,
+    "policyFile": "config/sponsor_policy.json",
+    "status": "v17-enabled-capped",
+    "fallback": "user-pays-gas"
+  },
+  "managedRebalance": {
+    "policyFile": "config/managed_rebalance_policy.json",
+    "status": "v17-specified",
+    "profitFeeBps": 200,
+    "dappPages": [
+      "Manage",
+      "Import position",
+      "Performance"
+    ],
+    "summary": "Users import BTEN-pair pools; Block10 rebalances; 2% of realized profits to protocol."
+  },
+  "turbosAdapters": {
+    "planFile": "config/turbos_adapter_plan.json",
+    "status": "v17-included",
+    "note": "Move flash-swap adapters ship with vendored Turbos CLMM interface in the v17 upgrade bundle."
+  },
+  "productGoals": {
+    "involveBtenWhenCheaper": true,
+    "tinyCutToBtenLpPools": true,
+    "managedVaultsProfitShareBps": 200
+  }
 }

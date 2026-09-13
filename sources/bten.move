@@ -111,6 +111,7 @@ module bten::bten {
     const E_FARM_STAKE: u64 = 34;
     const E_REBATE_STATE_CONFIG: u64 = 35;
     const E_REBATE_CAP: u64 = 36;
+    const E_COMPOSABLE_ROUTE: u64 = 37;
 
     public struct BTEN has drop {}
 
@@ -130,6 +131,14 @@ module bten::bten {
     /// It grants no authority over upgrades, minting, LP positions, treasury
     /// balances, registry entries, or user coins.
     public struct ExternalRouteVerifierCap has key, store { id: UID }
+
+    /// Hot-potato for multi-hop PTBs. Accrues paid route points across
+    /// composable Cetus hops and must be sealed in the same transaction.
+    /// It has no abilities, so it cannot be stored or transferred.
+    public struct ComposableRouteTicket {
+        trader: address,
+        paid_points: u64,
+    }
 
     /// The key is permanently retained after an accepted external event, so a
     /// transaction/event pair can never advance a BTEN gate twice.
@@ -615,16 +624,35 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
-    /// Composable version of the BTEN-second asset -> BTEN adapter. Unlike the
-    /// legacy entrypoint it returns both unused input and swap output to the
-    /// programmable transaction, allowing a following protected hop to consume
-    /// the BTEN in the same signed transaction. A receipt exists only after
-    /// Cetus repayment and the caller's minimum output check both succeed.
+
+    /// Open a composable multi-hop route ticket for the transaction sender.
+    public fun open_composable_route(ctx: &TxContext): ComposableRouteTicket {
+        ComposableRouteTicket { trader: tx_context::sender(ctx), paid_points: 0 }
+    }
+
+    /// Seal a composable route: exactly one receipt for the full accrued paid points.
+    public fun seal_composable_route(
+        state: &mut EmissionState,
+        ticket: ComposableRouteTicket,
+        clock: &Clock,
+        ctx: &TxContext,
+    ) {
+        let ComposableRouteTicket { trader, paid_points } = ticket;
+        assert!(trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
+        assert!(paid_points > 0, E_ZERO_INPUT);
+        record_atomic_route(state, paid_points, clock, trader);
+    }
+
+    /// Composable asset -> BTEN hop. Accrues paid points into `ticket` and
+    /// returns coins to the PTB. Does not mint a receipt; call
+    /// `seal_composable_route` once after the final hop.
     public fun cetus_swap_to_bten_return<A>(
-        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        registry: &PoolRegistry, config: &GlobalConfig,
         pool: &mut Pool<A, BTEN>, mut input: Coin<A>, min_bten_out: u64,
-        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+        sqrt_price_limit: u128, clock: &Clock,
+        ticket: &mut ComposableRouteTicket, ctx: &mut TxContext,
     ): (Coin<A>, Coin<BTEN>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
         assert_registered_cetus_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -633,17 +661,18 @@ module bten::bten {
         assert!(balance::value(&receive_bten) >= min_bten_out, E_MIN_OUTPUT);
         pool::repay_flash_swap(config, pool, coin::into_balance(coin::split(&mut input, paid, ctx)), balance::zero<BTEN>(), receipt);
         coin::join(&mut input, coin::from_balance(receive_a, ctx));
-        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        ticket.paid_points = ticket.paid_points + paid;
         (input, coin::from_balance(receive_bten, ctx))
     }
 
-    /// Composable BTEN-second BTEN -> asset adapter. The returned BTEN is only
-    /// unspent change; the asset output can be passed to a later PTB command.
+    /// Composable BTEN -> asset hop. Accrues paid points; seal once at the end.
     public fun cetus_swap_from_bten_return<A>(
-        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        registry: &PoolRegistry, config: &GlobalConfig,
         pool: &mut Pool<A, BTEN>, mut input: Coin<BTEN>, min_asset_out: u64,
-        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+        sqrt_price_limit: u128, clock: &Clock,
+        ticket: &mut ComposableRouteTicket, ctx: &mut TxContext,
     ): (Coin<BTEN>, Coin<A>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
         assert_registered_cetus_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -652,16 +681,18 @@ module bten::bten {
         assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
         pool::repay_flash_swap(config, pool, balance::zero<A>(), coin::into_balance(coin::split(&mut input, paid, ctx)), receipt);
         coin::join(&mut input, coin::from_balance(receive_bten, ctx));
-        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        ticket.paid_points = ticket.paid_points + paid;
         (input, coin::from_balance(receive_asset, ctx))
     }
 
-    /// Composable variants for Cetus pools whose canonical order is BTEN/A.
+    /// Composable asset -> BTEN for Pool<BTEN, A>.
     public fun cetus_swap_to_bten_b2a_return<A>(
-        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        registry: &PoolRegistry, config: &GlobalConfig,
         pool: &mut Pool<BTEN, A>, mut input: Coin<A>, min_bten_out: u64,
-        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+        sqrt_price_limit: u128, clock: &Clock,
+        ticket: &mut ComposableRouteTicket, ctx: &mut TxContext,
     ): (Coin<A>, Coin<BTEN>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
         assert_registered_cetus_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -670,15 +701,18 @@ module bten::bten {
         assert!(balance::value(&receive_bten) >= min_bten_out, E_MIN_OUTPUT);
         pool::repay_flash_swap(config, pool, balance::zero<BTEN>(), coin::into_balance(coin::split(&mut input, paid, ctx)), receipt);
         coin::join(&mut input, coin::from_balance(receive_asset, ctx));
-        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        ticket.paid_points = ticket.paid_points + paid;
         (input, coin::from_balance(receive_bten, ctx))
     }
 
+    /// Composable BTEN -> asset for Pool<BTEN, A>.
     public fun cetus_swap_from_bten_a2b_return<A>(
-        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        registry: &PoolRegistry, config: &GlobalConfig,
         pool: &mut Pool<BTEN, A>, mut input: Coin<BTEN>, min_asset_out: u64,
-        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+        sqrt_price_limit: u128, clock: &Clock,
+        ticket: &mut ComposableRouteTicket, ctx: &mut TxContext,
     ): (Coin<BTEN>, Coin<A>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
         assert_registered_cetus_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -687,7 +721,7 @@ module bten::bten {
         assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
         pool::repay_flash_swap(config, pool, coin::into_balance(coin::split(&mut input, paid, ctx)), balance::zero<A>(), receipt);
         coin::join(&mut input, coin::from_balance(receive_bten, ctx));
-        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        ticket.paid_points = ticket.paid_points + paid;
         (input, coin::from_balance(receive_asset, ctx))
     }
 

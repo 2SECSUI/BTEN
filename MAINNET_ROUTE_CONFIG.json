@@ -10,7 +10,11 @@
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
   "poolRegistryFinalized": true,
   "lpProgrammeState": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
-  "lpProgramme": { "finalized": true, "paused": false, "weightTotalBps": 10000 },
+  "lpProgramme": {
+    "finalized": true,
+    "paused": false,
+    "weightTotalBps": 10000
+  },
   "nativeStakingFarm": {
     "state": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
     "activationTransaction": "6gom1GHH29kzVtrmAQuTNvUF2RDSQMqRkjQbg7E4kcut",
@@ -33,8 +37,20 @@
         "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
         "0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427"
       ],
-      "activeTestedPairs": ["BTEN/NAVX", "BTEN/CETUS", "BTEN/MAGMA", "BTEN/DEEP", "BTEN/WAL", "BTEN/NS", "BTEN/USDC", "BTEN/USDT", "BTEN/TURBOS"],
-      "excludedPairs": ["BTEN/vSUI"]
+      "activeTestedPairs": [
+        "BTEN/NAVX",
+        "BTEN/CETUS",
+        "BTEN/MAGMA",
+        "BTEN/DEEP",
+        "BTEN/WAL",
+        "BTEN/NS",
+        "BTEN/USDC",
+        "BTEN/USDT",
+        "BTEN/TURBOS"
+      ],
+      "excludedPairs": [
+        "BTEN/vSUI"
+      ]
     }
   ],
   "eligibility": {
@@ -43,15 +59,21 @@
     "requireAtomicMinimumOutput": true
   },
   "sponsorship": {
-    "enabled": false,
+    "enabled": true,
     "provider": "cetus-self-hosted",
     "policyFile": "config/sponsor_policy.json",
-    "status": "funded-awaiting-whitelisted-sponsor-service",
+    "status": "v17-enabled-capped",
     "requiresEligibleRoute": true,
     "requiresPerSwapAndDailyCaps": true
   },
-  "genesis": { "released": true, "lastSettledBlockHeight": 2 },
-  "feeSubsidy": { "enabled": false, "requiresSuiSponsorBudget": true },
+  "genesis": {
+    "released": true,
+    "lastSettledBlockHeight": 2
+  },
+  "feeSubsidy": {
+    "enabled": false,
+    "requiresSuiSponsorBudget": true
+  },
   "externalCetusVerifier": {
     "entrypoint": "bten::attest_external_cetus_route",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
@@ -78,21 +100,110 @@
   },
   "activationRule": "Protected direct Cetus BTEN routes are wallet-signed and user-paid. V13 allocation accounting is live. One-sided protocol BTEN deposits are restricted to the finalized on-chain allowlist and atomically abort if a selected range needs any paired asset.",
   "protocolLiquidity": {
-    "executor": ["bten::deploy_protocol_liquidity_out_of_range_a", "bten::deploy_protocol_liquidity_out_of_range_b"],
+    "executor": [
+      "bten::deploy_protocol_liquidity_out_of_range_a",
+      "bten::deploy_protocol_liquidity_out_of_range_b"
+    ],
     "allocationPerAllowlistedPoolRaw": "400000000",
     "remainingProgrammeBtenRaw": "0",
     "status": "40 BTEN deployed one-sided across all ten finalized allowlisted pools; positions are owned by the ops wallet and require no paired asset at creation",
     "positions": [
-      {"asset":"SUI","pool":"0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950","position":"0x44df389642f7e74dc7884cceb16eb00d69c9b96d920b135fa533e709be71124b","ticks":[17460,17520]},
-      {"asset":"WAL","pool":"0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7","position":"0xab1f8ae14680253bf6a95079d345c321b1285582b006f10738bcd2d32d259d9b","ticks":[4294917316,4294917376]},
-      {"asset":"NAVX","pool":"0x2eb3cd887c38a20c7d4775a02847f8cbf55f1648bbfe3931420cb06180eb9128","position":"0xc84b9d7ba3bc7ebeb3a02742b7fd618d95c55cee58fd943a0be2f6a518d11545","ticks":[4294906816,4294906876]},
-      {"asset":"CETUS","pool":"0xf6c5df04eb488373c8309b96f0ea187aada7c3b446b3fb6ef5f73f222eaa5f0c","position":"0x3e406ef96f2766d6e183dba9317efb961668a783866c281f73350d0d24079555","ticks":[52200,52260]},
-      {"asset":"MAGMA","pool":"0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6","position":"0x307da8ee81c1790c684a87b09548938a5d2113c52e33e8d95b3c22738293d996","ticks":[4294939396,4294939456]},
-      {"asset":"DEEP","pool":"0x924c998ea2acc2bd1c91377a5d5f6ac1b634037bd05c4ebf67f5ad0d98bad835","position":"0x23ca537836a38ba97f738f25fd657ebfe2ab6929817adf8a3ad977e1d8c9ac4a","ticks":[13440,13500]},
-      {"asset":"NS","pool":"0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c","position":"0x994a941d6bd98dbe957d715d3d906f29bec1e4d5b9e82d25376d3cc8fffdb8ba","ticks":[10320,10380]},
-      {"asset":"USDC","pool":"0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45","position":"0x102a0018f9a933cabcfe8a4a51c709cb65cdae502121b86f8ca710acfaced973","ticks":[55080,55140]},
-      {"asset":"USDT","pool":"0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c","position":"0xc9dbc0db992897495329eb3104e463ff5cb03683f424d05fbdea2e776cd1a3d6","ticks":[55020,55080]},
-      {"asset":"TURBOS","pool":"0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427","position":"0x49ddbb2db1117b616ddc8d1864a09cf348077c8d2adc9747001c1452f0d2c14e","ticks":[4294862716,4294862776]}
+      {
+        "asset": "SUI",
+        "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+        "position": "0x44df389642f7e74dc7884cceb16eb00d69c9b96d920b135fa533e709be71124b",
+        "ticks": [
+          17460,
+          17520
+        ]
+      },
+      {
+        "asset": "WAL",
+        "pool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+        "position": "0xab1f8ae14680253bf6a95079d345c321b1285582b006f10738bcd2d32d259d9b",
+        "ticks": [
+          4294917316,
+          4294917376
+        ]
+      },
+      {
+        "asset": "NAVX",
+        "pool": "0x2eb3cd887c38a20c7d4775a02847f8cbf55f1648bbfe3931420cb06180eb9128",
+        "position": "0xc84b9d7ba3bc7ebeb3a02742b7fd618d95c55cee58fd943a0be2f6a518d11545",
+        "ticks": [
+          4294906816,
+          4294906876
+        ]
+      },
+      {
+        "asset": "CETUS",
+        "pool": "0xf6c5df04eb488373c8309b96f0ea187aada7c3b446b3fb6ef5f73f222eaa5f0c",
+        "position": "0x3e406ef96f2766d6e183dba9317efb961668a783866c281f73350d0d24079555",
+        "ticks": [
+          52200,
+          52260
+        ]
+      },
+      {
+        "asset": "MAGMA",
+        "pool": "0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6",
+        "position": "0x307da8ee81c1790c684a87b09548938a5d2113c52e33e8d95b3c22738293d996",
+        "ticks": [
+          4294939396,
+          4294939456
+        ]
+      },
+      {
+        "asset": "DEEP",
+        "pool": "0x924c998ea2acc2bd1c91377a5d5f6ac1b634037bd05c4ebf67f5ad0d98bad835",
+        "position": "0x23ca537836a38ba97f738f25fd657ebfe2ab6929817adf8a3ad977e1d8c9ac4a",
+        "ticks": [
+          13440,
+          13500
+        ]
+      },
+      {
+        "asset": "NS",
+        "pool": "0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c",
+        "position": "0x994a941d6bd98dbe957d715d3d906f29bec1e4d5b9e82d25376d3cc8fffdb8ba",
+        "ticks": [
+          10320,
+          10380
+        ]
+      },
+      {
+        "asset": "USDC",
+        "pool": "0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45",
+        "position": "0x102a0018f9a933cabcfe8a4a51c709cb65cdae502121b86f8ca710acfaced973",
+        "ticks": [
+          55080,
+          55140
+        ]
+      },
+      {
+        "asset": "USDT",
+        "pool": "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
+        "position": "0xc9dbc0db992897495329eb3104e463ff5cb03683f424d05fbdea2e776cd1a3d6",
+        "ticks": [
+          55020,
+          55080
+        ]
+      },
+      {
+        "asset": "TURBOS",
+        "pool": "0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427",
+        "position": "0x49ddbb2db1117b616ddc8d1864a09cf348077c8d2adc9747001c1452f0d2c14e",
+        "ticks": [
+          4294862716,
+          4294862776
+        ]
+      }
     ]
+  },
+  "v17": {
+    "pendingPackageVersion": 17,
+    "composableRoutes": true,
+    "managedRebalancePolicy": "config/managed_rebalance_policy.json",
+    "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   }
 }
