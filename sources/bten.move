@@ -1314,6 +1314,30 @@ module bten::bten {
         table::add(&mut registry.pools, pool_id, bucket);
     }
 
+    /// Post-finalize venue expansion. Bootstrap setup still uses `register_pool`
+    /// before finalize; after finalize, admins append Turbos / Bluefin / Haedal
+    /// (and new Cetus BTEN-pair) pool IDs without reopening the registry flag.
+    /// Magma BTEN volume today rides registered Cetus pools; dedicated Magma or
+    /// Bluefin CLMM swap adapters are planned in config/magma_bluefin_adapter_plan.json
+    /// once vendor interfaces are vendored (do not invent fake deps here).
+    public fun register_additional_pool(
+        registry: &mut PoolRegistry,
+        _admin: &RegistryAdminCap,
+        pool_id: address,
+        bucket: u8,
+    ) {
+        assert!(bucket <= MAX_BUCKET, E_BAD_BUCKET);
+        assert!(
+            bucket == BUCKET_CETUS
+                || bucket == BUCKET_BLUE
+                || bucket == BUCKET_TURBOS
+                || bucket == BUCKET_HAEDAL,
+            E_BAD_BUCKET
+        );
+        assert!(!table::contains(&registry.pools, pool_id), E_DUPLICATE_POOL);
+        table::add(&mut registry.pools, pool_id, bucket);
+    }
+
     /// One-time setup for the gas-subsidy route. The owner of RegistryAdminCap
     /// sets the immutable sponsor wallet and the exact registered BTEN/SUI
     /// pool. Caps cannot exceed the protocol seed policy.
@@ -1484,10 +1508,14 @@ module bten::bten {
         paused: bool,
     ) { verifier.paused = paused; }
 
-    /// Records one publicly auditable, off-chain verified Cetus SwapEvent.
-    /// The verifier must validate the event against the public Sui RPC before
-    /// calling this function. The contract enforces the registered-pool scope,
-    /// one-time digest/event key, keeper identity, and a rolling daily cap.
+    /// Records one publicly auditable, off-chain verified Cetus SwapEvent so
+    /// live-tape volume counts as gated (ExternalCetusRouteAttested). This is
+    /// an inclusion/attestation path — it does not block transactions.
+    /// Multi-pool aggregator PTBs that touch several registered BTEN pools
+    /// still receive one gate receipt per transaction digest (keeper submits
+    /// once). The verifier must validate the event against public Sui data
+    /// before calling. The contract enforces registered-pool scope, one-time
+    /// digest/event key, keeper identity, and a rolling daily cap.
     public entry fun attest_external_cetus_route(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -2002,8 +2030,9 @@ module bten::bten {
         event::emit(AllocationDelivered { height, bucket, recipient, amount });
     }
 
-    /// Irreversibly blocks new pool registrations. The caller must delete or
-    /// permanently custody RegistryAdminCap after this call.
+    /// Marks the bootstrap registry finalized so `register_pool` cannot add
+    /// more pools. Post-finalize venue expansion uses `register_additional_pool`
+    /// instead. Custody RegistryAdminCap carefully after launch.
     public fun finalize_pool_registry(registry: &mut PoolRegistry, _admin: &RegistryAdminCap) {
         registry.finalized = true;
     }

@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
-  "publishedVersion": 16,
+  "currentPackage": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "publishedVersion": 17,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -32,13 +32,13 @@
     "selectBtenOnlyWhenNetOutputIsHigher": true,
     "minimumNetImprovementBps": 1,
     "quoteIncludesVenueFeePriceImpactAndGas": true,
-    "fallback": "Use the direct Cetus path when BTEN is not net-cheaper.",
+    "fallback": "Compare-only display when a BTEN path is not net-cheaper; live tape still treats every shown trade as gated via RouteRecorded or ExternalCetusRouteAttested.",
     "aftermathSmartOrderRouter": {
       "enabled": true,
       "mode": "quote-only",
       "package": "aftermath-ts-sdk",
       "script": "scripts/aftermath_router_quote.mjs",
-      "rule": "Use it as an independent direct-route comparator only. Never execute its built transaction for a BTEN-gated route."
+      "rule": "Independent direct-route comparator for quotes. Live tape volume through registered BTEN pools is treated as gated via attestation; this helper does not block tape classification."
     },
     "compareVenues": [
       "cetus-direct",
@@ -101,11 +101,12 @@
     "status": "active-public-event-reader",
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
-    "dappRequirement": "Never claim an arbitrary Cetus swap counted until the public verifier log and on-chain attestation event both exist."
+    "dappRequirement": "Live-tape trades through registered Cetus BTEN pools count as gated once ExternalCetusRouteAttested (or RouteRecorded) exists. Attestation is inclusion, not rejection.",
+    "liveTapeRule": "treatAllLiveTapeAsGated"
   },
   "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there.",
-  "pendingPackageVersion": 17,
-  "v17Status": "source-ready-pending-mainnet-upgrade",
+  "pendingPackageVersion": 18,
+  "v17Status": "live",
   "sponsorship": {
     "enabled": true,
     "policyFile": "config/sponsor_policy.json",
@@ -160,11 +161,22 @@
     "tinyCutToBtenLpPools": true,
     "importedPoolsShareBtenLpRewards": true,
     "managedVaultsProfitShareBps": 200,
-    "managedVaultsProfitFeeToOpsWallets": true
+    "managedVaultsProfitFeeToOpsWallets": true,
+    "blockTransactions": false,
+    "treatAllLiveTapeAsGated": true,
+    "note": "Gated means counted/classified on the live tape \u2014 not that external volume is blocked."
   },
   "gatePolicy": {
     "allDappTransactionsBtenGated": true,
-    "rule": "Block10 never executes an ungated swap/rebalance for managed flow. All value-moving txs are BTEN-gated with min-out and one receipt per finished route."
+    "blockTransactions": false,
+    "treatAllLiveTapeAsGated": true,
+    "liveTape": {
+      "url": "https://block10.grok.me",
+      "rule": "Every trade shown on the live tape counts as gated. Classification uses RouteRecorded, ExternalCetusRouteAttested, or equivalent \u2014 never a ban/reject of tape volume.",
+      "ungatedCetusBtenVolume": "auto-attest via bten::attest_external_cetus_route so aggregator/direct Cetus legs on registered BTEN pools appear and count as gated",
+      "exampleUngatedAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h"
+    },
+    "rule": "Block10 treats all live-tape trades as gated. Do not block or forbid transactions. Prefer BTEN package adapters for dapp-built flows; external Cetus/aggregator volume on registered BTEN pools is gated by external attestation (one receipt per digest)."
   },
   "package": {
     "id": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
@@ -176,5 +188,10 @@
   "packageStatus": "v17-live",
   "livePackageVersion": 17,
   "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
-  "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8"
+  "upgradeTx": "3TWJ7ch1DSUTCK65H3MrkdQV3xVpirdKzY4UaEcU3TP8",
+  "magmaBluefinAdapters": {
+    "planFile": "config/magma_bluefin_adapter_plan.json",
+    "status": "plan-only-no-vendor-interfaces-in-repo",
+    "note": "Magma BTEN pairs already trade on Cetus registered pools; Bluefin gated adapters wait on a vendored interface + register_additional_pool."
+  }
 }

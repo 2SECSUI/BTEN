@@ -1,0 +1,37 @@
+{
+  "status": "plan-only-no-vendor-interfaces-in-repo",
+  "updated": "2026-09-13",
+  "liveTapeRule": {
+    "treatAllLiveTapeAsGated": true,
+    "blockTransactions": false,
+    "note": "Magma/Bluefin volume is not banned. Cetus-listed Magma BTEN pools already gate via ExternalCetusRouteAttested; native Magma/Bluefin adapters are future work."
+  },
+  "magma": {
+    "today": "BTEN/MAGMA trades on registered Cetus pool 0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6 and is attested as gated Cetus volume.",
+    "nativeAdapter": "Not in repo — no Magma CLMM Move interface vendored. Do not invent fake dependencies.",
+    "emissionNote": "On-chain magma_vault currently shares BUCKET_TURBOS delivery path (historical naming)."
+  },
+  "bluefin": {
+    "registryBucket": 2,
+    "bucketConstant": "BUCKET_BLUE",
+    "today": "No Bluefin CLMM interface under this repository (.cetus-clmm-interface and .turbos-sui-move-interface only).",
+    "nativeAdapter": "Defer gated swap entrypoints until an official Bluefin declaration interface is vendored, mirroring the Turbos pattern (flash swap + record_atomic_route / composable return).",
+    "registration": "After interface + pool exists, use bten::register_additional_pool with bucket=2."
+  },
+  "haedal": {
+    "registryBucket": 5,
+    "bucketConstant": "BUCKET_HAEDAL",
+    "registration": "Use bten::register_additional_pool with bucket=5 once a BTEN Haedal pool and adapter plan exist."
+  },
+  "turbos": {
+    "registryBucket": 3,
+    "adapters": "Already wired in v17",
+    "registration": "Use bten::register_additional_pool with bucket=3 (PoolRegistry is finalized)."
+  },
+  "next": [
+    "Ship v18 with register_additional_pool",
+    "Register Turbos BTEN pool when available and smoke turbos_swap_*",
+    "Vendor Bluefin interface before adding Move swap entrypoints",
+    "Keep Magma Cetus pool attestation path healthy via scripts/external_cetus_verifier.mjs"
+  ]
+}

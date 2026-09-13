@@ -62,7 +62,7 @@
       "2% fee accrued",
       "net user equity",
       "BTEN LP reward share accrued",
-      "gate status (BTEN-gated only)"
+      "gate status (live tape treats shown trades as gated)"
     ],
     "configFile": "config/managed_rebalance_policy.json",
     "integrationKey": "managedRebalance"
@@ -70,17 +70,17 @@
   "onChainStatus": "ManagedVaultState + ManagedEnrollment in package source; deploy with next upgrade (v18).",
   "gatePolicy": {
     "allTransactionsBtenGated": true,
-    "rule": "Every user action on Block10 that moves value (swap, rebalance hop, harvest, enroll, withdraw settle) must use a protected BTEN-gated path with min-out and one receipt per finished route. No ungated DEX shortcut for managed-vault flow.",
+    "blockTransactions": false,
+    "treatAllLiveTapeAsGated": true,
+    "rule": "Managed-vault value-moving flows prefer protected BTEN-gated adapters with min-out and one receipt per finished route. Live-tape classification treats every shown trade as gated; external Cetus BTEN legs are included via attestation rather than blocked.",
     "allowedPaths": [
       "cetus entry adapters",
       "cetus via_bten / rebate",
       "composable open -> *_return hops -> seal_composable_route",
-      "future turbos adapters with the same seal rule"
+      "turbos adapters with the same seal rule",
+      "external Cetus BTEN pool volume attested via ExternalCetusRouteAttested"
     ],
-    "forbidden": [
-      "direct non-BTEN venue execution from Block10 managed flow",
-      "unsigned operator swaps without gate receipt"
-    ]
+    "notABanList": "This policy does not forbid aggregator or direct Cetus volume from appearing on the live tape; attestation makes ungated legs count as gated."
   },
   "lpRewards": {
     "importedPoolsShareBtenLpRewards": true,

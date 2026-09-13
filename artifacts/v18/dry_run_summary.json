@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "fromVersion": 17,
+  "toVersion": 18,
+  "currentPackage": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "policy": "compatible (0)",
+  "simulatedNewPackageId": "0x269934d77c31c77c0b6ebadd68d0b8d9b2f1a5f5bac8cbc3ce4c8dbfe13a793f",
+  "estimatedGasMist": 237664940,
+  "estimatedGasSui": 0.237665,
+  "toolchain": "sui 1.79.0",
+  "includes": [
+    "ManagedVault (already in tree)",
+    "register_additional_pool post-finalize venue expansion",
+    "attest_external_cetus_route live-tape inclusion comments",
+    "configs: treatAllLiveTapeAsGated / blockTransactions=false",
+    "external_cetus_verifier digest key + live package fixes"
+  ],
+  "magmaBluefinAdapters": "not possible \u2014 no vendor CLMM interfaces in repo; plan at config/magma_bluefin_adapter_plan.json",
+  "liveTapeRule": "treatAllLiveTapeAsGated; ungated Cetus/aggregator BTEN legs attested not blocked",
+  "notExecuted": true,
+  "gitAtDryRun": "3cabeb7",
+  "artifact": "artifacts/v18/upgrade_dry_run_gated.txt"
+}

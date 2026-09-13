@@ -56,8 +56,8 @@
       "name": "turbos",
       "enabled": false,
       "pools": [],
-      "status": "adapters-wired-registry-blocked",
-      "note": "Move adapters live in v17, but PoolRegistry is finalized (11 pools). Need registry reopen/upgrade or pre-registered Turbos pool before smoke."
+      "status": "adapters-wired-awaiting-register_additional_pool",
+      "note": "Move adapters live in v17. PoolRegistry is finalized; v18 register_additional_pool enables post-finalize Turbos/Bluefin/Haedal (and new Cetus) registrations."
     }
   ],
   "eligibility": {
@@ -93,7 +93,16 @@
     "status": "active-public-event-reader",
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
-    "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The public reader scans only successful transactions affecting a frozen BTEN Cetus pool after V14 activation, validates the exact Cetus SwapEvent and sender, skips protected routes already recorded on-chain, uses one fixed point per transaction, and submits at most ten events per run within the on-chain daily cap. The contract cannot independently read historical Cetus events."
+    "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The public reader scans successful transactions affecting registered BTEN Cetus pools after activation, validates the Cetus SwapEvent and sender, skips routes already RouteRecorded on-chain, normalizes digest keys to base64 for GraphQL/on-chain comparison, uses one fixed point and one receipt per digest (including multi-pool aggregator PTBs), and stays within the on-chain daily cap. Attestation includes volume on the live tape as gated \u2014 it does not block transactions.",
+    "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+    "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
+    "eventTypes": [
+      "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
+      "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested"
+    ],
+    "liveTapeRule": "Ungated Cetus/aggregator volume that hits registered BTEN pools must be attested so the live tape treats it as gated. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
+    "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
+    "attestationKeyFormat": "base64(32-byte-digest):event_sequence"
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -223,5 +232,21 @@
       "entry": "bten::cetus_swap_to_bten_b2a",
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
+  },
+  "livePackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
+  "previousPackageId": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
+  "v18": {
+    "pendingPackageVersion": 18,
+    "registerAdditionalPool": true,
+    "managedVault": "already in source at 3cabeb7; deploy with upgrade",
+    "magmaBluefinAdapterPlan": "config/magma_bluefin_adapter_plan.json",
+    "liveTape": "treatAllLiveTapeAsGated"
+  },
+  "liveTape": {
+    "treatAllLiveTapeAsGated": true,
+    "blockTransactions": false,
+    "dapp": "https://block10.grok.me",
+    "rule": "Every trade on the live tape is classified/counted as gated via RouteRecorded or ExternalCetusRouteAttested (or equivalent)."
   }
 }
