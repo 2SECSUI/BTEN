@@ -74,7 +74,13 @@
     "assetToBtenSecondReturn": "bten::cetus_swap_to_bten_return",
     "btenToAssetSecondReturn": "bten::cetus_swap_from_bten_return",
     "assetToBtenFirstReturn": "bten::cetus_swap_to_bten_b2a_return",
-    "btenToAssetFirstReturn": "bten::cetus_swap_from_bten_a2b_return"
+    "btenToAssetFirstReturn": "bten::cetus_swap_from_bten_a2b_return",
+    "turbosAssetToBtenSecond": "bten::turbos_swap_to_bten",
+    "turbosBtenToAssetSecond": "bten::turbos_swap_from_bten",
+    "turbosAssetToBtenFirst": "bten::turbos_swap_to_bten_b_first",
+    "turbosBtenToAssetFirst": "bten::turbos_swap_from_bten_a_first",
+    "turbosAssetToBtenSecondReturn": "bten::turbos_swap_to_bten_return",
+    "turbosBtenToAssetSecondReturn": "bten::turbos_swap_from_bten_return"
   },
   "protocolLiquidity": {
     "entrypoints": [
@@ -126,8 +132,17 @@
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",
-    "status": "v17-included",
-    "note": "Move flash-swap adapters ship with vendored Turbos CLMM interface in the v17 upgrade bundle."
+    "status": "adapters-wired",
+    "vendorRef": "mainnet-v0.1.8",
+    "entrypoints": {
+      "assetToBtenSecond": "bten::turbos_swap_to_bten",
+      "btenToAssetSecond": "bten::turbos_swap_from_bten",
+      "assetToBtenFirst": "bten::turbos_swap_to_bten_b_first",
+      "btenToAssetFirst": "bten::turbos_swap_from_bten_a_first",
+      "assetToBtenSecondReturn": "bten::turbos_swap_to_bten_return",
+      "btenToAssetSecondReturn": "bten::turbos_swap_from_bten_return"
+    },
+    "note": "Gated Turbos entry + composable return adapters compile against vendored stubs; register pools before routing."
   },
   "productGoals": {
     "involveBtenWhenCheaper": true,

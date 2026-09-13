@@ -6,3 +6,5 @@ edition = "2024.beta"
 # Pinned to Cetus's published mainnet interface release. The interface is
 # declaration-only, so builds and publishes must use --dependencies-are-root.
 cetusclmm = { local = ".cetus-clmm-interface/sui/cetus_clmm", override = true }
+# Turbos mainnet interface (turbos-finance/turbos-sui-move-interface @ mainnet-v0.1.8).
+turbos_clmm = { local = ".turbos-sui-move-interface/clmm", override = true }

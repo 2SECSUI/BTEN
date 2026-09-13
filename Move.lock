@@ -28,11 +28,17 @@ use_environment = "mainnet"
 manifest_digest = "CD547CB1ACCE0880C835DAED2D8FFCB91D56C833AE5240D3AA5B918398263195"
 deps = { MoveStdlib = "MoveStdlib" }
 
+[pinned.mainnet.TurbosCLMM]
+source = { local = '.turbos-sui-move-interface\clmm' }
+use_environment = "mainnet"
+manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
+deps = { std = "MoveStdlib", sui = "Sui" }
+
 [pinned.mainnet.bten]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "209ADE6FB907B96C47963901FE048180388170963187B32474BCBB747F6F48B4"
-deps = { cetusclmm = "cetusclmm", std = "MoveStdlib", sui = "Sui" }
+manifest_digest = "650170957EC278B38BA25194C7D948959920710F1EF5F86B73580BC44D773922"
+deps = { cetusclmm = "cetusclmm", std = "MoveStdlib", sui = "Sui", turbos_clmm = "TurbosCLMM" }
 
 [pinned.mainnet.cetusclmm]
 source = { local = '.cetus-clmm-interface\sui\cetus_clmm' }

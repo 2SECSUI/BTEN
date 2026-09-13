@@ -1,23 +1,27 @@
-﻿{
-  "status": "v17-included",
-  "network": "mainnet",
-  "goal": "Mirror Cetus protected adapters on Turbos BTEN pairs so Block10 can pick whichever venue is net-cheaper.",
-  "allocationBucket": "Turbos LP 1% emission bucket (BUCKET_TURBOS)",
-  "plannedEntrypoints": {
-    "assetToBten": "bten::turbos_swap_to_bten",
-    "btenToAsset": "bten::turbos_swap_from_bten",
-    "suiToAssetViaBten": "bten::turbos_sui_to_asset_via_bten",
-    "composableReturn": "bten::turbos_swap_*_return + seal_composable_route"
+{
+  "status": "adapters-wired",
+  "vendor": {
+    "source": "turbos-finance/turbos-sui-move-interface",
+    "ref": "mainnet-v0.1.8",
+    "local": ".turbos-sui-move-interface/clmm",
+    "note": "Move-2024 declaration stubs for local compile; published-at links mainnet package. Full upstream kept locally in sources.bak (not required for build)."
   },
-  "requirements": [
-    "Vendor Turbos CLMM interface as a Move dependency (same pattern as .cetus-clmm-interface)",
-    "Register live Turbos BTEN pools in PoolRegistry with BUCKET_TURBOS",
-    "Enforce min-out, registered pool, one receipt per finished route",
-    "Wire Block10 quotes to compare Cetus vs Turbos vs direct"
-  ],
-  "quoteTooling": {
-    "existing": ["scripts/quote_turbos_route.mjs", "scripts/build_turbos_pool.mjs"],
-    "note": "Quote scripts may live on main; vendoring interface is the Move gate for this slice."
+  "packageAddress": "0x91bfbc386a41afcfd9b2533058d7e915a1d3829089cc268ff4333d54d6339ca1",
+  "publishedAt": "0xa5a0c25c79e428eba04fb98b3fb2a34db45ab26d4c8faf0d7e39d66a63891e64",
+  "versionedObject": "required shared Versioned for swap_router calls",
+  "gatePoints": "exact-in requested input amount (no public pay_amount getter on FlashSwapReceipt in interface)",
+  "entrypoints": {
+    "assetToBtenSecond": "bten::turbos_swap_to_bten",
+    "btenToAssetSecond": "bten::turbos_swap_from_bten",
+    "assetToBtenFirst": "bten::turbos_swap_to_bten_b_first",
+    "btenToAssetFirst": "bten::turbos_swap_from_bten_a_first",
+    "assetToBtenSecondReturn": "bten::turbos_swap_to_bten_return",
+    "btenToAssetSecondReturn": "bten::turbos_swap_from_bten_return"
   },
-  "receiptPolicy": "Identical to Cetus: one seal per completed route"
+  "registryBucket": 3,
+  "next": [
+    "Register live Turbos BTEN pools into PoolRegistry with BUCKET_TURBOS",
+    "Add MAINNET_ROUTE_CONFIG Turbos venue rows after pool IDs confirmed",
+    "Bluefin venue next after Turbos mainnet smoke"
+  ]
 }

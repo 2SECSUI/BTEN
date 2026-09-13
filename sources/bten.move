@@ -24,6 +24,8 @@ module bten::bten {
     use sui::sui::SUI;
     use cetusclmm::config::GlobalConfig;
     use cetusclmm::pool::{Self, Pool};
+    use turbos_clmm::pool::{Pool as TurbosPool, Versioned as TurbosVersioned};
+    use turbos_clmm::swap_router;
 
     const DECIMALS: u8 = 8;
     const UNIT: u64 = 100_000_000;
@@ -941,6 +943,171 @@ module bten::bten {
         assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
         assert!(*table::borrow(&registry.pools, pool_address) == BUCKET_CETUS, E_POOL_NOT_REGISTERED);
     }
+    fun assert_registered_turbos_pool<A, B, F>(registry: &PoolRegistry, pool: &TurbosPool<A, B, F>) {
+        let pool_id = object::id(pool);
+        let pool_address = object::id_to_address(&pool_id);
+        assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
+        assert!(*table::borrow(&registry.pools, pool_address) == BUCKET_TURBOS, E_POOL_NOT_REGISTERED);
+    }
+
+
+
+    /// Turbos gated swap: asset (coin A) -> BTEN (coin B). Exact-in; records one receipt.
+    public entry fun turbos_swap_to_bten<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        pool: &mut TurbosPool<A, BTEN, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_turbos_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let sender = tx_context::sender(ctx);
+        let deadline = clock::timestamp_ms(clock) + 60_000;
+        let (out_bten, rem_a) = swap_router::swap_a_b_with_return_<A, BTEN, FeeType>(
+            pool, vector[input], requested, min_bten_out, sqrt_price_limit, true, sender, deadline, clock, versioned, ctx
+        );
+        assert!(coin::value(&out_bten) >= min_bten_out, E_MIN_OUTPUT);
+        record_atomic_route(state, requested, clock, sender);
+        transfer::public_transfer(rem_a, sender);
+        transfer::public_transfer(out_bten, sender);
+    }
+
+    /// Turbos gated swap: BTEN (coin B) -> asset (coin A).
+    public entry fun turbos_swap_from_bten<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        pool: &mut TurbosPool<A, BTEN, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_turbos_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let sender = tx_context::sender(ctx);
+        let deadline = clock::timestamp_ms(clock) + 60_000;
+        let (out_asset, rem_bten) = swap_router::swap_b_a_with_return_<A, BTEN, FeeType>(
+            pool, vector[input], requested, min_asset_out, sqrt_price_limit, true, sender, deadline, clock, versioned, ctx
+        );
+        assert!(coin::value(&out_asset) >= min_asset_out, E_MIN_OUTPUT);
+        record_atomic_route(state, requested, clock, sender);
+        transfer::public_transfer(rem_bten, sender);
+        transfer::public_transfer(out_asset, sender);
+    }
+
+    /// Turbos gated swap when pool order is BTEN/A: asset (B) -> BTEN (A).
+    public entry fun turbos_swap_to_bten_b_first<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        pool: &mut TurbosPool<BTEN, A, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_turbos_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let sender = tx_context::sender(ctx);
+        let deadline = clock::timestamp_ms(clock) + 60_000;
+        let (out_bten, rem_a) = swap_router::swap_b_a_with_return_<BTEN, A, FeeType>(
+            pool, vector[input], requested, min_bten_out, sqrt_price_limit, true, sender, deadline, clock, versioned, ctx
+        );
+        assert!(coin::value(&out_bten) >= min_bten_out, E_MIN_OUTPUT);
+        record_atomic_route(state, requested, clock, sender);
+        transfer::public_transfer(rem_a, sender);
+        transfer::public_transfer(out_bten, sender);
+    }
+
+    /// Turbos gated swap when pool order is BTEN/A: BTEN (A) -> asset (B).
+    public entry fun turbos_swap_from_bten_a_first<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        pool: &mut TurbosPool<BTEN, A, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_turbos_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let sender = tx_context::sender(ctx);
+        let deadline = clock::timestamp_ms(clock) + 60_000;
+        let (out_asset, rem_bten) = swap_router::swap_a_b_with_return_<BTEN, A, FeeType>(
+            pool, vector[input], requested, min_asset_out, sqrt_price_limit, true, sender, deadline, clock, versioned, ctx
+        );
+        assert!(coin::value(&out_asset) >= min_asset_out, E_MIN_OUTPUT);
+        record_atomic_route(state, requested, clock, sender);
+        transfer::public_transfer(rem_bten, sender);
+        transfer::public_transfer(out_asset, sender);
+    }
+
+    /// Composable Turbos hop asset->BTEN (pool A/BTEN). Accrues ticket; seal once at end.
+    public fun turbos_swap_to_bten_return<A, FeeType>(
+        registry: &PoolRegistry,
+        pool: &mut TurbosPool<A, BTEN, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ticket: &mut ComposableRouteTicket,
+        ctx: &mut TxContext,
+    ): (Coin<A>, Coin<BTEN>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
+        assert_registered_turbos_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let sender = tx_context::sender(ctx);
+        let deadline = clock::timestamp_ms(clock) + 60_000;
+        let (out_bten, rem_a) = swap_router::swap_a_b_with_return_<A, BTEN, FeeType>(
+            pool, vector[input], requested, min_bten_out, sqrt_price_limit, true, sender, deadline, clock, versioned, ctx
+        );
+        assert!(coin::value(&out_bten) >= min_bten_out, E_MIN_OUTPUT);
+        ticket.paid_points = ticket.paid_points + requested;
+        (rem_a, out_bten)
+    }
+
+    /// Composable Turbos hop BTEN->asset (pool A/BTEN).
+    public fun turbos_swap_from_bten_return<A, FeeType>(
+        registry: &PoolRegistry,
+        pool: &mut TurbosPool<A, BTEN, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ticket: &mut ComposableRouteTicket,
+        ctx: &mut TxContext,
+    ): (Coin<BTEN>, Coin<A>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
+        assert_registered_turbos_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let sender = tx_context::sender(ctx);
+        let deadline = clock::timestamp_ms(clock) + 60_000;
+        let (out_asset, rem_bten) = swap_router::swap_b_a_with_return_<A, BTEN, FeeType>(
+            pool, vector[input], requested, min_asset_out, sqrt_price_limit, true, sender, deadline, clock, versioned, ctx
+        );
+        assert!(coin::value(&out_asset) >= min_asset_out, E_MIN_OUTPUT);
+        ticket.paid_points = ticket.paid_points + requested;
+        (rem_bten, out_asset)
+    }
+
 
     /// Shared private receipt path. It cannot be reached without completing a
     /// Cetus flash-swap in one transaction, because the receipt has no drop.
