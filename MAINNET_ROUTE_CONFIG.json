@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
   "status": "v21-live",
-  "publishedVersion": 21,
-  "currentPackage": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "publishedVersion": 22,
+  "currentPackage": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -96,7 +96,7 @@
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
     "security": "Only the verifier capability held by the dedicated keeper can attest. Attestation accrues trader points; it does not gate block release. Bitcoin-style cadence: settle unlocks at most 1 block per call; advance_slots / 600s creates pending.",
-    "livePackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+    "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
       "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896::bten::ExternalCetusRouteAttested",
@@ -264,9 +264,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
+  "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -283,7 +283,7 @@
     "magmaBluefinAdapterPlan": "config/magma_bluefin_adapter_plan.json",
     "liveTape": "treatAllLiveTapeAsGated",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) — still upgradeable"
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable"
   },
   "liveTape": {
     "treatAllLiveTapeAsGated": true,
@@ -330,9 +330,9 @@
     "tradeBar": false,
     "blockTimeSecs": 600
   },
-  "pendingPackageVersion": 21,
-  "livePackageVersion": 21,
-  "packageStatus": "v21-live",
+  "pendingPackageVersion": 22,
+  "livePackageVersion": 22,
+  "packageStatus": "v22-live",
   "v20Status": "live",
   "v20": {
     "live": true,
@@ -342,7 +342,7 @@
     "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
     "v19UpgradeTx": "aZXWoQssttz7N6EQSwziYdyuQKh3642R61rXYLxjXsB",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) — still upgradeable",
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
     "emission": "time-pending catch-up without trade bar; 600s pace once caught up"
   },
   "v21Status": "live",
@@ -354,7 +354,16 @@
     "previousPackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
     "v20UpgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) — still upgradeable",
-    "emission": "Bitcoin-style MAX_SETTLE_BLOCKS=1; 600s advance_slots; no bulk catch-up dumps"
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
+    "emission": "Bitcoin-style MAX_SETTLE_BLOCKS=1; 600s advance_slots; no bulk catch-up dumps",
+    "supersededBy": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6"
+  },
+  "v22": {
+    "live": true,
+    "packageVersion": 22,
+    "packageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+    "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
+    "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow"
   }
 }

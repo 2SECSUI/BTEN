@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
+  "newPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "packageVersion": 22,
+  "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "upgradeCapPolicy": 0,
+  "upgradeCapPolicyName": "compatible",
+  "gasMist": 240242540,
+  "note": "authorize_upgrade used policy 0 (Compatible). UpgradeCap not destroyed. u128 auto_pay_trader fix."
+}

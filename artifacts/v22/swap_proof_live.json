@@ -1,0 +1,34 @@
+{
+  "mode": "executed",
+  "package": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "inputSuiRaw": "2000000",
+  "estimatedBtenRaw": "397115",
+  "minBtenRaw": "377259",
+  "entry": "cetus_swap_to_bten_b2a",
+  "digest": "5vSGbYyWQRHEjSTUHC2JrKawGMeyXqCM49p7auVBy3Xd",
+  "status": {
+    "success": true,
+    "error": null
+  },
+  "routeRecorded": true,
+  "events": [
+    {
+      "type": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent"
+    },
+    {
+      "type": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::RouteRecorded"
+    }
+  ],
+  "balanceChanges": [
+    {
+      "coinType": "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+      "address": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "amount": "-4521664"
+    },
+    {
+      "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
+      "address": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "amount": "397115"
+    }
+  ]
+}

@@ -2244,7 +2244,13 @@ module bten::bten {
         assert!(table::contains(&state.trader_points, key), E_NOTHING_TO_PAY);
         let points = table::remove(&mut state.trader_points, key);
         let trader_round = table::borrow_mut(&mut state.trader_rounds, round);
-        let amount = points * trader_round.reward_total / trader_round.total_points;
+        // u128 intermediate: large fee_points * reward_total overflows u64 before / total_points
+        // (MoveAbort 0 on Block10 Swap · auto-pay). Keep Compatible upgrade path.
+        assert!(trader_round.total_points > 0, E_NOTHING_TO_PAY);
+        let amount = (
+            ((points as u128) * (trader_round.reward_total as u128)
+                / (trader_round.total_points as u128)) as u64
+        );
         assert!(amount > 0, E_NOTHING_TO_PAY);
         trader_round.reward_paid = trader_round.reward_paid + amount;
         transfer::public_transfer(coin::from_balance(balance::split(&mut state.trader_vault, amount), ctx), trader);

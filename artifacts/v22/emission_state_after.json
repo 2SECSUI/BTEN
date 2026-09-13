@@ -1,0 +1,46 @@
+{
+  "objectId": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
+  "version": 999259855,
+  "digest": "ERnedFi31KKXaFZuyoBUomBoPLPmK1qfxoiidvYksqPz",
+  "objType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::EmissionState",
+  "owner": {
+    "Shared": {
+      "initial_shared_version": 1
+    }
+  },
+  "prevTx": "5vSGbYyWQRHEjSTUHC2JrKawGMeyXqCM49p7auVBy3Xd",
+  "storageRebate": 3207200,
+  "content": {
+    "batch_fee_points": "4139499998",
+    "batch_trades": "3",
+    "block_height": "343",
+    "blue_vault": "0",
+    "bten_lp_vault": "0",
+    "cap": {
+      "id": "0x7c1fa266d9e0c281eaf7b228ac40353570ac56e941bc9a9f867240090975ffce",
+      "total_supply": {
+        "value": "1715000000000"
+      }
+    },
+    "cetus_vault": "0",
+    "current_round": "21",
+    "haedal_vault": "0",
+    "id": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
+    "last_slot_ts": "1789341873",
+    "magma_vault": "0",
+    "pending_blocks": "4",
+    "route_fee_vault": "772999075000",
+    "staking_vault": "2000000000",
+    "sui_gas_vault": "0",
+    "total_minted": "1715000000000",
+    "trader_points": {
+      "id": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55",
+      "size": "4"
+    },
+    "trader_rounds": {
+      "id": "0x087a838eee3700321c27fa478a92446e1f2a075aea337bcdc5d88c2ca4ddd73b",
+      "size": "21"
+    },
+    "trader_vault": "113500000010"
+  }
+}

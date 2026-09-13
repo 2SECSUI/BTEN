@@ -1,0 +1,176 @@
+{
+  "dynamicFields": [
+    {
+      "kind": "FIELD",
+      "parent": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55",
+      "fieldId": "0x5e5a05686782b78dff7fe02a760882e10c2537505f898bba27ad611a046035b9",
+      "fieldObject": {
+        "bcs": {
+          "name": "Object",
+          "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg1keW5hbWljX2ZpZWxkBUZpZWxkAgcxxscRhLCKV0vWL6jt2adaq5qYZCdITPdloYkM4Ars4ARidGVuCFBvaW50S2V5AAIAz36POwAAAABQXloFaGeCt43/f+AqdgiC4QwlN1BfiYu6J61hGgRgNbkVAAAAAAAAAFgYm2d4lOD+etOODlFkCKNQDaV9hvwENjc7wdnGM00K3sG79gAAAAABz1N0JzySDg1z3BBWoh7KVz4KlaUzbJVcvfOu2aFqi1UgSR8aKqSyEXrnmW1q5+NTW+WRxvnrQObK4JQabdvGHZgAix8AAAAAAA=="
+        },
+        "objectId": "0x5e5a05686782b78dff7fe02a760882e10c2537505f898bba27ad611a046035b9",
+        "version": "999259855",
+        "digest": "9MdmLemAj17XeZLM7kb3ZNnAvfep62JumHAStxQ2UGzB",
+        "owner": {
+          "kind": "OBJECT",
+          "address": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55"
+        },
+        "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+        "hasPublicTransfer": false,
+        "contents": {
+          "name": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+          "value": "XloFaGeCt43/f+AqdgiC4QwlN1BfiYu6J61hGgRgNbkVAAAAAAAAAFgYm2d4lOD+etOODlFkCKNQDaV9hvwENjc7wdnGM00K3sG79gAAAAA="
+        },
+        "previousTransaction": "5vSGbYyWQRHEjSTUHC2JrKawGMeyXqCM49p7auVBy3Xd",
+        "storageRebate": "2067200",
+        "json": {
+          "id": "0x5e5a05686782b78dff7fe02a760882e10c2537505f898bba27ad611a046035b9",
+          "name": {
+            "round": "21",
+            "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+          },
+          "value": "4139499998"
+        }
+      },
+      "name": {
+        "name": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey",
+        "value": "FQAAAAAAAABYGJtneJTg/nrTjg5RZAijUA2lfYb8BDY3O8HZxjNNCg=="
+      },
+      "value": {
+        "name": "u64",
+        "value": "3sG79gAAAAA="
+      },
+      "valueType": "u64"
+    },
+    {
+      "kind": "FIELD",
+      "parent": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55",
+      "fieldId": "0x6a8c3b806d5c5a95d78792ad3dab1bb1b30089d9b7f42395b456c6c7e7bc4d70",
+      "fieldObject": {
+        "bcs": {
+          "name": "Object",
+          "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg1keW5hbWljX2ZpZWxkBUZpZWxkAgcxxscRhLCKV0vWL6jt2adaq5qYZCdITPdloYkM4Ars4ARidGVuCFBvaW50S2V5AAIAPqmDOwAAAABQaow7gG1cWpXXh5KtPasbsbMAidm39COVtFbGx+e8TXAHAAAAAAAAAFagVN2xpNsVuhe/4k1E46Rd4C7skWzGV2LLH965j4egAQAAAAAAAAABz1N0JzySDg1z3BBWoh7KVz4KlaUzbJVcvfOu2aFqi1UgIH0pY8v+FMpVGpkIyN/tGA7tJxKrOeMjEpLgoBaAQSQAix8AAAAAAA=="
+        },
+        "objectId": "0x6a8c3b806d5c5a95d78792ad3dab1bb1b30089d9b7f42395b456c6c7e7bc4d70",
+        "version": "998484286",
+        "digest": "WRXPWG6LXQ7RebykwRNdqjTUQvV13M8Kzr72AquCyDz",
+        "owner": {
+          "kind": "OBJECT",
+          "address": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55"
+        },
+        "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+        "hasPublicTransfer": false,
+        "contents": {
+          "name": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+          "value": "aow7gG1cWpXXh5KtPasbsbMAidm39COVtFbGx+e8TXAHAAAAAAAAAFagVN2xpNsVuhe/4k1E46Rd4C7skWzGV2LLH965j4egAQAAAAAAAAA="
+        },
+        "previousTransaction": "3BpjvCURH7nYEwfagpobnfTFchEbzEcGcMGpXDSi1fWB",
+        "storageRebate": "2067200",
+        "json": {
+          "id": "0x6a8c3b806d5c5a95d78792ad3dab1bb1b30089d9b7f42395b456c6c7e7bc4d70",
+          "name": {
+            "round": "7",
+            "trader": "0x56a054ddb1a4db15ba17bfe24d44e3a45de02eec916cc65762cb1fdeb98f87a0"
+          },
+          "value": "1"
+        }
+      },
+      "name": {
+        "name": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey",
+        "value": "BwAAAAAAAABWoFTdsaTbFboXv+JNROOkXeAu7JFsxldiyx/euY+HoA=="
+      },
+      "value": {
+        "name": "u64",
+        "value": "AQAAAAAAAAA="
+      },
+      "valueType": "u64"
+    },
+    {
+      "kind": "FIELD",
+      "parent": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55",
+      "fieldId": "0xabf3793309b0cf7cf29db0ed14c255fc86f06b504c736298ec096ab73e22618e",
+      "fieldObject": {
+        "bcs": {
+          "name": "Object",
+          "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg1keW5hbWljX2ZpZWxkBUZpZWxkAgcxxscRhLCKV0vWL6jt2adaq5qYZCdITPdloYkM4Ars4ARidGVuCFBvaW50S2V5AAIAOteCOwAAAABQq/N5Mwmwz3zynbDtFMJV/Ibwa1BMc2KY7Alqtz4iYY4FAAAAAAAAAFagVN2xpNsVuhe/4k1E46Rd4C7skWzGV2LLH965j4egAQAAAAAAAAABz1N0JzySDg1z3BBWoh7KVz4KlaUzbJVcvfOu2aFqi1UgJx66GoKAdpPmDHReECCuEiuuzWCgWUfbxIuN8tUnQdQAix8AAAAAAA=="
+        },
+        "objectId": "0xabf3793309b0cf7cf29db0ed14c255fc86f06b504c736298ec096ab73e22618e",
+        "version": "998430522",
+        "digest": "HnAkyjMh6rag8kcdxW7t2DBnh9ao9D4x2fnyHDSrEFEg",
+        "owner": {
+          "kind": "OBJECT",
+          "address": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55"
+        },
+        "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+        "hasPublicTransfer": false,
+        "contents": {
+          "name": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+          "value": "q/N5Mwmwz3zynbDtFMJV/Ibwa1BMc2KY7Alqtz4iYY4FAAAAAAAAAFagVN2xpNsVuhe/4k1E46Rd4C7skWzGV2LLH965j4egAQAAAAAAAAA="
+        },
+        "previousTransaction": "3di5NJZP3Lu4UgLBhBvYh6ytqVKRTiAUiNMaJXoZUNJF",
+        "storageRebate": "2067200",
+        "json": {
+          "id": "0xabf3793309b0cf7cf29db0ed14c255fc86f06b504c736298ec096ab73e22618e",
+          "name": {
+            "round": "5",
+            "trader": "0x56a054ddb1a4db15ba17bfe24d44e3a45de02eec916cc65762cb1fdeb98f87a0"
+          },
+          "value": "1"
+        }
+      },
+      "name": {
+        "name": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey",
+        "value": "BQAAAAAAAABWoFTdsaTbFboXv+JNROOkXeAu7JFsxldiyx/euY+HoA=="
+      },
+      "value": {
+        "name": "u64",
+        "value": "AQAAAAAAAAA="
+      },
+      "valueType": "u64"
+    },
+    {
+      "kind": "FIELD",
+      "parent": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55",
+      "fieldId": "0xb49e7bace97c9d5eded956e2c96f8db9cd8f5bda2c3856e872f5a948bd755fe6",
+      "fieldObject": {
+        "bcs": {
+          "name": "Object",
+          "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg1keW5hbWljX2ZpZWxkBUZpZWxkAgcxxscRhLCKV0vWL6jt2adaq5qYZCdITPdloYkM4Ars4ARidGVuCFBvaW50S2V5AAIAzhyJOwAAAABQtJ57rOl8nV7e2VbiyW+Nuc2PW9osOFbocvWpSL11X+YKAAAAAAAAAFagVN2xpNsVuhe/4k1E46Rd4C7skWzGV2LLH965j4egAQAAAAAAAAABz1N0JzySDg1z3BBWoh7KVz4KlaUzbJVcvfOu2aFqi1UgxFnI3vT5osocyrcIeNKWSsNHI8jLif+ehAWHtzlAy1gAix8AAAAAAA=="
+        },
+        "objectId": "0xb49e7bace97c9d5eded956e2c96f8db9cd8f5bda2c3856e872f5a948bd755fe6",
+        "version": "998841550",
+        "digest": "ABtJb2TigrUgrpstTnDmFDaUib9hhWBe81TPBMAUQPhH",
+        "owner": {
+          "kind": "OBJECT",
+          "address": "0xcf5374273c920e0d73dc1056a21eca573e0a95a5336c955cbdf3aed9a16a8b55"
+        },
+        "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+        "hasPublicTransfer": false,
+        "contents": {
+          "name": "0x0000000000000000000000000000000000000000000000000000000000000002::dynamic_field::Field<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey,u64>",
+          "value": "tJ57rOl8nV7e2VbiyW+Nuc2PW9osOFbocvWpSL11X+YKAAAAAAAAAFagVN2xpNsVuhe/4k1E46Rd4C7skWzGV2LLH965j4egAQAAAAAAAAA="
+        },
+        "previousTransaction": "EDUKFry5GxYayji5Ha4P7BdS2hJToJ3YWexJGrbaQLXy",
+        "storageRebate": "2067200",
+        "json": {
+          "id": "0xb49e7bace97c9d5eded956e2c96f8db9cd8f5bda2c3856e872f5a948bd755fe6",
+          "name": {
+            "round": "10",
+            "trader": "0x56a054ddb1a4db15ba17bfe24d44e3a45de02eec916cc65762cb1fdeb98f87a0"
+          },
+          "value": "1"
+        }
+      },
+      "name": {
+        "name": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::PointKey",
+        "value": "CgAAAAAAAABWoFTdsaTbFboXv+JNROOkXeAu7JFsxldiyx/euY+HoA=="
+      },
+      "value": {
+        "name": "u64",
+        "value": "AQAAAAAAAAA="
+      },
+      "valueType": "u64"
+    }
+  ]
+}

@@ -641,4 +641,37 @@ module bten::bten_tests {
         scenario.end();
     }
 
+
+    /// Reproduces the live Block10 overflow: points * reward_total exceeds u64
+    /// before dividing by total_points. u128 intermediate must succeed.
+    #[test]
+    fun auto_pay_trader_u128_avoids_u64_overflow() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            clock::set_for_testing(&mut clock, 1_000);
+            // 50e9 * 500e6 = 2.5e19 > u64::MAX (~1.84e19) — overflows in u64 math
+            bten::record_qualified_route_for_testing(&mut state, 50_000_000_000, &clock, scenario.ctx());
+            clock::set_for_testing(&mut clock, 601_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            assert!(bten::block_height(&state) == 1, 0);
+            assert!(bten::trader_balance(&state) == 500_000_000, 1);
+            bten::auto_pay_trader(&mut state, 0, admin, scenario.ctx());
+            assert!(bten::trader_balance(&state) == 0, 2);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.next_tx(admin);
+        {
+            let reward = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
+            assert!(coin::value(&reward) == 500_000_000, 3);
+            scenario.return_to_sender(reward);
+        };
+        scenario.end();
+    }
 }
