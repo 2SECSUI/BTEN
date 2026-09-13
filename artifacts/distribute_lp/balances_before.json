@@ -1,0 +1,42 @@
+{
+  "ts": "2026-09-13T22:50:57.196Z",
+  "emission": {
+    "block_height": "341",
+    "pending_blocks": "0",
+    "current_round": "19",
+    "route_fee_vault": "767999075000",
+    "trader_vault": "166668093278",
+    "staking_vault": "2000000000",
+    "bten_lp_vault": "0",
+    "cetus_vault": "0",
+    "haedal_vault": "0",
+    "blue_vault": "0",
+    "magma_vault": "0",
+    "sui_gas_vault": "0"
+  },
+  "lp": {
+    "protocol_liquidity": "588500000000",
+    "paused": false,
+    "finalized": true,
+    "weight_total": "10000"
+  },
+  "dist": {
+    "next_height": "341",
+    "enabled_size": "0",
+    "destinations_size": "0"
+  },
+  "farm": {
+    "reward_vault": "143439551764",
+    "total_staked": "3534314200",
+    "next_height": "341",
+    "paused": false
+  },
+  "treasury": {
+    "next_height": "341",
+    "sponsor_accrued": "253500000000",
+    "pol_accrued": "253500000000",
+    "rebate_accrued": "168999975000",
+    "lp_support_accrued": "0",
+    "safety_accrued": "84500000000"
+  }
+}

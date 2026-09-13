@@ -1,7 +1,7 @@
 {
   "network": "mainnet",
-  "status": "v20-live",
-  "publishedVersion": 20,
+  "status": "v21-live",
+  "publishedVersion": 21,
   "currentPackage": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
@@ -13,7 +13,8 @@
   "lpProgramme": {
     "finalized": true,
     "paused": false,
-    "weightTotalBps": 10000
+    "weightTotalBps": 10000,
+    "protocolLiquidityRaw": "0"
   },
   "nativeStakingFarm": {
     "state": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
@@ -76,7 +77,7 @@
   },
   "genesis": {
     "released": true,
-    "lastSettledBlockHeight": 2
+    "lastSettledBlockHeight": 343
   },
   "feeSubsidy": {
     "enabled": false,
@@ -141,7 +142,7 @@
     ],
     "allocationPerAllowlistedPoolRaw": "400000000",
     "remainingProgrammeBtenRaw": "0",
-    "status": "40 BTEN deployed one-sided across all ten finalized allowlisted pools; positions are owned by the ops wallet and require no paired asset at creation",
+    "status": "Deployed: prior ~5885 BTEN protocol_liquidity + subsequent settle accruals into Cetus OOR positions across 10 allowlisted pools by lp_program_policy weights; programme balance 0 after 2026-09-13 ops release.",
     "positions": [
       {
         "asset": "SUI",
@@ -233,7 +234,18 @@
           4294862776
         ]
       }
-    ]
+    ],
+    "lpProgramCap": "0x650d04283491bba9599e03577b80676e99edf1af4f274fd3163207b71fdda538",
+    "lastRelease": {
+      "at": "2026-09-13T23:04:36.034Z",
+      "primaryDeployBatches": 60,
+      "primaryDigestFile": "artifacts/distribute_lp/digests.txt",
+      "remainderDigests": [
+        "C4mfM9zM7usE5Z5rj4XEihFGw7iCBdJSgSwtxpT15DdS",
+        "8fcZUbV3yQefNrjBAW3RYCNL1MJbsnV3g5Eaee6mwfwH"
+      ],
+      "gasTopUpSwapDigest": "51JiXJG3odnVYL8GZuA9fbFZDutveQ7Ee9kkfDJWEdZU"
+    }
   },
   "v17": {
     "pendingPackageVersion": 17,
@@ -271,7 +283,7 @@
     "magmaBluefinAdapterPlan": "config/magma_bluefin_adapter_plan.json",
     "liveTape": "treatAllLiveTapeAsGated",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable"
+    "upgradeCapPolicy": "compatible (0) — still upgradeable"
   },
   "liveTape": {
     "treatAllLiveTapeAsGated": true,
@@ -330,7 +342,7 @@
     "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
     "v19UpgradeTx": "aZXWoQssttz7N6EQSwziYdyuQKh3642R61rXYLxjXsB",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
+    "upgradeCapPolicy": "compatible (0) — still upgradeable",
     "emission": "time-pending catch-up without trade bar; 600s pace once caught up"
   },
   "v21Status": "live",
@@ -342,7 +354,7 @@
     "previousPackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
     "v20UpgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
+    "upgradeCapPolicy": "compatible (0) — still upgradeable",
     "emission": "Bitcoin-style MAX_SETTLE_BLOCKS=1; 600s advance_slots; no bulk catch-up dumps"
   }
 }

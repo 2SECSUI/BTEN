@@ -1,0 +1,114 @@
+{
+  "count": 18,
+  "totalPay": "54168093268",
+  "plan": [
+    {
+      "round": 0,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "510000000",
+      "amount": "500000000"
+    },
+    {
+      "round": 1,
+      "trader": "0x19b59588fca3e46e6ac31353357d8b6ac5dcd4abdcddad346bc2051621615292",
+      "points": "60000000",
+      "amount": "238012"
+    },
+    {
+      "round": 1,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "125983599233",
+      "amount": "499761987"
+    },
+    {
+      "round": 4,
+      "trader": "0x29bc4f3fb3ded350b0e9fab9120facf0112791d3796f1e6cea2ebac994bf9385",
+      "points": "1",
+      "amount": "4"
+    },
+    {
+      "round": 4,
+      "trader": "0x56a054ddb1a4db15ba17bfe24d44e3a45de02eec916cc65762cb1fdeb98f87a0",
+      "points": "2",
+      "amount": "8"
+    },
+    {
+      "round": 7,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "1572287768",
+      "amount": "496460053"
+    },
+    {
+      "round": 8,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "500000000",
+      "amount": "500000000"
+    },
+    {
+      "round": 9,
+      "trader": "0x9a1374c97aa7a9cd84e1e84efebd2d5fcde4eeedc0b97d69814ed8adc4102260",
+      "points": "1",
+      "amount": "1"
+    },
+    {
+      "round": 9,
+      "trader": "0xcb06cdf105ce4019e4269450ca5ac015342fc5e5a10c8ab526e480c890723506",
+      "points": "1",
+      "amount": "1"
+    },
+    {
+      "round": 9,
+      "trader": "0xd5ede9e60441818089e490f1520449ab91f51a2537b2a7238a9976cd36f61d3b",
+      "points": "1",
+      "amount": "1"
+    },
+    {
+      "round": 10,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "585822447",
+      "amount": "499999999"
+    },
+    {
+      "round": 12,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "6000000000",
+      "amount": "500000000"
+    },
+    {
+      "round": 13,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "1200500000",
+      "amount": "174533034"
+    },
+    {
+      "round": 14,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "264000000",
+      "amount": "499999998"
+    },
+    {
+      "round": 14,
+      "trader": "0x89a1c807393670de16b055f0316232a5627b94bf74dfaa7ac34d3124109acf19",
+      "points": "1",
+      "amount": "1"
+    },
+    {
+      "round": 15,
+      "trader": "0x56a054ddb1a4db15ba17bfe24d44e3a45de02eec916cc65762cb1fdeb98f87a0",
+      "points": "1",
+      "amount": "24998"
+    },
+    {
+      "round": 15,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "2000000",
+      "amount": "49997075171"
+    },
+    {
+      "round": 19,
+      "trader": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "points": "800000000",
+      "amount": "500000000"
+    }
+  ]
+}

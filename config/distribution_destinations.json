@@ -1,6 +1,6 @@
 {
   "network": "mainnet",
-  "status": "deployed-all-buckets-paused",
+  "status": "venues-redirected-to-lp-programme; staking-native-farm-active",
   "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
   "deploymentTransaction": "gAegYi4JGp9oDQzUzWaiGkrMW4Rj5cXfMFHK84epCUR",
   "policy": "A destination is enabled only after its exact on-chain deposit call has passed a mainnet dry-run. Disabled allocation buckets remain in EmissionState and are never retroactively delivered.",
@@ -67,5 +67,7 @@
       "reason": "Aftermath is not part of BTEN. The native farm receives only newly released fixed staking allocations after the upgrade and its farm state is created."
     }
   ],
-  "roundingDust": "At the current 50-BTEN subsidy there is no split dust. At future halvings, integer dust remains in the Haedal vault under the existing immutable-state layout until a dedicated dust migration is approved."
+  "roundingDust": "At the current 50-BTEN subsidy there is no split dust. At future halvings, integer dust remains in the Haedal vault under the existing immutable-state layout until a dedicated dust migration is approved.",
+  "note": "Non-staking destination configure is permanently redirected (E_REDIRECTED_BUCKET). Venue vault balances accrue via accrue_lp_program into LpProgramState.protocol_liquidity, then ops deploys OOR Cetus POL. Direct distribute_released_blocks for those buckets remains a no-op while enabled table is empty.",
+  "lastReleaseAt": "2026-09-13T23:04:36.034Z"
 }

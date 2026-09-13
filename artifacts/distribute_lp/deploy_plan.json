@@ -1,0 +1,71 @@
+{
+  "mode": "execute",
+  "startProtocolLiquidity": "588500000000",
+  "startBten": 5885,
+  "callCount": 120,
+  "batchSize": 2,
+  "plan": [
+    {
+      "name": "SUI",
+      "target": "147125000000",
+      "bten": 1471.25,
+      "chunks": 30
+    },
+    {
+      "name": "WAL",
+      "target": "88275000000",
+      "bten": 882.75,
+      "chunks": 18
+    },
+    {
+      "name": "NAVX",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "CETUS",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "MAGMA",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "DEEP",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "NS",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    },
+    {
+      "name": "USDC",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    },
+    {
+      "name": "USDT",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    },
+    {
+      "name": "TURBOS",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    }
+  ],
+  "submitted": [],
+  "errors": []
+}

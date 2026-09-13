@@ -1,0 +1,32 @@
+{
+  "mode": "dry-run",
+  "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
+  "settlement": {
+    "eligibleBlocks": 1,
+    "routeReceipts": 1,
+    "pendingBlocksAfterTimeAdvance": 3
+  },
+  "treasurySync": {
+    "needed": false,
+    "nextHeight": "341",
+    "blockHeight": "341"
+  },
+  "lpProgrammeAccrual": {
+    "enabled": true,
+    "configured": true,
+    "availableRaw": "0"
+  },
+  "nativeFarmSync": {
+    "enabled": true,
+    "configured": true,
+    "needed": false,
+    "started": true,
+    "nextHeight": "341",
+    "blockHeight": "341"
+  },
+  "privilegedExecutors": {
+    "enabled": false,
+    "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."
+  },
+  "submitted": []
+}

@@ -1,0 +1,913 @@
+{
+  "mode": "execute",
+  "startProtocolLiquidity": "588500000000",
+  "startBten": 5885,
+  "callCount": 120,
+  "batchSize": 2,
+  "plan": [
+    {
+      "name": "SUI",
+      "target": "147125000000",
+      "bten": 1471.25,
+      "chunks": 30
+    },
+    {
+      "name": "WAL",
+      "target": "88275000000",
+      "bten": 882.75,
+      "chunks": 18
+    },
+    {
+      "name": "NAVX",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "CETUS",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "MAGMA",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "DEEP",
+      "target": "58850000000",
+      "bten": 588.5,
+      "chunks": 12
+    },
+    {
+      "name": "NS",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    },
+    {
+      "name": "USDC",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    },
+    {
+      "name": "USDT",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    },
+    {
+      "name": "TURBOS",
+      "target": "29425000000",
+      "bten": 294.25,
+      "chunks": 6
+    }
+  ],
+  "submitted": [
+    {
+      "index": 0,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "DHHbairZqq2D2DVihJmgTMgH1aPXCoPG68QUEwLPf79Y",
+      "status": 0
+    },
+    {
+      "index": 2,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "FULGBZ39aNr6vMgFGn39kaPDZUVnvyURXiEY5zhb2RvP",
+      "status": 0
+    },
+    {
+      "index": 4,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "CiK4dezQHowvNWNmrHo469kHeCBeQQmFcQ24LLcTfSks",
+      "status": 0
+    },
+    {
+      "index": 6,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "91oMU64qeLLQcpAAmsHvE7Gww8mQTpLuHAFzj4h8hF5Z",
+      "status": 0
+    },
+    {
+      "index": 8,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "7zZn1aVWzMDjqDBCVwwmT4TvYikhQ8rvQXHeRJp4L7es",
+      "status": 0
+    },
+    {
+      "index": 10,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "AVyLyGHtiphafQojjGeCrBy5ghKC4rBrg2zb88F6GcRa",
+      "status": 0
+    },
+    {
+      "index": 12,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "6sZSxfh3C3BaUoWKoo6GfCAiBxCwib5DnYLPBL37tcmB",
+      "status": 0
+    },
+    {
+      "index": 14,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "4TuR5d5ZwodSXqhnq6Ts9tzzT4eRm4J4U1NvdjTGjqRS",
+      "status": 0
+    },
+    {
+      "index": 16,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "7BXTqvwWMb7QytrAosJkRj6XmDkNp26wHz1pFkPtg7Bv",
+      "status": 0
+    },
+    {
+      "index": 18,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "2F5VAr5qgZTGdNx1eehnHYme2kwscwb6YK6Qg3NnQK9G",
+      "status": 0
+    },
+    {
+      "index": 20,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "2sK3Sdb1MKoL9zzu11quaShi5TJdsHtKuBaSUcDkJoMz",
+      "status": 0
+    },
+    {
+      "index": 22,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "6xPr7tyKndjtfx4kMzv3iS5RZ3gtKbxyMZxq6BQ8KS8V",
+      "status": 0
+    },
+    {
+      "index": 24,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "GdhCLP7r3EVGeFVpTGNYSDqGmHEmRoH39wPdoRsNuVzS",
+      "status": 0
+    },
+    {
+      "index": 26,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "HnZYgEVN4m3BMsWomHNwUhaztiZLw74KUsvhtJ5imhtT",
+      "status": 0
+    },
+    {
+      "index": 28,
+      "pools": [
+        "SUI",
+        "SUI"
+      ],
+      "amounts": [
+        "5000000000",
+        "2125000000"
+      ],
+      "ok": true,
+      "digest": "C19EQzfWhXuaRmZNvRWp8YPNRkftwR2ormTHDNDSsxz6",
+      "status": 0
+    },
+    {
+      "index": 30,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "HKzh3JxP5xkqrS42YyLGuTxJhRfjdABBbkLX5a2vXeZs",
+      "status": 0
+    },
+    {
+      "index": 32,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "CoAbAoAhqXwYA7rE8iBw9U5UxYHkU2HqVsCSLEsJXZxy",
+      "status": 0
+    },
+    {
+      "index": 34,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "9bpoFFVqZiBjLnDkoZzLyNt1sbXmZNSSH5WYHrYUKzKt",
+      "status": 0
+    },
+    {
+      "index": 36,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "Hci4HQsvam51aBPmtnKqxWGB1MngqaA4o7xwsS7aPD75",
+      "status": 0
+    },
+    {
+      "index": 38,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "DXJVgcUDu1Cd6r1ZzcGK7LFYYmuXBTe1hgRZHeym7ELb",
+      "status": 0
+    },
+    {
+      "index": 40,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "36SXjt9v1qn8GKkHgdQmfKYx5wqKDYn2H5zTCjaBSX2t",
+      "status": 0
+    },
+    {
+      "index": 42,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "4XGPwhtpWZpx8fSkmUDMiTJAsLh5LxQda7oZruWqNDNo",
+      "status": 0
+    },
+    {
+      "index": 44,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "Eeu9pTT74Vx3NzcYAX3rhMi5gzvhYfvgNxa42fYBENsw",
+      "status": 0
+    },
+    {
+      "index": 46,
+      "pools": [
+        "WAL",
+        "WAL"
+      ],
+      "amounts": [
+        "5000000000",
+        "3275000000"
+      ],
+      "ok": true,
+      "digest": "6br5ZeEUz6kvrWNphPMdgL4qN7D81mAHhexeKHZaBm7r",
+      "status": 0
+    },
+    {
+      "index": 48,
+      "pools": [
+        "NAVX",
+        "NAVX"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "7o56qzLH8Gzz5xsjqStrdyi5B7tEFqH6y9cxhmXihqJe",
+      "status": 0
+    },
+    {
+      "index": 50,
+      "pools": [
+        "NAVX",
+        "NAVX"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "2hSj3D8iyeXBGqNkz1WZa9AB826BRdVhriFfWwNikZx3",
+      "status": 0
+    },
+    {
+      "index": 52,
+      "pools": [
+        "NAVX",
+        "NAVX"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "EdUNjaePtfpfrQmgkyj5Kdmk3HCnStwRcZhsvPp9e1rX",
+      "status": 0
+    },
+    {
+      "index": 54,
+      "pools": [
+        "NAVX",
+        "NAVX"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "64Ty9eFVzF1yaYdDC7gJYp6M9tbqpMokEfrN5RqmBAdZ",
+      "status": 0
+    },
+    {
+      "index": 56,
+      "pools": [
+        "NAVX",
+        "NAVX"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "HCNj3x92jYhPZYTCpD6NXvDxhhWKkBkx8XT4ZhjYn1Zs",
+      "status": 0
+    },
+    {
+      "index": 58,
+      "pools": [
+        "NAVX",
+        "NAVX"
+      ],
+      "amounts": [
+        "5000000000",
+        "3850000000"
+      ],
+      "ok": true,
+      "digest": "3XpaMyvbc4G4uLr9SaUyw4o8WjCzPZ969MWcr1n5itbS",
+      "status": 0
+    },
+    {
+      "index": 60,
+      "pools": [
+        "CETUS",
+        "CETUS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "BuC6YdLswxQoYKengpFt1iQttNeb2ghJtVXGKFGpunw4",
+      "status": 0
+    },
+    {
+      "index": 62,
+      "pools": [
+        "CETUS",
+        "CETUS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "F9GMDDFXCh7ZxRnKfs7Njh7vV57F3F4FQrXu5gNqqVsz",
+      "status": 0
+    },
+    {
+      "index": 64,
+      "pools": [
+        "CETUS",
+        "CETUS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "2utXzwW8iuzn4NfN2KguPh17wCzXvesghRidVJmnCck8",
+      "status": 0
+    },
+    {
+      "index": 66,
+      "pools": [
+        "CETUS",
+        "CETUS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "EEqFrq5CJyTydB5ukLAgxNJ3Gjn9P3xnHpD3rnaz6vTH",
+      "status": 0
+    },
+    {
+      "index": 68,
+      "pools": [
+        "CETUS",
+        "CETUS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "5Kk6hB9wfkrWYTbRJz4SvE2VNjgv3yNHMLgZqT4wUMNG",
+      "status": 0
+    },
+    {
+      "index": 70,
+      "pools": [
+        "CETUS",
+        "CETUS"
+      ],
+      "amounts": [
+        "5000000000",
+        "3850000000"
+      ],
+      "ok": true,
+      "digest": "3RsyyWiVLMF9gR4bTt1CZjwAPxXDgZKn58y2XQFFsB7b",
+      "status": 0
+    },
+    {
+      "index": 72,
+      "pools": [
+        "MAGMA",
+        "MAGMA"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "6b2A15cCZJfy4vhLtrdPe9m7oTtZYKeryQLByGLLr9Gv",
+      "status": 0
+    },
+    {
+      "index": 74,
+      "pools": [
+        "MAGMA",
+        "MAGMA"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "4pzL6yMi1q8WKcU4W4QDhRH32edBc44pJaiwN5vRfLYP",
+      "status": 0
+    },
+    {
+      "index": 76,
+      "pools": [
+        "MAGMA",
+        "MAGMA"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "GkJtoTyAANzJkieLXqDtRcVoqGmckcdHNfu4U6pXnnCY",
+      "status": 0
+    },
+    {
+      "index": 78,
+      "pools": [
+        "MAGMA",
+        "MAGMA"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "As86jceayGsDWpcQU6t7bwEwW41e8qVXx2RYeoig4JBP",
+      "status": 0
+    },
+    {
+      "index": 80,
+      "pools": [
+        "MAGMA",
+        "MAGMA"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "4Br3HFuE1e5CZgiRMkjF1C8r5kF6e75TPpd9qUvTupA4",
+      "status": 0
+    },
+    {
+      "index": 82,
+      "pools": [
+        "MAGMA",
+        "MAGMA"
+      ],
+      "amounts": [
+        "5000000000",
+        "3850000000"
+      ],
+      "ok": true,
+      "digest": "7jRMWviuAdKP9JfcVTLVUfrucmifYvGZPDDDbgYLSpXp",
+      "status": 0
+    },
+    {
+      "index": 84,
+      "pools": [
+        "DEEP",
+        "DEEP"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "BY5rKt351DSHpx85AnPCSDMMgcsK2PAsQSFBH99H2Kwq",
+      "status": 0
+    },
+    {
+      "index": 86,
+      "pools": [
+        "DEEP",
+        "DEEP"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "R4ZMReKfE28mB5pepjayAQbSeAwtes9XmpyvG1boZ38",
+      "status": 0
+    },
+    {
+      "index": 88,
+      "pools": [
+        "DEEP",
+        "DEEP"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "DKJayWM622TwQgVtStopvfKdZFbPUZ6CB5jMsss5ojAa",
+      "status": 0
+    },
+    {
+      "index": 90,
+      "pools": [
+        "DEEP",
+        "DEEP"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "FvwdiE1nbDTM6VJmU4weWzhiMcGjNrc1VPYB3ZWSciii",
+      "status": 0
+    },
+    {
+      "index": 92,
+      "pools": [
+        "DEEP",
+        "DEEP"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "8uqb5y62JWMJYGX32VHjpbHfL81iULFbJnjTsTag5BPy",
+      "status": 0
+    },
+    {
+      "index": 94,
+      "pools": [
+        "DEEP",
+        "DEEP"
+      ],
+      "amounts": [
+        "5000000000",
+        "3850000000"
+      ],
+      "ok": true,
+      "digest": "2WfHYy6JcnFKfFnE6WWUFnrSS4NN3SqnT8jk7fGDJdsf",
+      "status": 0
+    },
+    {
+      "index": 96,
+      "pools": [
+        "NS",
+        "NS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "GpzLVTYdKJ8No3yeFmGCkAefzLdzJSTDf4SoA2mYLRq6",
+      "status": 0
+    },
+    {
+      "index": 98,
+      "pools": [
+        "NS",
+        "NS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "5bfT1XGM7VoYfuPMHbn3rUuVt4ztaUJWVP2EQpivR1Xq",
+      "status": 0
+    },
+    {
+      "index": 100,
+      "pools": [
+        "NS",
+        "NS"
+      ],
+      "amounts": [
+        "5000000000",
+        "4425000000"
+      ],
+      "ok": true,
+      "digest": "4BGukfnMiEGrSZUC6XwRU2hfSPqgPQmyoa8NErPHd9uT",
+      "status": 0
+    },
+    {
+      "index": 102,
+      "pools": [
+        "USDC",
+        "USDC"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "4pdyFcsxwXNQmEZwpPmqEorNHxZs1LrsrtPGkC4xThNd",
+      "status": 0
+    },
+    {
+      "index": 104,
+      "pools": [
+        "USDC",
+        "USDC"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "ApGSqLC4cNzjz3aKpbgkxvUvfxD98fagZ6YKEWerukqu",
+      "status": 0
+    },
+    {
+      "index": 106,
+      "pools": [
+        "USDC",
+        "USDC"
+      ],
+      "amounts": [
+        "5000000000",
+        "4425000000"
+      ],
+      "ok": true,
+      "digest": "7BGpqj5H38CCnvMBP3UdhoQAywfjxwFeJRRsZRz3ugtW",
+      "status": 0
+    },
+    {
+      "index": 108,
+      "pools": [
+        "USDT",
+        "USDT"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "GoKUxLbHwTCCRAvM61cvEt8xf53UTuKMRaT1xxP45nLt",
+      "status": 0
+    },
+    {
+      "index": 110,
+      "pools": [
+        "USDT",
+        "USDT"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "9mDUDkY6nr8wrVVttxNWGc9wNLtgLpBcUPfnTYT78UKo",
+      "status": 0
+    },
+    {
+      "index": 112,
+      "pools": [
+        "USDT",
+        "USDT"
+      ],
+      "amounts": [
+        "5000000000",
+        "4425000000"
+      ],
+      "ok": true,
+      "digest": "J68Cv7x8CCgM22Uwzp6CWfKnvZEQsrjCLAyRb6kZJ76T",
+      "status": 0
+    },
+    {
+      "index": 114,
+      "pools": [
+        "TURBOS",
+        "TURBOS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "9CdUM1D9U1HNKX9ytKrR3vjjfKcaTMF6ZfGRRq54umPR",
+      "status": 0
+    },
+    {
+      "index": 116,
+      "pools": [
+        "TURBOS",
+        "TURBOS"
+      ],
+      "amounts": [
+        "5000000000",
+        "5000000000"
+      ],
+      "ok": true,
+      "digest": "DEij39WLBkU2q5yTsNbL6n1EEqJUVJc5g2mHTnLLmKud",
+      "status": 0
+    },
+    {
+      "index": 118,
+      "pools": [
+        "TURBOS",
+        "TURBOS"
+      ],
+      "amounts": [
+        "5000000000",
+        "4425000000"
+      ],
+      "ok": true,
+      "digest": "Bp8azTbCMHr3Qy9zbGZqGMYWFV2RetUKinp1qwykfiqx",
+      "status": 0
+    }
+  ],
+  "errors": [],
+  "endProtocolLiquidity": "9425000000"
+}

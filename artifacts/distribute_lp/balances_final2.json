@@ -1,0 +1,41 @@
+{
+  "ts": "2026-09-13T23:03:33.421Z",
+  "emission": {
+    "block_height": "343",
+    "pending": "1",
+    "round": "21",
+    "trader_vault": "113999761997",
+    "staking_vault": "2000000000",
+    "route_fee_vault": "772999075000",
+    "venues": {
+      "bten_lp": "0",
+      "cetus": "0",
+      "haedal": "0",
+      "blue": "0",
+      "magma": "0",
+      "sui_gas": "0"
+    },
+    "trader_points_size": "4"
+  },
+  "lp": {
+    "protocol_liquidity": "1500000000",
+    "paused": false
+  },
+  "dist": {
+    "next_height": "343",
+    "enabled": "0"
+  },
+  "farm": {
+    "reward_vault": "500000000",
+    "next_height": "343",
+    "total_staked": "1767157100"
+  },
+  "treasury": {
+    "next_height": "343",
+    "lp_support_accrued": "500000000"
+  },
+  "upgradeCap": {
+    "policy": 0,
+    "package": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896"
+  }
+}
