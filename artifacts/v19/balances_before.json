@@ -1,0 +1,47 @@
+{
+  "distribution": {
+    "next_height": "16"
+  },
+  "treasury": {
+    "lp_support_accrued": "3250000000",
+    "next_height": "16",
+    "paused": false,
+    "pol_accrued": "9750000000",
+    "rebate_accrued": "6499975000",
+    "safety_accrued": "3250000000",
+    "sponsor_accrued": "9750000000"
+  },
+  "lp": {
+    "finalized": true,
+    "paused": false,
+    "protocol_liquidity": "16500000000",
+    "weight_total": "10000"
+  },
+  "farm": {
+    "acc_reward_per_stake": "103288139020112551739",
+    "next_height": "16",
+    "paused": false,
+    "reward_vault": "500000000",
+    "staked_principal": "4017964590",
+    "started": true,
+    "total_staked": "4017964590"
+  },
+  "emission": {
+    "batch_fee_points": "2000117",
+    "batch_trades": "3",
+    "block_height": "16",
+    "blue_vault": "0",
+    "bten_lp_vault": "0",
+    "cetus_vault": "0",
+    "current_round": "15",
+    "haedal_vault": "0",
+    "last_slot_ts": "1789334673",
+    "magma_vault": "0",
+    "pending_blocks": "319",
+    "route_fee_vault": "39999075000",
+    "staking_vault": "2000000000",
+    "sui_gas_vault": "0",
+    "total_minted": "80000000000",
+    "trader_vault": "4170993108"
+  }
+}

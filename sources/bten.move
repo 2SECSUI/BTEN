@@ -1,4 +1,10 @@
-/// BlockTen (BTEN) is a fixed-cap, trade-gated emission token.
+/// BlockTen (BTEN) is a fixed-cap emission token.
+///
+/// Block release is time-slot based: after `advance_slots`, `settle` unlocks
+/// `min(pending_blocks, MAX_SETTLE_BLOCKS)` even when `batch_trades == 0`.
+/// Trades and external attestations still accrue trader points/rewards for the
+/// sealed round; they are not required to release pending blocks.
+/// Live-tape labeling is display-only and is not the gate.
 ///
 /// This package intentionally separates three concerns:
 /// - `EmissionState` schedules the 50-BTEN, ten-minute block emissions.
@@ -8,6 +14,8 @@
 /// Qualifying routes are recorded only by adapters that complete their swap in
 /// the same transaction. The retained `RouterCap` entry is deliberately
 /// disabled for upgrade compatibility with the development deployment.
+/// External Cetus/aggregator volume on registered BTEN pools is emission-gated
+/// via `attest_external_cetus_route` (same `record_atomic_route` path).
 module bten::bten {
     use std::ascii;
     use std::string;
@@ -35,7 +43,10 @@ module bten::bten {
     const INITIAL_SUBSIDY: u64 = 50 * UNIT;
     const BLOCK_TIME_SECS: u64 = 600;
     const HALVING_INTERVAL: u64 = 210_000;
-    const MIN_TRADES_PER_BLOCK: u64 = 10;
+    // Retained for views / compatibility. Settlement no longer requires
+    // batch_trades / MIN_TRADES_PER_BLOCK. Time-pending slots release up to
+    // MAX_SETTLE_BLOCKS per call.
+    const MIN_TRADES_PER_BLOCK: u64 = 1;
     const MAX_SETTLE_BLOCKS: u64 = 100;
     const BPS: u64 = 10_000;
     const DAY_MS: u64 = 86_400_000;
@@ -1191,8 +1202,11 @@ module bten::bten {
     }
 
 
-    /// Shared private receipt path. It cannot be reached without completing a
-    /// Cetus flash-swap in one transaction, because the receipt has no drop.
+    /// Shared private receipt path. This is the emission gate: each call
+    /// increments `batch_trades` so `settle` can release pending blocks.
+    /// Adapter swaps reach it by completing a Cetus/Turbos flash-swap in one
+    /// transaction (receipt has no drop). External Cetus/aggregator volume on
+    /// registered BTEN pools reaches it via `attest_external_cetus_route`.
     fun record_atomic_route(
         state: &mut EmissionState,
         fee_points: u64,
@@ -1224,6 +1238,11 @@ module bten::bten {
         ctx: &mut TxContext,
     ) {
         record_atomic_route(state, fee_points, clock, tx_context::sender(ctx));
+    }
+
+    #[test_only]
+    public fun prime_slots_for_testing(state: &mut EmissionState, clock: &Clock) {
+        advance_slots(state, clock::timestamp_ms(clock) / 1000);
     }
 
     #[test_only]
@@ -1270,12 +1289,16 @@ module bten::bten {
         event::emit(BlocksReleased { blocks: 1, emission, remaining_pending: state.pending_blocks });
     }
 
-    /// Permissionless settlement. A routed transaction can invoke this after
-    /// recording its receipt; an ops keeper covers quiet periods.
+    /// Permissionless settlement.
+    /// Catch-up: unlock `min(pending_blocks, MAX_SETTLE_BLOCKS)` with no trade
+    /// bar so the backlog can drain. Steady-state: `advance_slots` still
+    /// creates new pending only every BLOCK_TIME_SECS (600s); once pending is
+    /// drained, the 10-minute clock is what makes the next block available.
+    /// Present receipts still seal trader points/rewards; they do not gate
+    /// unlock.
     public fun settle(state: &mut EmissionState, clock: &Clock, ctx: &mut TxContext) {
         advance_slots(state, clock::timestamp_ms(clock) / 1000);
-        let trade_supported = state.batch_trades / MIN_TRADES_PER_BLOCK;
-        let mut blocks = if (state.pending_blocks < trade_supported) { state.pending_blocks } else { trade_supported };
+        let mut blocks = state.pending_blocks;
         if (blocks > MAX_SETTLE_BLOCKS) { blocks = MAX_SETTLE_BLOCKS };
         assert!(blocks > 0, E_NO_ELIGIBLE_BLOCKS);
 
@@ -1509,13 +1532,15 @@ module bten::bten {
     ) { verifier.paused = paused; }
 
     /// Records one publicly auditable, off-chain verified Cetus SwapEvent so
-    /// live-tape volume counts as gated (ExternalCetusRouteAttested). This is
-    /// an inclusion/attestation path — it does not block transactions.
-    /// Multi-pool aggregator PTBs that touch several registered BTEN pools
-    /// still receive one gate receipt per transaction digest (keeper submits
-    /// once). The verifier must validate the event against public Sui data
-    /// before calling. The contract enforces registered-pool scope, one-time
-    /// digest/event key, keeper identity, and a rolling daily cap.
+    /// it is gated for emission-block release: this calls `record_atomic_route`,
+    /// which increments `batch_trades` used by `settle`. Live-tape labeling is
+    /// not the gate. This is an inclusion/attestation path — it does not block
+    /// transactions. Multi-pool aggregator PTBs that touch several registered
+    /// BTEN pools still receive one emission-gate receipt per transaction
+    /// digest (keeper submits once). The verifier must validate the event
+    /// against public Sui data before calling. The contract enforces
+    /// registered-pool scope, one-time digest/event key, keeper identity, and
+    /// a rolling daily cap.
     public entry fun attest_external_cetus_route(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -1528,6 +1553,67 @@ module bten::bten {
         fee_points: u64,
         clock: &Clock,
         ctx: &mut TxContext,
+    ) {
+        attest_external_cetus_route_internal(
+            state, registry, verifier, pool_id, transaction_digest,
+            event_sequence, trader, fee_points, clock, ctx,
+        );
+    }
+
+    /// Batch variant of `attest_external_cetus_route`. Each item still yields
+    /// one emission-gate receipt (one `record_atomic_route` / one
+    /// `batch_trades` increment). Parallel vectors must be the same non-zero
+    /// length. Daily cap, replay, keeper, and registered-pool rules apply per
+    /// item. Compatible-upgrade addition: existing single-digest entry is
+    /// unchanged.
+    public entry fun attest_external_cetus_routes(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        _cap: &ExternalRouteVerifierCap,
+        pool_ids: vector<address>,
+        transaction_digests: vector<vector<u8>>,
+        event_sequences: vector<u64>,
+        traders: vector<address>,
+        fee_points_vec: vector<u64>,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let n = vector::length(&pool_ids);
+        assert!(n > 0, E_BAD_AMOUNT);
+        assert!(vector::length(&transaction_digests) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&event_sequences) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&traders) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&fee_points_vec) == n, E_BAD_AMOUNT);
+        let mut i = 0;
+        while (i < n) {
+            attest_external_cetus_route_internal(
+                state,
+                registry,
+                verifier,
+                *vector::borrow(&pool_ids, i),
+                *vector::borrow(&transaction_digests, i),
+                *vector::borrow(&event_sequences, i),
+                *vector::borrow(&traders, i),
+                *vector::borrow(&fee_points_vec, i),
+                clock,
+                ctx,
+            );
+            i = i + 1;
+        };
+    }
+
+    fun attest_external_cetus_route_internal(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        pool_id: address,
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+        trader: address,
+        fee_points: u64,
+        clock: &Clock,
+        ctx: &TxContext,
     ) {
         assert!(!verifier.paused, E_EXTERNAL_VERIFIER_PAUSED);
         assert!(tx_context::sender(ctx) == verifier.keeper, E_EXTERNAL_VERIFIER_SENDER);
@@ -1969,9 +2055,10 @@ module bten::bten {
         event::emit(DistributionDestinationConfigured { bucket, recipient: destination, enabled });
     }
 
-    /// Settle a gate and immediately deliver the allocations from every block
-    /// released by that gate. This is permissionless: destinations are fixed
-    /// in DistributionState and callers can never redirect a payout.
+    /// Settle pending time-slots and immediately deliver the allocations from
+    /// every block released. Trades are not required. This is permissionless:
+    /// destinations are fixed in DistributionState and callers can never
+    /// redirect a payout.
     public entry fun settle_and_distribute(
         state: &mut EmissionState,
         distribution: &mut DistributionState,

@@ -281,6 +281,121 @@ module bten::bten_tests {
     }
 
     #[test]
+    fun pending_slots_release_without_trades() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            assert!(bten::batch_trades(&state) == 0, 84);
+            clock::set_for_testing(&mut clock, 1_000);
+            bten::prime_slots_for_testing(&mut state, &clock);
+            clock::set_for_testing(&mut clock, 1_201_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            assert!(bten::block_height(&state) == 2, 85);
+            assert!(bten::batch_trades(&state) == 0, 86);
+            assert!(bten::total_minted(&state) == 10_000_000_000, 87);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    fun one_gated_receipt_unlocks_one_pending_block() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            assert!(bten::min_trades_per_block() == 1, 80);
+            clock::set_for_testing(&mut clock, 1_000);
+            bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
+            assert!(bten::batch_trades(&state) == 1, 81);
+            clock::set_for_testing(&mut clock, 601_000);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            assert!(bten::block_height(&state) == 1, 82);
+            assert!(bten::batch_trades(&state) == 0, 83);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    fun batch_attest_records_one_receipt_per_digest() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let pool = @0xC;
+        let trader = @0xD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 3, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_paused(&mut verifier, &admin_cap, false);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(keeper);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let cap = scenario.take_from_sender<bten::ExternalRouteVerifierCap>();
+            let clock = scenario.take_shared<Clock>();
+            let digest_a = vector[
+                2u8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            ];
+            let digest_b = vector[
+                3u8, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            ];
+            bten::attest_external_cetus_routes(
+                &mut state, &registry, &mut verifier, &cap,
+                vector[pool, pool],
+                vector[digest_a, digest_b],
+                vector[0, 0],
+                vector[trader, trader],
+                vector[1, 1],
+                &clock, scenario.ctx(),
+            );
+            assert!(bten::batch_trades(&state) == 2, 90);
+            assert!(bten::external_verifier_events_today(&verifier) == 2, 91);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(cap);
+        };
+        scenario.end();
+    }
+
+    #[test]
     #[expected_failure(abort_code = 11)]
     fun legacy_router_cap_cannot_record_routes() {
         let admin = @0xA;

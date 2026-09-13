@@ -3,8 +3,12 @@
  * BTEN direct-Cetus event verifier.
  *
  * Narrow public-data keeper: examines successful Cetus SwapEvent records from
- * registered BTEN pools and attests them so live-tape volume counts as gated.
- * It never quotes, swaps, transfers treasury funds, or prints private keys.
+ * registered BTEN pools and attests them so they count as gated for emission
+ * block release (`attest_external_cetus_route` -> `record_atomic_route` ->
+ * `batch_trades` / settle unlock). Live-tape labeling is not the gate.
+ * One emission-gate receipt per transaction digest, including multi-pool
+ * aggregator PTBs. It never quotes, swaps, transfers treasury funds, or
+ * prints private keys.
  *
  * Usage:
  *   node scripts/external_cetus_verifier.mjs              # dry-run scan
@@ -193,7 +197,7 @@ function candidateFromTransaction(transaction, pool) {
   const sender = normal(transaction.sender?.address);
   if (!sender) return null;
   const events = transaction.effects?.events?.nodes ?? [];
-  // Protected adapter already emitted RouteRecorded — already gated on tape.
+  // Protected adapter already emitted RouteRecorded — already emission-gated.
   if (events.some((event) => event.contents?.type?.repr?.endsWith("::bten::RouteRecorded"))) return null;
   const match = events.find((event) => {
     const json = event.contents?.json ?? {};

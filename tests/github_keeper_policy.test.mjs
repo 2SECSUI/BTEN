@@ -13,5 +13,9 @@ test("keeper policy is a separate, bounded wallet", () => {
   assert.match(policy.distributionState, /^0x[0-9a-f]{64}$/i);
   assert.match(policy.routeTreasuryState, /^0x[0-9a-f]{64}$/i);
   assert.equal(policy.settlement.enabled, true);
+  assert.equal(policy.minTradesPerBlock, 0);
+  assert.equal(policy.settlement.routesPerBlock, 0);
+  assert.equal(policy.settlement.tradeBar, false);
+  assert.equal(policy.settlement.maximumBlocksPerRun, 100);
   assert.equal(policy.privilegedExecutors.enabled, false);
 });

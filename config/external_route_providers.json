@@ -1,30 +1,30 @@
 {
-  "purpose": "Public provider manifest for Block10 route discovery and quote comparison. Providers receive no BTEN capability, treasury balance, keeper key, or browser private key. Live-tape classification is separate: any volume on registered BTEN pools is treated as gated via RouteRecorded or ExternalCetusRouteAttested.",
+  "purpose": "Public provider manifest for Block10 route discovery and quote comparison. Providers receive no BTEN capability, treasury balance, keeper key, or browser private key. Emission gating is separate: aggregator/Cetus volume on registered BTEN pools counts toward block release via RouteRecorded or ExternalCetusRouteAttested \u2014 not via tape-only labels.",
   "providers": [
     {
       "name": "Aftermath Smart Order Router",
       "status": "quote-only-integrated-live-quote-passed",
       "sdk": "aftermath-ts-sdk",
       "integration": "scripts/aftermath_router_quote.mjs",
-      "executionRule": "Use output as a direct-route comparator for display. Protected dapp-built routes prefer the BTEN Move adapter; external volume that hits registered BTEN pools is gated via attestation for the live tape (not rejected).",
+      "executionRule": "Use output as a direct-route comparator for display. Protected dapp-built routes prefer the BTEN Move adapter; external volume that hits registered BTEN pools is emission-gated via attestation (counts toward settle), not rejected.",
       "role": "quote-compare-helper",
-      "gateRule": "Quote/compare helper only for route selection UI. Does not block live-tape inclusion. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for the tape."
+      "gateRule": "Quote/compare helper only for route selection UI. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for emission-block release (batch_trades / settle), not for tape labeling."
     },
     {
       "name": "Hop Aggregator",
       "status": "quote-only-integrated-pending-api-connectivity-test",
       "sdk": "@hop.ag/sdk",
       "integration": "scripts/hop_router_quote.mjs",
-      "executionRule": "Use output as a direct-route comparator for display. Protected dapp-built routes prefer the BTEN Move adapter; external volume that hits registered BTEN pools is gated via attestation for the live tape (not rejected).",
+      "executionRule": "Use output as a direct-route comparator for display. Protected dapp-built routes prefer the BTEN Move adapter; external volume that hits registered BTEN pools is emission-gated via attestation (counts toward settle), not rejected.",
       "role": "quote-compare-helper",
-      "gateRule": "Quote/compare helper only for route selection UI. Does not block live-tape inclusion. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for the tape."
+      "gateRule": "Quote/compare helper only for route selection UI. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for emission-block release (batch_trades / settle), not for tape labeling."
     },
     {
       "name": "7K Aggregator",
       "status": "external-link-pending-sdk-v2-compatibility",
       "url": "https://docs.7k.ag/developers/sdk",
       "scope": "Quote comparison only after a stable @mysten/sui v2 compatible release is reviewed.",
-      "gateRule": "Quote/compare helper only for route selection UI. Does not block live-tape inclusion. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for the tape.",
+      "gateRule": "Quote/compare helper only for route selection UI. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for emission-block release (batch_trades / settle), not for tape labeling.",
       "role": "quote-compare-helper"
     },
     {
@@ -32,7 +32,7 @@
       "status": "external-link-pending-sdk-v2-compatibility",
       "url": "https://docs.flowx.finance/developer/flowx-sdk/swap-aggregator",
       "scope": "Quote comparison only. The current published SDK brings legacy Sui v1 dependencies and is intentionally not included in BTEN.",
-      "gateRule": "Quote/compare helper only for route selection UI. Does not block live-tape inclusion. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for the tape.",
+      "gateRule": "Quote/compare helper only for route selection UI. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for emission-block release (batch_trades / settle), not for tape labeling.",
       "role": "quote-compare-helper"
     },
     {
@@ -40,7 +40,7 @@
       "status": "external-link-pending-api-credential-configuration",
       "url": "https://web3.okx.com/onchainos/dev-docs-v5/dex-api/dex-sdk-sui",
       "scope": "Quote comparison only after a dedicated OKX Web3 API configuration is supplied.",
-      "gateRule": "Quote/compare helper only for route selection UI. Does not block live-tape inclusion. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for the tape.",
+      "gateRule": "Quote/compare helper only for route selection UI. If the resulting on-chain swap touches a registered BTEN Cetus pool, external attestation gates that digest for emission-block release (batch_trades / settle), not for tape labeling.",
       "role": "quote-compare-helper"
     },
     {
@@ -48,26 +48,26 @@
       "status": "external-link-pending-official-sdk-review",
       "url": "https://www.routernitro.com/",
       "scope": "User-initiated cross-chain bridge or swap only.",
-      "gateRule": "External user-initiated flow. Counts on the BTEN live tape only when a registered BTEN-pool leg is attested or a protected adapter records the route."
+      "gateRule": "External user-initiated flow. Counts toward emission-block release only when a registered BTEN-pool leg is attested or a protected adapter records the route."
     },
     {
       "name": "YouSUI",
       "status": "external-link-pending-official-sdk-review",
       "url": "https://yousui.io/bridge",
       "scope": "User-initiated Sui swap or bridge only.",
-      "gateRule": "External user-initiated flow. Counts on the BTEN live tape only when a registered BTEN-pool leg is attested or a protected adapter records the route."
+      "gateRule": "External user-initiated flow. Counts toward emission-block release only when a registered BTEN-pool leg is attested or a protected adapter records the route."
     }
   ],
   "securityRules": [
     "No provider transaction is auto-submitted by the keeper.",
     "The user's wallet signs every user transaction.",
     "No provider receives a BTEN admin capability, upgrade capability, treasury fund, or GitHub keeper secret.",
-    "A third-party quote is not itself a RouteRecorded proof; live-tape gating for external Cetus BTEN legs comes from ExternalCetusRouteAttested (or an on-package RouteRecorded).",
-    "Do not block or drop live-tape trades; attest or record so they count as gated."
+    "A third-party quote is not itself a RouteRecorded proof; emission gating for external Cetus BTEN legs comes from ExternalCetusRouteAttested (or an on-package RouteRecorded).",
+    "Do not block or drop trades; attest or record so they count toward block release."
   ],
   "liveTape": {
     "treatAllLiveTapeAsGated": true,
     "blockTransactions": false,
-    "rule": "Nothing here bans or blocks a transaction from the live tape. Aggregator quotes are compare helpers; Cetus BTEN legs that land on-chain are attested so they count as gated."
+    "rule": "Tape is display-only. Aggregator quotes are compare helpers; Cetus BTEN legs that land on-chain are attested so they count toward emission-block release."
   }
 }

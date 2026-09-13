@@ -1,0 +1,22 @@
+{
+  "status": "success",
+  "fromVersion": 18,
+  "toVersion": 19,
+  "currentPackage": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "policy": "compatible (0)",
+  "simulatedNewPackageId": "0x62e4ab323bfafe98121ba31fe89acd2039a3cb8e71166c61c89a0ec690272612",
+  "estimatedGasMist": 240940740,
+  "estimatedGasSui": 0.24094074,
+  "toolchain": "sui 1.79.0",
+  "includes": [
+    "MIN_TRADES_PER_BLOCK 10 -> 1",
+    "attest_external_cetus_routes batch entrypoint",
+    "gated = emission-block release comments",
+    "keeper ROUTES_PER_BLOCK=1"
+  ],
+  "notExecuted": true,
+  "stillUpgradeable": true,
+  "immutableCallsMade": false
+}

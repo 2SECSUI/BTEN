@@ -5,6 +5,10 @@
  * `--execute` is deliberately limited to settlement, accounting, LP accrual,
  * and permissionless native-farm reward syncing. It never swaps, controls an
  * upgrade, withdraws user stake, or holds a farm/sponsor administrator cap.
+ *
+ * Settlement is time-slot based: pending blocks after advance_slots are
+ * eligible even when batch_trades is 0. Trades still accrue trader rewards
+ * when present; they do not gate unlock.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -21,7 +25,7 @@ const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const PACKAGE = mainnet.currentPackage;
 const CLOCK = "0x6";
 const SLOT_SECONDS = 600;
-const ROUTES_PER_BLOCK = 10;
+const MAX_SETTLE_BLOCKS = 100; // matches on-chain MAX_SETTLE_BLOCKS — time-pending slots, no trade bar
 const LP_VAULT_FIELDS = ["bten_lp_vault", "cetus_vault", "haedal_vault", "blue_vault", "magma_vault", "sui_gas_vault"];
 
 async function moveFields(address) {
@@ -72,7 +76,7 @@ const [state, treasuryState, farmState] = await Promise.all([
 const now = Math.floor(Date.now() / 1000);
 const elapsedSlots = Math.max(0, Math.floor((now - Number(state.last_slot_ts)) / SLOT_SECONDS));
 const pending = Number(state.pending_blocks) + elapsedSlots;
-const eligibleBlocks = Math.min(pending, Math.floor(Number(state.batch_trades) / ROUTES_PER_BLOCK), policy.settlement.maximumBlocksPerRun);
+const eligibleBlocks = Math.min(pending, MAX_SETTLE_BLOCKS, policy.settlement.maximumBlocksPerRun);
 const syncNeeded = Number(treasuryState.next_height) < Number(state.block_height);
 const report = {
   mode: EXECUTE ? "execute" : "dry-run",

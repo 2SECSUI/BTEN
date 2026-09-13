@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v18-live",
-  "publishedVersion": 18,
-  "currentPackage": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "status": "v20-live",
+  "publishedVersion": 20,
+  "currentPackage": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -94,15 +94,16 @@
     "status": "active-public-event-reader",
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
-    "security": "Only the verifier capability held by the dedicated keeper can attest. A unique 32-byte transaction digest plus event sequence is retained permanently. The public reader scans successful transactions affecting registered BTEN Cetus pools after activation, validates the Cetus SwapEvent and sender, skips routes already RouteRecorded on-chain, normalizes digest keys to base64 for GraphQL/on-chain comparison, uses one fixed point and one receipt per digest (including multi-pool aggregator PTBs), and stays within the on-chain daily cap. Attestation includes volume on the live tape as gated \u2014 it does not block transactions.",
-    "livePackageId": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+    "security": "Only the verifier capability held by the dedicated keeper can attest. Attestation accrues trader points; it does not gate block release. Catch-up settle unlocks pending time-slots without trades. Steady-state pace is advance_slots / 600s.",
+    "livePackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
+      "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc::bten::ExternalCetusRouteAttested",
       "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098::bten::ExternalCetusRouteAttested",
       "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
       "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested"
     ],
-    "liveTapeRule": "Every live-tape row is gated. Cetus/aggregator volume that hits registered BTEN pools is attested so inclusion is complete; absence of RouteRecorded never flips the tape label to ungated. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
+    "liveTapeRule": "Display only. Emission gating is the attestation receipt itself. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
     "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
     "attestationKeyFormat": "base64(32-byte-digest):event_sequence",
     "paused": false,
@@ -112,7 +113,14 @@
       "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
     ],
     "exampleExternalAggregatorDigest": "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v",
-    "liveTapeClassification": "gated"
+    "liveTapeClassification": "gated",
+    "emissionGate": true,
+    "countsTowardBlockRelease": false,
+    "entrypoints": [
+      "bten::attest_external_cetus_route",
+      "bten::attest_external_cetus_routes"
+    ],
+    "oneReceiptPerDigest": true
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -232,7 +240,7 @@
     "managedRebalancePolicy": "config/managed_rebalance_policy.json",
     "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   },
-  "upgradeTx": "3gBGpjAa9hxJGpSo8mcSAwjr5hTyrBDXzmgkuWtRSQDR",
+  "upgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
   "v17Proofs": {
     "cetusSuiToBten": {
       "tx": "2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw",
@@ -243,9 +251,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
+  "livePackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e",
+  "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -268,7 +276,7 @@
     "treatAllLiveTapeAsGated": true,
     "blockTransactions": false,
     "dapp": "https://block10.grok.me",
-    "rule": "Every trade on the live tape is classified as gated. Missing RouteRecorded must not label a row ungated; registered BTEN Cetus pool volume without RouteRecorded is still gated (pending or completed external attestation).",
+    "rule": "Tape classification is not emission gating. Registered BTEN Cetus volume without RouteRecorded becomes settle-eligible only after ExternalCetusRouteAttested.",
     "liveTapeClassification": {
       "everyLiveTapeRow": "gated",
       "neverLabel": "ungated",
@@ -282,7 +290,7 @@
         "completedExternalAttestation": "gated",
         "aggregatorOrDirectCetusOnRegisteredBtenPool": "gated"
       },
-      "note": "Every row on the block10.grok.me live tape is classified as gated. Presence or absence of RouteRecorded must never flip the tape label to ungated. Routes that touch registered BTEN Cetus pools without RouteRecorded remain gated (pending or completed external attestation)."
+      "note": "Tape labels do not unlock blocks. Attestation or adapter recording does."
     },
     "neverLabelUngated": true,
     "routeRecordedAbsenceDoesNotUngate": true,
@@ -299,5 +307,29 @@
     "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
     "policyFile": "config/managed_rebalance_policy.json",
     "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76"
+  },
+  "emissionGate": {
+    "minTradesPerBlock": 0,
+    "maxSettleBlocks": 100,
+    "gatedMeans": "time-pending slots; trades not required",
+    "externalCetusAggregator": "attestation via attest_external_cetus_route / attest_external_cetus_routes; one receipt per digest; increments batch_trades",
+    "note": "Catch-up: settle releases min(pending, MAX_SETTLE_BLOCKS) with no trade bar. Steady-state: advance_slots adds new pending every 600s. Trades accrue rewards only.",
+    "tradeBar": false,
+    "blockTimeSecs": 600
+  },
+  "pendingPackageVersion": 20,
+  "livePackageVersion": 20,
+  "packageStatus": "v20-live",
+  "v20Status": "live",
+  "v20": {
+    "live": true,
+    "packageVersion": 20,
+    "packageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
+    "upgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
+    "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
+    "v19UpgradeTx": "aZXWoQssttz7N6EQSwziYdyuQKh3642R61rXYLxjXsB",
+    "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
+    "emission": "time-pending catch-up without trade bar; 600s pace once caught up"
   }
 }

@@ -1,0 +1,289 @@
+[Note]: Dependency sources are no longer verified automatically during publication and upgrade. You can pass the `--verify-deps` option if you would like to verify them as part of publication or upgrade.
+INCLUDING DEPENDENCY IntegerMate
+INCLUDING DEPENDENCY MoveSTL
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY TurbosCLMM
+INCLUDING DEPENDENCY cetusclmm
+BUILDING bten
+warning[WC09011]: unused constant
+    ┌─ /workspace/BTEN-work/sources/bten.move:132:11
+    │
+132 │     const E_MANAGED_VAULT_OPERATOR: u64 = 40;
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^ The constant 'E_MANAGED_VAULT_OPERATOR' is never used. Consider removing it.
+    │
+    = This warning can be suppressed with '#[allow(unused_const)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC04037]: deprecated usage
+    ┌─ /workspace/BTEN-work/sources/bten.move:535:37
+    │
+535 │         let (cap, metadata) = coin::create_currency<BTEN>(
+    │                                     ^^^^^^^^^^^^^^^ The function 'sui::coin::create_currency' is deprecated: Use `coin_registry::new_currency_with_otw` instead
+    │
+    = This warning can be suppressed with '#[allow(deprecated_usage)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:579:9
+    │
+579 │         state: &mut EmissionState,
+    │         ^^^^^ Unused parameter 'state'. Consider removing or prefixing with an underscore: '_state'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:581:9
+    │
+581 │         fee_points: u64,
+    │         ^^^^^^^^^^ Unused parameter 'fee_points'. Consider removing or prefixing with an underscore: '_fee_points'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:582:9
+    │
+582 │         clock: &Clock,
+    │         ^^^^^ Unused parameter 'clock'. Consider removing or prefixing with an underscore: '_clock'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:583:9
+    │
+583 │         ctx: &mut TxContext,
+    │         ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+{
+  "digest": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
+  "transaction": {
+    "data": {
+      "messageVersion": "v1",
+      "transaction": {
+        "kind": "ProgrammableTransaction",
+        "inputs": [
+          {
+            "type": "object",
+            "objectType": "immOrOwnedObject",
+            "objectId": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+            "version": "20",
+            "digest": "SVXaQeEMyfuh3UjdC9Yahn85kR9kyDVzx8WXjErgCqu"
+          },
+          {
+            "type": "pure",
+            "valueType": null,
+            "value": [
+              0
+            ]
+          },
+          {
+            "type": "pure",
+            "valueType": null,
+            "value": [
+              32,
+              150,
+              92,
+              39,
+              193,
+              38,
+              170,
+              30,
+              241,
+              155,
+              2,
+              60,
+              235,
+              102,
+              127,
+              164,
+              165,
+              152,
+              6,
+              31,
+              26,
+              138,
+              233,
+              136,
+              128,
+              11,
+              38,
+              85,
+              78,
+              110,
+              243,
+              100,
+              236
+            ]
+          }
+        ],
+        "transactions": [
+          {
+            "MoveCall": {
+              "package": "0x0000000000000000000000000000000000000000000000000000000000000002",
+              "module": "package",
+              "function": "authorize_upgrade",
+              "arguments": [
+                {
+                  "Input": 0
+                },
+                {
+                  "Input": 1
+                },
+                {
+                  "Input": 2
+                }
+              ]
+            }
+          },
+          {
+            "Upgrade": [
+              [
+                "0xdfaadf86be9af246900d1e3f3b996cf549e7948e662a9977bdd7646d8fa3a778",
+                "0x8569b7efebec65c73b9dc15c5ac2a9542870d286fa79a3feedffbaa94ed53002",
+                "0x0000000000000000000000000000000000000000000000000000000000000001",
+                "0x0000000000000000000000000000000000000000000000000000000000000002",
+                "0xa5a0c25c79e428eba04fb98b3fb2a34db45ab26d4c8faf0d7e39d66a63891e64",
+                "0x25ebb9a7c50eb17b3fa9c5a30fb8b5ad8f97caaf4928943acbcff7153dfee5e3"
+              ],
+              "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
+              {
+                "Result": 0
+              }
+            ]
+          },
+          {
+            "MoveCall": {
+              "package": "0x0000000000000000000000000000000000000000000000000000000000000002",
+              "module": "package",
+              "function": "commit_upgrade",
+              "arguments": [
+                {
+                  "Input": 0
+                },
+                {
+                  "Result": 1
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "sender": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "gasData": {
+        "payment": [],
+        "owner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+        "price": "100",
+        "budget": "500000000"
+      }
+    },
+    "txSignatures": [
+      "ADSL9n4MybHAwPWZXRC7gO2Gf5yxLJYp2PaNQRcXfsh7a8kVtSMX1lPq50ITqLxy81KR63qdkkVXNvP2ni6nbQU4LmtNJ7wKlE81Wjke694MgdQ7TZdZKXTF2YAI/vbEcQ=="
+    ]
+  },
+  "effects": {
+    "messageVersion": "v1",
+    "status": {
+      "status": "success"
+    },
+    "executedEpoch": "1249",
+    "gasUsed": {
+      "computationCost": "506000",
+      "storageCost": "240821200",
+      "storageRebate": "1617660",
+      "nonRefundableStorageFee": "16340"
+    },
+    "modifiedAtVersions": [
+      {
+        "objectId": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+        "sequenceNumber": "20"
+      }
+    ],
+    "transactionDigest": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
+    "created": [
+      {
+        "owner": "Immutable",
+        "reference": {
+          "objectId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
+          "version": 20,
+          "digest": "AE1P13SJHJtjDLS8sB3Ds3B1NFpv5QoqDj2BPQWpfCkm"
+        }
+      }
+    ],
+    "mutated": [
+      {
+        "owner": {
+          "AddressOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+        },
+        "reference": {
+          "objectId": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+          "version": 21,
+          "digest": "J7sbeS2vn76dpLr2yiG3euPU7ZDGf2d5mkHXFnow1VgJ"
+        }
+      }
+    ],
+    "accumulatorEvents": [
+      {
+        "accumulatorObj": "0x8df1f20d10a7d2aeca7c8c6a786038bb175d69c0fcd75e8b9aeaa2e9795b6816",
+        "address": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+        "ty": "0x2::balance::Balance<0x2::sui::SUI>",
+        "operation": "split",
+        "value": {
+          "integer": 239709540
+        }
+      }
+    ],
+    "gasObject": {
+      "owner": {
+        "AddressOwner": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "reference": {
+        "objectId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "version": 0,
+        "digest": "11111111111111111111111111111111"
+      }
+    },
+    "dependencies": [
+      "aZXWoQssttz7N6EQSwziYdyuQKh3642R61rXYLxjXsB",
+      "4iZ5nMJbgU6VtoDXg8TsuAEg6K6y4zovDgcMqxNn4diS",
+      "67LPZppkWnB3dYZwjJ9vS6n7jb5rG8HvXtXXZCUaRVLy",
+      "6z8MQyrxFEN5H3hshBGWLxNcY5sUQShysFVNoqLzWAQG",
+      "9feeN5tyxKLPPt1nRERtddp8xzxMVefNufkhxWAT1Jja",
+      "Byks2LBG2cNGT9fmhYyDwh3d9oreBnf6sMuE9SzuQGdP",
+      "FzmkKxeiwFgu6kDupWEZjmVgLkznXhK2bLk447o8cJ2u"
+    ]
+  },
+  "objectChanges": [
+    {
+      "type": "mutated",
+      "sender": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+      "owner": {
+        "AddressOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+      },
+      "objectType": "0x2::package::UpgradeCap",
+      "objectId": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+      "version": "21",
+      "previousVersion": "20",
+      "digest": "J7sbeS2vn76dpLr2yiG3euPU7ZDGf2d5mkHXFnow1VgJ"
+    },
+    {
+      "type": "published",
+      "packageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
+      "version": "20",
+      "digest": "AE1P13SJHJtjDLS8sB3Ds3B1NFpv5QoqDj2BPQWpfCkm",
+      "modules": [
+        "bten"
+      ]
+    }
+  ],
+  "balanceChanges": [
+    {
+      "owner": {
+        "AddressOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+      },
+      "coinType": "0x2::sui::SUI",
+      "amount": "-239709540"
+    }
+  ],
+  "timestampMs": "1789338696924",
+  "checkpoint": "322309445"
+}

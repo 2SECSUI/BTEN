@@ -7,8 +7,11 @@
   "routeTreasuryState": "0xf1992cffa7d4980cd03f37a114bd49fc01a1edef09213cffaec7c0f081fa23ce",
   "settlement": {
     "enabled": true,
-    "maximumBlocksPerRun": 10,
-    "gasBudgetMist": "30000000"
+    "maximumBlocksPerRun": 100,
+    "gasBudgetMist": "30000000",
+    "routesPerBlock": 0,
+    "note": "v20: settle unlocks min(pending_blocks, MAX_SETTLE_BLOCKS) after advance_slots even when batch_trades==0.",
+    "tradeBar": false
   },
   "treasurySync": {
     "enabled": true
@@ -26,5 +29,7 @@
   "privilegedExecutors": {
     "enabled": false,
     "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."
-  }
+  },
+  "minTradesPerBlock": 0,
+  "gatedMeans": "time-pending slots release without a trade bar; trades/attestations accrue rewards but are not required to settle"
 }

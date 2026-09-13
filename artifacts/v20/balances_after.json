@@ -1,0 +1,53 @@
+{
+  "upgradeCap": {
+    "id": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "package": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
+    "policy": 0.0,
+    "version": "20"
+  },
+  "emission": {
+    "batch_fee_points": "0",
+    "batch_trades": "0",
+    "block_height": "341",
+    "blue_vault": "0",
+    "bten_lp_vault": "0",
+    "cetus_vault": "0",
+    "current_round": "19",
+    "haedal_vault": "0",
+    "last_slot_ts": "1789338273",
+    "magma_vault": "0",
+    "pending_blocks": "0",
+    "route_fee_vault": "767999075000",
+    "staking_vault": "2000000000",
+    "sui_gas_vault": "0",
+    "total_minted": "1705000000000",
+    "trader_vault": "166670993108"
+  },
+  "treasury": {
+    "lp_support_accrued": "0",
+    "next_height": "341",
+    "paused": false,
+    "pol_accrued": "253500000000",
+    "rebate_accrued": "168999975000",
+    "safety_accrued": "84500000000",
+    "sponsor_accrued": "253500000000"
+  },
+  "lp": {
+    "finalized": true,
+    "paused": false,
+    "protocol_liquidity": "588500000000",
+    "weight_total": "10000"
+  },
+  "farm": {
+    "acc_reward_per_stake": "143731501911969196914",
+    "next_height": "341",
+    "paused": false,
+    "reward_vault": "163000000000",
+    "staked_principal": "4017964590",
+    "started": true,
+    "total_staked": "4017964590"
+  },
+  "distribution": {
+    "next_height": "341"
+  }
+}
