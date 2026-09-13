@@ -115,10 +115,14 @@
       "Import position",
       "Performance"
     ],
-    "summary": "Import BTEN-pair pools; rebalance only on BTEN-gated routes; importers share BTEN LP rewards; protocol takes 2% of realized profits.",
+    "summary": "Import BTEN-pair pools; rebalance only on BTEN-gated routes; importers share BTEN LP rewards; 2% of realized profits goes to ops wallets.",
     "importedPoolsEarnBtenLpRewards": true,
     "lpRewardShare": true,
-    "allTransactionsBtenGated": true
+    "allTransactionsBtenGated": true,
+    "profitFeeRecipient": "ops_wallets",
+    "opsWallets": [
+      "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+    ]
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",
@@ -130,7 +134,8 @@
     "allTransactionsBtenGated": true,
     "tinyCutToBtenLpPools": true,
     "importedPoolsShareBtenLpRewards": true,
-    "managedVaultsProfitShareBps": 200
+    "managedVaultsProfitShareBps": 200,
+    "managedVaultsProfitFeeToOpsWallets": true
   },
   "gatePolicy": {
     "allDappTransactionsBtenGated": true,

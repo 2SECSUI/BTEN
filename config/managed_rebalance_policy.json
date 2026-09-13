@@ -3,16 +3,20 @@
   "dapp": "https://block10.grok.me",
   "status": "v17-specified",
   "network": "mainnet",
-  "summary": "Users import Cetus BTEN-pair positions. Block10 rebalances only via BTEN-gated routes. Enrolled positions earn a share of BTEN LP rewards. Protocol takes 2% of realized profits only.",
+  "summary": "Users import Cetus BTEN-pair positions. Block10 rebalances only via BTEN-gated routes. Enrolled positions earn a share of BTEN LP rewards. Ops wallets take 2% of realized profits only.",
   "fee": {
     "profitShareBps": 200,
     "basis": "realized_profit_only",
     "definition": "Profit = USD value withdrawn or compounded above the user's imported cost basis for that position. No fee on principal. Fee is taken in the profit asset(s) at harvest/rebalance settle.",
-    "recipient": "BTEN protocol treasury / BTEN LP support per distribution_destinations.json",
+    "recipient": "ops_wallets",
     "neverFee": [
       "imported_principal",
       "unrealized_mark_to_market_only"
-    ]
+    ],
+    "opsWallets": [
+      "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+    ],
+    "recipientNote": "2% of realized rebalance profits is paid to ops wallets only. It does not go to BTEN LP vaults or emission buckets."
   },
   "userFlow": {
     "import": "Wallet-sign transfer or share of an eligible Cetus BTEN-pair position NFT / position object into the managed programme.",
@@ -82,6 +86,7 @@
     "rule": "Users who enroll/import eligible BTEN-pair positions receive a proportional share of BTEN LP rewards while enrolled, weighted by eligible programme liquidity.",
     "protocolProfitFeeBps": 200,
     "feeDoesNotReplaceLpShare": true,
-    "note": "2% realized-profit fee is separate from LP reward share. Importers keep LP reward eligibility; protocol takes 2% of realized rebalance profits only."
+    "note": "2% realized-profit fee goes to ops wallets only. It is separate from LP reward share. Importers keep BTEN LP reward eligibility.",
+    "profitFeeRecipient": "ops_wallets"
   }
 }
