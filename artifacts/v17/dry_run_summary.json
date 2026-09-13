@@ -1,0 +1,21 @@
+{
+  "status": "success",
+  "fromVersion": 16,
+  "toVersion": 17,
+  "currentPackage": "0xc71c7ab810ba15ea337dc7722e8eaac4e3c7e631cf3557f70167783f1f3bcc41",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "policy": "compatible (0)",
+  "simulatedNewPackageId": "0xda1dbc8a8cb35d6afdfb9ebe95458eb4e4d8fe47b4bcff2321931bdad6d2abe4",
+  "packageDigestHex": "0x95a042e3d57e57387448f28d04a7178dec202ca5ec674273701426c061334ff9",
+  "estimatedGasMist": 208593340,
+  "estimatedGasSui": 0.208593,
+  "toolchain": "sui 1.79.0",
+  "includes": [
+    "composable Cetus return adapters + ComposableRouteTicket",
+    "Turbos gated entry + return adapters (BUCKET_TURBOS)",
+    "existing via_bten / rebate paths"
+  ],
+  "notExecuted": true,
+  "git": "7f02d79"
+}

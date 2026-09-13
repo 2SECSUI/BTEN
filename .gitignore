@@ -21,3 +21,6 @@ composable_test_out.txt
 
 # Turbos full upstream snapshot (optional local only)
 .turbos-sui-move-interface/clmm/sources.bak/
+
+artifacts/v17/package_dump.json
+artifacts/v17/build-dump.json

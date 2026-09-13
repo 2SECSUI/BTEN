@@ -23,10 +23,10 @@ Reads GitHub `main` configs. After merge/push, refresh the Grok dapp so it picks
 ## Publish checklist
 
 - [ ] `sui move test` / build with `--dependencies-are-root`
-- [ ] Dry-run upgrade
+- [x] Dry-run upgrade (V17_UPGRADE_DRY_RUN.md) — success, not executed
 - [ ] Small-value mainnet proofs (single hop, composable seal, via_bten, rebate)
 - [ ] Sponsor authorizer live with caps
-- [ ] Turbos interface vendored + at least one pool registered
+- [x] Turbos interface vendored/adapters wired; [ ] at least one Turbos pool registered
 - [ ] Verification zip + Published.toml version 17
 - [ ] Push configs to `2SECSUI/BTEN` main for the live dapp
 
