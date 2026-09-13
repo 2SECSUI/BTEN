@@ -114,21 +114,31 @@
   },
   "managedRebalance": {
     "policyFile": "config/managed_rebalance_policy.json",
-    "status": "v17-specified",
-    "profitFeeBps": 200,
+    "status": "v18-move-scaffold",
     "dappPages": [
       "Manage",
       "Import position",
       "Performance"
     ],
-    "summary": "Import BTEN-pair pools; rebalance only on BTEN-gated routes; importers share BTEN LP rewards; 2% of realized profits goes to ops wallets.",
-    "importedPoolsEarnBtenLpRewards": true,
-    "lpRewardShare": true,
-    "allTransactionsBtenGated": true,
+    "summary": "Users add/remove any Cetus LP positions on block10.grok.me, set rebalance params, exit anytime. BTEN rebalances; 2% realized profit fee to ops.",
+    "anyPool": true,
+    "userCanAddRemoveAnytime": true,
+    "userSetsParameters": true,
+    "profitFeeBps": 200,
     "profitFeeRecipient": "ops_wallets",
     "opsWallets": [
       "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
-    ]
+    ],
+    "entrypoints": {
+      "createVault": "bten::create_managed_vault",
+      "enroll": "bten::enroll_cetus_position",
+      "updateParams": "bten::update_enrollment_params",
+      "withdrawAnytime": "bten::withdraw_enrolled_position",
+      "operatorTake": "bten::operator_take_position",
+      "operatorReturn": "bten::operator_return_position",
+      "settleExit": "bten::settle_exit_with_coins"
+    },
+    "pendingPackage": "deploy ManagedVault with next upgrade after dry-run"
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",

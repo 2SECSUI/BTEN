@@ -1,9 +1,9 @@
 {
   "product": "Block10 Managed Rebalance Vaults",
   "dapp": "https://block10.grok.me",
-  "status": "v17-specified",
+  "status": "v18-move-scaffold",
   "network": "mainnet",
-  "summary": "Users import Cetus BTEN-pair positions. Block10 rebalances only via BTEN-gated routes. Enrolled positions earn a share of BTEN LP rewards. Ops wallets take 2% of realized profits only.",
+  "summary": "Users import any Cetus LP position (any pool/pair). Block10 rebalances; 2% of per-asset realized profit above import basis goes to ops wallets.",
   "fee": {
     "profitShareBps": 200,
     "basis": "realized_profit_only",
@@ -19,24 +19,26 @@
     "recipientNote": "2% of realized rebalance profits is paid to ops wallets only. It does not go to BTEN LP vaults or emission buckets."
   },
   "userFlow": {
-    "import": "Wallet-sign transfer or share of an eligible Cetus BTEN-pair position NFT / position object into the managed programme.",
-    "create": "Optional: open a new in-range or adjacent BTEN pair position and enroll it.",
-    "rebalance": "Operator/daemon may withdraw OOR, swap with min-out guards, and redeposit in-range using the same safety rules as bten_lp_rebalance_daemon.mjs.",
-    "withdraw": "User can exit; accrued 2% fee is settled on realized profit before return of remainder.",
-    "rewards": "While enrolled, position liquidity accrues a share of BTEN LP rewards from settled gated volume; claim/auto-pay follows programme rules. Exit settles the 2% realized-profit fee, then returns remainder."
+    "surface": "block10.grok.me Manage / Import",
+    "import": "User connects wallet, picks any Cetus Position NFT, sets cost basis + rebalance params, signs enroll_cetus_position.",
+    "updateParams": "User can call update_enrollment_params anytime (max deviation, slippage, recenter, allow OOR close).",
+    "remove": "User can withdraw_enrolled_position anytime while not mid-operator-take; or settle_exit_with_coins after a closed exit (2% fee on realized profit above basis).",
+    "rebalance": "BTEN operator takes position, rebalances per user params, returns position NFT to enrollment.",
+    "fee": "2% of per-asset realized profit above import basis to ops on settle/exit only \u2014 never on principal."
   },
   "eligibility": {
-    "requireBtenPair": true,
-    "requireRegisteredCetusPool": true,
-    "excludePairs": [
-      "BTEN/vSUI"
-    ],
+    "requireBtenPair": false,
+    "anyCetusClmmPosition": true,
+    "requireRegisteredCetusPool": false,
     "venues": [
       "cetus"
     ],
     "futureVenues": [
-      "turbos"
-    ]
+      "turbos",
+      "bluefin",
+      "haedal"
+    ],
+    "note": "Any Cetus position NFT can be enrolled. Swaps during rebalance still prefer BTEN-gated routes when a BTEN hop is available."
   },
   "operator": {
     "rebalancer": "laptop/bten_lp_rebalance_daemon.mjs pattern extended to enrolled user positions",
@@ -65,7 +67,7 @@
     "configFile": "config/managed_rebalance_policy.json",
     "integrationKey": "managedRebalance"
   },
-  "onChainStatus": "policy-first; Move vault escrow/fee settlement ships with v17 programme objects when enrolled positions require trust-minimised custody",
+  "onChainStatus": "ManagedVaultState + ManagedEnrollment in package source; deploy with next upgrade (v18).",
   "gatePolicy": {
     "allTransactionsBtenGated": true,
     "rule": "Every user action on Block10 that moves value (swap, rebalance hop, harvest, enroll, withdraw settle) must use a protected BTEN-gated path with min-out and one receipt per finished route. No ungated DEX shortcut for managed-vault flow.",
@@ -88,5 +90,32 @@
     "feeDoesNotReplaceLpShare": true,
     "note": "2% realized-profit fee goes to ops wallets only. It is separate from LP reward share. Importers keep BTEN LP reward eligibility.",
     "profitFeeRecipient": "ops_wallets"
+  },
+  "parameters": {
+    "maxDeviationBps": {
+      "default": 200,
+      "min": 1,
+      "max": 10000
+    },
+    "slippageBps": {
+      "default": 100,
+      "min": 1,
+      "max": 1000
+    },
+    "recenter": {
+      "default": true
+    },
+    "allowOorClose": {
+      "default": true
+    }
+  },
+  "onChainEntrypoints": {
+    "createVault": "bten::create_managed_vault",
+    "enroll": "bten::enroll_cetus_position",
+    "updateParams": "bten::update_enrollment_params",
+    "withdrawAnytime": "bten::withdraw_enrolled_position",
+    "operatorTake": "bten::operator_take_position",
+    "operatorReturn": "bten::operator_return_position",
+    "settleExit": "bten::settle_exit_with_coins"
   }
 }

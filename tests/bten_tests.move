@@ -446,4 +446,48 @@ module bten::bten_tests {
         };
         scenario.end();
     }
+
+    #[test]
+    fun managed_profit_fee_is_two_percent_of_profit_only() {
+        // basis 100 / 50, returned 150 / 40 -> profit only on A (50), fee 1; B no profit
+        let (fee_a, fee_b) = bten::managed_profit_fees(100, 50, 150, 40, 200);
+        assert!(fee_a == 1, 300);
+        assert!(fee_b == 0, 301);
+        let (fee_a2, fee_b2) = bten::managed_profit_fees(100, 50, 100, 50, 200);
+        assert!(fee_a2 == 0 && fee_b2 == 0, 302);
+    }
+
+    #[test]
+    fun managed_vault_creates_and_pauses() {
+        let admin = @0xA;
+        let ops = @0xB;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_managed_vault(&admin_cap, ops, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut vault = scenario.take_shared<bten::ManagedVaultState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            assert!(bten::managed_vault_ops_wallet(&vault) == ops, 310);
+            assert!(bten::managed_vault_fee_bps(&vault) == 200, 311);
+            assert!(!bten::managed_vault_is_paused(&vault), 312);
+            bten::set_managed_vault_paused(&mut vault, &admin_cap, true);
+            assert!(bten::managed_vault_is_paused(&vault), 313);
+            test_scenario::return_shared(vault);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let cap = scenario.take_from_sender<bten::ManagedVaultOperatorCap>();
+            scenario.return_to_sender(cap);
+        };
+        scenario.end();
+    }
+
 }

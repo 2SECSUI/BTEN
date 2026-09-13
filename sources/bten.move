@@ -24,6 +24,8 @@ module bten::bten {
     use sui::sui::SUI;
     use cetusclmm::config::GlobalConfig;
     use cetusclmm::pool::{Self, Pool};
+    use cetusclmm::position::{Self as cetus_position, Position};
+    use sui::dynamic_object_field as dof;
     use turbos_clmm::pool::{Pool as TurbosPool, Versioned as TurbosVersioned};
     use turbos_clmm::swap_router;
 
@@ -114,6 +116,12 @@ module bten::bten {
     const E_REBATE_STATE_CONFIG: u64 = 35;
     const E_REBATE_CAP: u64 = 36;
     const E_COMPOSABLE_ROUTE: u64 = 37;
+    const E_MANAGED_VAULT: u64 = 38;
+    const E_MANAGED_VAULT_OWNER: u64 = 39;
+    const E_MANAGED_VAULT_OPERATOR: u64 = 40;
+    const E_MANAGED_VAULT_PAUSED: u64 = 41;
+    const E_MANAGED_VAULT_TAKEN: u64 = 42;
+    const MANAGED_PROFIT_FEE_BPS: u64 = 200;
 
     public struct BTEN has drop {}
 
@@ -141,6 +149,80 @@ module bten::bten {
         trader: address,
         paid_points: u64,
     }
+
+    /// Capability for the laptop/ops rebalancer to take and return enrolled positions.
+    public struct ManagedVaultOperatorCap has key, store { id: UID }
+
+    /// Shared programme: users deposit any Cetus LP Position; BTEN rebalances; 2% of
+    /// per-asset realized profit above import basis goes to ops on settle/exit.
+    public struct ManagedVaultState has key {
+        id: UID,
+        ops_wallet: address,
+        profit_fee_bps: u64,
+        paused: bool,
+        enrollment_count: u64,
+    }
+
+    /// User-set rebalance preferences (editable anytime from the dapp while enrolled).
+    public struct ManagedRebalanceParams has copy, drop, store {
+        /// Max deviation from target before operator may act (bps).
+        max_deviation_bps: u64,
+        /// Slippage tolerance for operator swaps (bps).
+        slippage_bps: u64,
+        /// Prefer re-centering around current price when redepositing.
+        recenter: bool,
+        /// Allow out-of-range close + redeposit.
+        allow_oor_close: bool,
+    }
+
+    /// Metadata for one enrolled position. The Cetus `Position` NFT is held as a
+    /// dynamic object field on this object under key `b"position"`.
+    public struct ManagedEnrollment has key, store {
+        id: UID,
+        owner: address,
+        pool_id: address,
+        position_id: address,
+        /// Coin A raw amount recorded at import (cost basis).
+        basis_a: u64,
+        /// Coin B raw amount recorded at import (cost basis).
+        basis_b: u64,
+        liquidity_at_import: u128,
+        enrolled_ms: u64,
+        /// When true, operator currently holds the Position outside this object.
+        taken: bool,
+        params: ManagedRebalanceParams,
+    }
+
+    /// Hot-potato proving the operator must return a Position for this enrollment.
+    public struct ManagedPositionLoan {
+        enrollment_id: address,
+        position_id: address,
+    }
+
+    public struct ManagedPositionEnrolled has copy, drop {
+        enrollment_id: address,
+        owner: address,
+        pool_id: address,
+        position_id: address,
+        basis_a: u64,
+        basis_b: u64,
+    }
+
+    public struct ManagedPositionReturned has copy, drop {
+        enrollment_id: address,
+        position_id: address,
+    }
+
+    public struct ManagedExitSettled has copy, drop {
+        enrollment_id: address,
+        owner: address,
+        returned_a: u64,
+        returned_b: u64,
+        fee_a: u64,
+        fee_b: u64,
+        ops_wallet: address,
+    }
+
 
     /// The key is permanently retained after an accepted external event, so a
     /// transaction/event pair can never advance a BTEN gate twice.
@@ -2200,4 +2282,259 @@ module bten::bten {
         *table::borrow(&registry.pools, pool_id)
     }
     public fun registry_is_finalized(registry: &PoolRegistry): bool { registry.finalized }
+
+    /// Create the shared managed-vault programme. Caller with admin cap receives the operator cap.
+    public entry fun create_managed_vault(
+        _admin: &RegistryAdminCap,
+        ops_wallet: address,
+        ctx: &mut TxContext,
+    ) {
+        assert!(ops_wallet != @0x0, E_MANAGED_VAULT);
+        transfer::share_object(ManagedVaultState {
+            id: object::new(ctx),
+            ops_wallet,
+            profit_fee_bps: MANAGED_PROFIT_FEE_BPS,
+            paused: false,
+            enrollment_count: 0,
+        });
+        transfer::public_transfer(ManagedVaultOperatorCap { id: object::new(ctx) }, tx_context::sender(ctx));
+    }
+
+    public fun set_managed_vault_paused(
+        vault: &mut ManagedVaultState,
+        _admin: &RegistryAdminCap,
+        paused: bool,
+    ) {
+        vault.paused = paused;
+    }
+
+    public fun set_managed_vault_ops_wallet(
+        vault: &mut ManagedVaultState,
+        _admin: &RegistryAdminCap,
+        ops_wallet: address,
+    ) {
+        assert!(ops_wallet != @0x0, E_MANAGED_VAULT);
+        vault.ops_wallet = ops_wallet;
+    }
+
+    /// Import any Cetus CLMM Position (any pool / pair). Cost basis is the raw coin amounts
+    /// at import; the 2% ops fee applies only to realized amounts above that basis on exit.
+    public entry fun enroll_cetus_position<A, B>(
+        vault: &mut ManagedVaultState,
+        pool: &Pool<A, B>,
+        position: Position,
+        basis_a: u64,
+        basis_b: u64,
+        max_deviation_bps: u64,
+        slippage_bps: u64,
+        recenter: bool,
+        allow_oor_close: bool,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!vault.paused, E_MANAGED_VAULT_PAUSED);
+        assert!(max_deviation_bps > 0 && max_deviation_bps <= BPS, E_MANAGED_VAULT);
+        assert!(slippage_bps > 0 && slippage_bps <= 1_000, E_MANAGED_VAULT);
+        let pool_id = object::id_to_address(&object::id(pool));
+        let pos_pool = object::id_to_address(&cetus_position::pool_id(&position));
+        assert!(pos_pool == pool_id, E_MANAGED_VAULT);
+        let position_id = object::id_to_address(&object::id(&position));
+        let liquidity = cetus_position::liquidity(&position);
+        let owner = tx_context::sender(ctx);
+        let params = ManagedRebalanceParams {
+            max_deviation_bps,
+            slippage_bps,
+            recenter,
+            allow_oor_close,
+        };
+        let mut enrollment = ManagedEnrollment {
+            id: object::new(ctx),
+            owner,
+            pool_id,
+            position_id,
+            basis_a,
+            basis_b,
+            liquidity_at_import: liquidity,
+            enrolled_ms: clock::timestamp_ms(clock),
+            taken: false,
+            params,
+        };
+        let enrollment_id = object::id_to_address(&object::id(&enrollment));
+        dof::add(&mut enrollment.id, b"position", position);
+        event::emit(ManagedPositionEnrolled {
+            enrollment_id,
+            owner,
+            pool_id,
+            position_id,
+            basis_a,
+            basis_b,
+        });
+        vault.enrollment_count = vault.enrollment_count + 1;
+        transfer::share_object(enrollment);
+    }
+
+    /// Owner updates rebalance parameters anytime from the dapp (position stays enrolled).
+    public entry fun update_enrollment_params(
+        enrollment: &mut ManagedEnrollment,
+        max_deviation_bps: u64,
+        slippage_bps: u64,
+        recenter: bool,
+        allow_oor_close: bool,
+        ctx: &mut TxContext,
+    ) {
+        assert!(enrollment.owner == tx_context::sender(ctx), E_MANAGED_VAULT_OWNER);
+        assert!(max_deviation_bps > 0 && max_deviation_bps <= BPS, E_MANAGED_VAULT);
+        assert!(slippage_bps > 0 && slippage_bps <= 1_000, E_MANAGED_VAULT);
+        enrollment.params = ManagedRebalanceParams {
+            max_deviation_bps,
+            slippage_bps,
+            recenter,
+            allow_oor_close,
+        };
+    }
+
+
+    /// Operator borrows the Position NFT to rebalance (close / swap / reopen) off this object.
+    public fun operator_take_position(
+        vault: &ManagedVaultState,
+        enrollment: &mut ManagedEnrollment,
+        _cap: &ManagedVaultOperatorCap,
+    ): (Position, ManagedPositionLoan) {
+        assert!(!vault.paused, E_MANAGED_VAULT_PAUSED);
+        assert!(!enrollment.taken, E_MANAGED_VAULT_TAKEN);
+        assert!(dof::exists(&enrollment.id, b"position"), E_MANAGED_VAULT);
+        let position = dof::remove<vector<u8>, Position>(&mut enrollment.id, b"position");
+        enrollment.taken = true;
+        let loan = ManagedPositionLoan {
+            enrollment_id: object::id_to_address(&object::id(enrollment)),
+            position_id: object::id_to_address(&object::id(&position)),
+        };
+        (position, loan)
+    }
+
+    /// Return a (possibly replacement) Position after an operator rebalance cycle.
+    public fun operator_return_position(
+        vault: &ManagedVaultState,
+        enrollment: &mut ManagedEnrollment,
+        _cap: &ManagedVaultOperatorCap,
+        position: Position,
+        loan: ManagedPositionLoan,
+    ) {
+        assert!(!vault.paused, E_MANAGED_VAULT_PAUSED);
+        assert!(enrollment.taken, E_MANAGED_VAULT_TAKEN);
+        let ManagedPositionLoan { enrollment_id, position_id: _old } = loan;
+        assert!(enrollment_id == object::id_to_address(&object::id(enrollment)), E_MANAGED_VAULT);
+        let new_id = object::id_to_address(&object::id(&position));
+        enrollment.position_id = new_id;
+        enrollment.taken = false;
+        dof::add(&mut enrollment.id, b"position", position);
+        event::emit(ManagedPositionReturned {
+            enrollment_id,
+            position_id: new_id,
+        });
+    }
+
+    /// Owner exits: operator (or owner after close) supplies the recovered coins; vault takes
+    /// 2% of per-asset profit above import basis, sends fees to ops, remainder to owner, and
+    /// destroys the empty enrollment (Position must already be closed / not stored).
+    public fun settle_exit_with_coins<A, B>(
+        vault: &mut ManagedVaultState,
+        enrollment: ManagedEnrollment,
+        mut coin_a: Coin<A>,
+        mut coin_b: Coin<B>,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!vault.paused, E_MANAGED_VAULT_PAUSED);
+        assert!(!enrollment.taken, E_MANAGED_VAULT_TAKEN);
+        assert!(!dof::exists(&enrollment.id, b"position"), E_MANAGED_VAULT);
+        let ManagedEnrollment {
+            id,
+            owner,
+            pool_id: _,
+            position_id: _,
+            basis_a,
+            basis_b,
+            liquidity_at_import: _,
+            enrolled_ms: _,
+            taken: _,
+            params: _,
+        } = enrollment;
+        let enrollment_id = object::uid_to_address(&id);
+        object::delete(id);
+
+        let returned_a = coin::value(&coin_a);
+        let returned_b = coin::value(&coin_b);
+        let profit_a = if (returned_a > basis_a) { returned_a - basis_a } else { 0 };
+        let profit_b = if (returned_b > basis_b) { returned_b - basis_b } else { 0 };
+        let fee_a = profit_a * vault.profit_fee_bps / BPS;
+        let fee_b = profit_b * vault.profit_fee_bps / BPS;
+        let ops = vault.ops_wallet;
+        if (fee_a > 0) {
+            transfer::public_transfer(coin::split(&mut coin_a, fee_a, ctx), ops);
+        };
+        if (fee_b > 0) {
+            transfer::public_transfer(coin::split(&mut coin_b, fee_b, ctx), ops);
+        };
+        transfer::public_transfer(coin_a, owner);
+        transfer::public_transfer(coin_b, owner);
+        vault.enrollment_count = vault.enrollment_count - 1;
+        event::emit(ManagedExitSettled {
+            enrollment_id,
+            owner,
+            returned_a,
+            returned_b,
+            fee_a,
+            fee_b,
+            ops_wallet: ops,
+        });
+    }
+
+    /// Owner cancels enrollment and takes the Position back when it was never taken by ops
+    /// and no exit settlement is needed (no fee — no realized profit event).
+    public entry fun withdraw_enrolled_position(
+        vault: &mut ManagedVaultState,
+        enrollment: ManagedEnrollment,
+        ctx: &mut TxContext,
+    ) {
+        assert!(!vault.paused, E_MANAGED_VAULT_PAUSED);
+        assert!(enrollment.owner == tx_context::sender(ctx), E_MANAGED_VAULT_OWNER);
+        assert!(!enrollment.taken, E_MANAGED_VAULT_TAKEN);
+        assert!(dof::exists(&enrollment.id, b"position"), E_MANAGED_VAULT);
+        let ManagedEnrollment {
+            mut id,
+            owner,
+            pool_id: _,
+            position_id: _,
+            basis_a: _,
+            basis_b: _,
+            liquidity_at_import: _,
+            enrolled_ms: _,
+            taken: _,
+            params: _,
+        } = enrollment;
+        let position = dof::remove<vector<u8>, Position>(&mut id, b"position");
+        object::delete(id);
+        vault.enrollment_count = vault.enrollment_count - 1;
+        transfer::public_transfer(position, owner);
+    }
+
+    public fun managed_vault_ops_wallet(vault: &ManagedVaultState): address { vault.ops_wallet }
+    public fun managed_vault_fee_bps(vault: &ManagedVaultState): u64 { vault.profit_fee_bps }
+    public fun managed_vault_is_paused(vault: &ManagedVaultState): bool { vault.paused }
+    public fun managed_vault_enrollment_count(vault: &ManagedVaultState): u64 { vault.enrollment_count }
+    public fun managed_enrollment_owner(e: &ManagedEnrollment): address { e.owner }
+    public fun managed_enrollment_pool(e: &ManagedEnrollment): address { e.pool_id }
+    public fun managed_enrollment_position_id(e: &ManagedEnrollment): address { e.position_id }
+    public fun managed_enrollment_taken(e: &ManagedEnrollment): bool { e.taken }
+    public fun managed_enrollment_basis(e: &ManagedEnrollment): (u64, u64) { (e.basis_a, e.basis_b) }
+    public fun managed_enrollment_params(e: &ManagedEnrollment): ManagedRebalanceParams { e.params }
+
+    /// Pure helper for clients/tests: 2% of profit above basis per asset.
+    public fun managed_profit_fees(basis_a: u64, basis_b: u64, returned_a: u64, returned_b: u64, fee_bps: u64): (u64, u64) {
+        let profit_a = if (returned_a > basis_a) { returned_a - basis_a } else { 0 };
+        let profit_b = if (returned_b > basis_b) { returned_b - basis_b } else { 0 };
+        (profit_a * fee_bps / BPS, profit_b * fee_bps / BPS)
+    }
+
+
 }
