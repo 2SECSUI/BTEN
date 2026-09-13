@@ -1,5 +1,5 @@
 {
-  "status": "adapters-wired",
+  "status": "adapters-wired-registry-blocked",
   "vendor": {
     "source": "turbos-finance/turbos-sui-move-interface",
     "ref": "mainnet-v0.1.8",
@@ -20,8 +20,9 @@
   },
   "registryBucket": 3,
   "next": [
-    "Register live Turbos BTEN pools into PoolRegistry with BUCKET_TURBOS",
-    "Add MAINNET_ROUTE_CONFIG Turbos venue rows after pool IDs confirmed",
-    "Bluefin venue next after Turbos mainnet smoke"
-  ]
+    "Ship a small upgrade (or admin path) to allow BUCKET_TURBOS registrations post-finalize, OR recreate registry policy",
+    "Create/find Turbos BTEN pair pool",
+    "Register pool bucket=3 and smoke turbos_swap_to_bten"
+  ],
+  "blocker": "PoolRegistry finalized=true with 11 pools; register_pool asserts !finalized. No BTEN pool found on Turbos API top list."
 }

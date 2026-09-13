@@ -22,3 +22,17 @@
 2. Register at least one Turbos BTEN pool into PoolRegistry
 3. Explorer verification zip if needed
 4. Confirm Block10 dapp reads v17 package id from config/block10_integration.json
+
+
+## Post-upgrade proofs
+
+### Cetus gated SUI → BTEN (live)
+
+- **Tx:** 2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw
+- **Amount:** 0.002 SUI → ~0.0038 BTEN (est.)
+- **Entry:** cetus_swap_to_bten_b2a on package v17
+- **RouteRecorded:** yes
+
+### Turbos
+
+Blocked: PoolRegistry.finalized == true (11 pools). Adapters compile and are on-chain, but no new BUCKET_TURBOS registrations until registry policy is reopened in a later upgrade. No BTEN pool currently listed on Turbos public pool API.
