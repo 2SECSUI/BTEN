@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "upgradeTx": "Hffs2p4ptgFpcGr5zW7JWpRj4NNXGgxQrgy3GJxgzL4N",
+  "newPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "packageVersion": 21,
+  "previousPackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+  "upgradeCapPolicy": 0,
+  "upgradeCapPolicyName": "compatible",
+  "gasMist": 239976540,
+  "note": "authorize_upgrade used policy 0 (Compatible). UpgradeCap not destroyed. Package remains upgradeable. MAX_SETTLE_BLOCKS=1."
+}

@@ -6,9 +6,10 @@
  * and permissionless native-farm reward syncing. It never swaps, controls an
  * upgrade, withdraws user stake, or holds a farm/sponsor administrator cap.
  *
- * Settlement is time-slot based: pending blocks after advance_slots are
- * eligible even when batch_trades is 0. Trades still accrue trader rewards
- * when present; they do not gate unlock.
+ * Bitcoin-style ~10-minute cadence: advance_slots creates pending every 600s;
+ * each settle releases at most one block (MAX_SETTLE_BLOCKS=1). No bulk
+ * multi-block catch-up dumps. Trades still accrue trader rewards when present;
+ * they do not gate unlock.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -25,7 +26,7 @@ const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const PACKAGE = mainnet.currentPackage;
 const CLOCK = "0x6";
 const SLOT_SECONDS = 600;
-const MAX_SETTLE_BLOCKS = 100; // matches on-chain MAX_SETTLE_BLOCKS — time-pending slots, no trade bar
+const MAX_SETTLE_BLOCKS = 1; // matches on-chain MAX_SETTLE_BLOCKS — Bitcoin-style one block per settle
 const LP_VAULT_FIELDS = ["bten_lp_vault", "cetus_vault", "haedal_vault", "blue_vault", "magma_vault", "sui_gas_vault"];
 
 async function moveFields(address) {

@@ -1,7 +1,8 @@
 /// BlockTen (BTEN) is a fixed-cap emission token.
 ///
-/// Block release is time-slot based: after `advance_slots`, `settle` unlocks
-/// `min(pending_blocks, MAX_SETTLE_BLOCKS)` even when `batch_trades == 0`.
+/// Bitcoin-style ~10-minute block cadence: `advance_slots` creates a new pending
+/// slot only every `BLOCK_TIME_SECS` (600s). Each `settle` call then releases at
+/// most one block (`MAX_SETTLE_BLOCKS = 1`) — no bulk multi-block catch-up dumps.
 /// Trades and external attestations still accrue trader points/rewards for the
 /// sealed round; they are not required to release pending blocks.
 /// Live-tape labeling is display-only and is not the gate.
@@ -44,10 +45,10 @@ module bten::bten {
     const BLOCK_TIME_SECS: u64 = 600;
     const HALVING_INTERVAL: u64 = 210_000;
     // Retained for views / compatibility. Settlement no longer requires
-    // batch_trades / MIN_TRADES_PER_BLOCK. Time-pending slots release up to
-    // MAX_SETTLE_BLOCKS per call.
+    // batch_trades / MIN_TRADES_PER_BLOCK. Bitcoin-style cadence: at most one
+    // pending slot unlocks per settle call (no bulk catch-up dumps).
     const MIN_TRADES_PER_BLOCK: u64 = 1;
-    const MAX_SETTLE_BLOCKS: u64 = 100;
+    const MAX_SETTLE_BLOCKS: u64 = 1;
     const BPS: u64 = 10_000;
     const DAY_MS: u64 = 86_400_000;
     // The route reserve may only refill the SUI sponsor gradually. These are
@@ -1289,13 +1290,12 @@ module bten::bten {
         event::emit(BlocksReleased { blocks: 1, emission, remaining_pending: state.pending_blocks });
     }
 
-    /// Permissionless settlement.
-    /// Catch-up: unlock `min(pending_blocks, MAX_SETTLE_BLOCKS)` with no trade
-    /// bar so the backlog can drain. Steady-state: `advance_slots` still
-    /// creates new pending only every BLOCK_TIME_SECS (600s); once pending is
-    /// drained, the 10-minute clock is what makes the next block available.
-    /// Present receipts still seal trader points/rewards; they do not gate
-    /// unlock.
+    /// Permissionless settlement (Bitcoin-style ~10 min cadence).
+    /// Releases `min(pending_blocks, MAX_SETTLE_BLOCKS)` with MAX_SETTLE_BLOCKS=1,
+    /// so at most one block per call — no bulk multi-block catch-up dumps.
+    /// No trade bar: `batch_trades == 0` is fine. `advance_slots` still creates
+    /// new pending only every BLOCK_TIME_SECS (600s). Present receipts seal
+    /// trader points/rewards; they do not gate unlock.
     public fun settle(state: &mut EmissionState, clock: &Clock, ctx: &mut TxContext) {
         advance_slots(state, clock::timestamp_ms(clock) / 1000);
         let mut blocks = state.pending_blocks;
@@ -2331,6 +2331,7 @@ module bten::bten {
     public fun max_supply(): u64 { MAX_SUPPLY }
     public fun initial_subsidy(): u64 { INITIAL_SUBSIDY }
     public fun block_time_secs(): u64 { BLOCK_TIME_SECS }
+    public fun max_settle_blocks(): u64 { MAX_SETTLE_BLOCKS }
     public fun min_trades_per_block(): u64 { MIN_TRADES_PER_BLOCK }
     public fun pending_blocks(state: &EmissionState): u64 { state.pending_blocks }
     public fun batch_trades(state: &EmissionState): u64 { state.batch_trades }

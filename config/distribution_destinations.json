@@ -4,7 +4,7 @@
   "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
   "deploymentTransaction": "gAegYi4JGp9oDQzUzWaiGkrMW4Rj5cXfMFHK84epCUR",
   "policy": "A destination is enabled only after its exact on-chain deposit call has passed a mainnet dry-run. Disabled allocation buckets remain in EmissionState and are never retroactively delivered.",
-  "releaseTrigger": "Permissionless settle_and_distribute releases pending time-slots (min(pending, 100) per tx) even with zero trades. distribute_released_blocks covers a prior legacy settlement.",
+  "releaseTrigger": "Permissionless settle_and_distribute releases at most 1 pending time-slot per tx (Bitcoin-style ~10 min cadence) even with zero trades. distribute_released_blocks covers a prior legacy settlement.",
   "nativePaths": {
     "routeReserve": "Capped BTEN-to-SUI refill into the fixed sponsor wallet; not a generic recipient transfer.",
     "traderRewards": "Point-weighted automatic payments after a sealed settlement round; not a generic recipient transfer."

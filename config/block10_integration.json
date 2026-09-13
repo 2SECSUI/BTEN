@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
-  "publishedVersion": 20,
+  "currentPackage": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "publishedVersion": 21,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -101,7 +101,7 @@
     "status": "active-public-event-reader",
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
-    "dappRequirement": "Block release is time-slot based and does not require trades. Attestation still accrues trader points for the sealed round. Catch-up settle releases min(pending, 100) without batch_trades; once caught up, advance_slots (600s) creates the next pending slot.",
+    "dappRequirement": "Bitcoin-style ~10 min cadence: settle releases at most 1 block per call. Attestation still accrues trader points. No bulk multi-block catch-up; advance_slots (600s) creates the next pending slot.",
     "liveTapeRule": "treatAllLiveTapeAsGated",
     "enabled": true,
     "paused": false,
@@ -179,7 +179,7 @@
     "managedVaultsProfitFeeToOpsWallets": true,
     "blockTransactions": false,
     "treatAllLiveTapeAsGated": true,
-    "note": "Time-pending slots release without a trade bar. settle unlocks min(pending, MAX_SETTLE_BLOCKS=100) after advance_slots even when batch_trades==0. Trades/attestations still credit trader rewards; they are not required to unlock.",
+    "note": "Bitcoin-style ~10 min cadence. settle unlocks at most 1 block (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. Trades/attestations still credit trader rewards; they are not required to unlock.",
     "gatedMeans": "time-pending slots; trades not required",
     "minTradesPerBlock": 0
   },
@@ -204,7 +204,7 @@
       "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
       "exampleExternalAggregatorDigest": "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
     },
-    "rule": "Block release is time-slot based. settle unlocks pending ten-minute slots up to MAX_SETTLE_BLOCKS without requiring batch_trades. Adapter and external Cetus attestations still accrue trader points. Do not block transactions. Live-tape labels are not the gate.",
+    "rule": "Bitcoin-style ~10 min cadence. settle unlocks at most one pending ten-minute slot per call (MAX_SETTLE_BLOCKS=1) without requiring batch_trades. Adapter and external Cetus attestations still accrue trader points. Do not block transactions. Live-tape labels are not the gate.",
     "liveTapeClassification": {
       "everyLiveTapeRow": "gated",
       "neverLabel": "ungated",
@@ -224,7 +224,7 @@
     "gatedMeans": "time-pending slots release; trades not required",
     "emissionGate": {
       "minTradesPerBlock": 0,
-      "maxSettleBlocks": 100,
+      "maxSettleBlocks": 1,
       "countsTowardBlockRelease": [
         "RouteRecorded (package adapters / composable seal)",
         "ExternalCetusRouteAttested (aggregator/direct Cetus on registered BTEN pools)"
@@ -234,7 +234,7 @@
         "bten::attest_external_cetus_routes"
       ],
       "oneReceiptPerDigest": true,
-      "note": "Time-pending slots release without a trade bar. settle unlocks min(pending, MAX_SETTLE_BLOCKS=100) after advance_slots even when batch_trades==0. Trades/attestations still credit trader rewards; they are not required to unlock.",
+      "note": "Bitcoin-style ~10 min cadence. settle unlocks at most 1 block (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. Trades/attestations still credit trader rewards; they are not required to unlock.",
       "tradeBar": false
     }
   },

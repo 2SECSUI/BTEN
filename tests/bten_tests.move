@@ -291,13 +291,49 @@ module bten::bten_tests {
             let mut state = scenario.take_shared<bten::EmissionState>();
             let mut clock = scenario.take_shared<Clock>();
             assert!(bten::batch_trades(&state) == 0, 84);
+            assert!(bten::max_settle_blocks() == 1, 88);
             clock::set_for_testing(&mut clock, 1_000);
             bten::prime_slots_for_testing(&mut state, &clock);
+            // Two elapsed slots create pending=2, but settle releases only 1.
             clock::set_for_testing(&mut clock, 1_201_000);
             bten::settle(&mut state, &clock, scenario.ctx());
-            assert!(bten::block_height(&state) == 2, 85);
+            assert!(bten::block_height(&state) == 1, 85);
+            assert!(bten::pending_blocks(&state) == 1, 89);
             assert!(bten::batch_trades(&state) == 0, 86);
-            assert!(bten::total_minted(&state) == 10_000_000_000, 87);
+            assert!(bten::total_minted(&state) == 5_000_000_000, 87);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    /// Bitcoin-style cadence: even with a large pending backlog, one settle
+    /// call unlocks at most one block (MAX_SETTLE_BLOCKS = 1).
+    #[test]
+    fun settle_releases_at_most_one_when_pending_large() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut clock = scenario.take_shared<Clock>();
+            clock::set_for_testing(&mut clock, 1_000);
+            bten::prime_slots_for_testing(&mut state, &clock);
+            // 100 * 600s = 60_000s → 100 pending slots after advance_slots.
+            clock::set_for_testing(&mut clock, 60_001_000);
+            assert!(bten::batch_trades(&state) == 0, 90);
+            bten::settle(&mut state, &clock, scenario.ctx());
+            assert!(bten::block_height(&state) == 1, 91);
+            assert!(bten::pending_blocks(&state) == 99, 92);
+            assert!(bten::total_minted(&state) == 5_000_000_000, 93);
+            assert!(bten::max_settle_blocks() == 1, 94);
+            // Second settle still only releases one more.
+            bten::settle(&mut state, &clock, scenario.ctx());
+            assert!(bten::block_height(&state) == 2, 95);
+            assert!(bten::pending_blocks(&state) == 98, 96);
+            assert!(bten::total_minted(&state) == 10_000_000_000, 97);
             test_scenario::return_shared(state);
             test_scenario::return_shared(clock);
         };
