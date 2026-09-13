@@ -615,6 +615,82 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
+    /// Composable version of the BTEN-second asset -> BTEN adapter. Unlike the
+    /// legacy entrypoint it returns both unused input and swap output to the
+    /// programmable transaction, allowing a following protected hop to consume
+    /// the BTEN in the same signed transaction. A receipt exists only after
+    /// Cetus repayment and the caller's minimum output check both succeed.
+    public fun cetus_swap_to_bten_return<A>(
+        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        pool: &mut Pool<A, BTEN>, mut input: Coin<A>, min_bten_out: u64,
+        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+    ): (Coin<A>, Coin<BTEN>) {
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_bten, receipt) = pool::flash_swap<A, BTEN>(config, pool, true, true, requested, sqrt_price_limit, clock);
+        let paid = pool::swap_pay_amount(&receipt);
+        assert!(balance::value(&receive_bten) >= min_bten_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, pool, coin::into_balance(coin::split(&mut input, paid, ctx)), balance::zero<BTEN>(), receipt);
+        coin::join(&mut input, coin::from_balance(receive_a, ctx));
+        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        (input, coin::from_balance(receive_bten, ctx))
+    }
+
+    /// Composable BTEN-second BTEN -> asset adapter. The returned BTEN is only
+    /// unspent change; the asset output can be passed to a later PTB command.
+    public fun cetus_swap_from_bten_return<A>(
+        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        pool: &mut Pool<A, BTEN>, mut input: Coin<BTEN>, min_asset_out: u64,
+        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+    ): (Coin<BTEN>, Coin<A>) {
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_asset, receive_bten, receipt) = pool::flash_swap<A, BTEN>(config, pool, false, true, requested, sqrt_price_limit, clock);
+        let paid = pool::swap_pay_amount(&receipt);
+        assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, pool, balance::zero<A>(), coin::into_balance(coin::split(&mut input, paid, ctx)), receipt);
+        coin::join(&mut input, coin::from_balance(receive_bten, ctx));
+        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        (input, coin::from_balance(receive_asset, ctx))
+    }
+
+    /// Composable variants for Cetus pools whose canonical order is BTEN/A.
+    public fun cetus_swap_to_bten_b2a_return<A>(
+        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        pool: &mut Pool<BTEN, A>, mut input: Coin<A>, min_bten_out: u64,
+        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+    ): (Coin<A>, Coin<BTEN>) {
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_bten, receive_asset, receipt) = pool::flash_swap<BTEN, A>(config, pool, false, true, requested, sqrt_price_limit, clock);
+        let paid = pool::swap_pay_amount(&receipt);
+        assert!(balance::value(&receive_bten) >= min_bten_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, pool, balance::zero<BTEN>(), coin::into_balance(coin::split(&mut input, paid, ctx)), receipt);
+        coin::join(&mut input, coin::from_balance(receive_asset, ctx));
+        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        (input, coin::from_balance(receive_bten, ctx))
+    }
+
+    public fun cetus_swap_from_bten_a2b_return<A>(
+        state: &mut EmissionState, registry: &PoolRegistry, config: &GlobalConfig,
+        pool: &mut Pool<BTEN, A>, mut input: Coin<BTEN>, min_asset_out: u64,
+        sqrt_price_limit: u128, clock: &Clock, ctx: &mut TxContext,
+    ): (Coin<BTEN>, Coin<A>) {
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_bten, receive_asset, receipt) = pool::flash_swap<BTEN, A>(config, pool, true, true, requested, sqrt_price_limit, clock);
+        let paid = pool::swap_pay_amount(&receipt);
+        assert!(balance::value(&receive_asset) >= min_asset_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, pool, coin::into_balance(coin::split(&mut input, paid, ctx)), balance::zero<A>(), receipt);
+        coin::join(&mut input, coin::from_balance(receive_bten, ctx));
+        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        (input, coin::from_balance(receive_asset, ctx))
+    }
+
     /// Atomically route SUI through BTEN and into a BTEN-first Cetus partner
     /// pool. This records one receipt only after both flash swaps settle and
     /// the trader's final minimum output is met.
