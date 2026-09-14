@@ -71,5 +71,6 @@
     "rule": "Tape is display-only. Aggregator quotes are compare helpers; Cetus BTEN legs that land on-chain are attested so they count toward emission-block release."
   },
   "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
-  "livePackageVersion": 22
+  "livePackageVersion": 22,
+  "cacheBust": "20260914T002557Z"
 }

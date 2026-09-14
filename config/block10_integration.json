@@ -183,7 +183,9 @@
     "treatAllLiveTapeAsGated": true,
     "note": "Bitcoin-style ~10 min cadence. settle unlocks at most 1 block (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. Trades/attestations still credit trader rewards; they are not required to unlock.",
     "gatedMeans": "time-pending slots; trades not required",
-    "minTradesPerBlock": 0
+    "minTradesPerBlock": 0,
+    "hopsRequired": 0,
+    "tradeBar": false
   },
   "gatePolicy": {
     "allDappTransactionsBtenGated": true,
@@ -237,8 +239,11 @@
       ],
       "oneReceiptPerDigest": true,
       "note": "Bitcoin-style ~10 min cadence. settle unlocks at most 1 block (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. Trades/attestations still credit trader rewards; they are not required to unlock.",
-      "tradeBar": false
-    }
+      "tradeBar": false,
+      "hopsRequired": 0
+    },
+    "hopsRequired": 0,
+    "tradeBar": false
   },
   "package": {
     "id": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
@@ -264,5 +269,25 @@
   "v20Status": "superseded-by-v22",
   "v21Status": "superseded-by-v22",
   "v22Status": "live",
-  "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896"
+  "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "cacheBust": "20260914T002557Z",
+  "configRevision": "20260914T002557Z",
+  "uiRevision": "v22-no-trade-bar",
+  "dappUiPolicy": {
+    "source": "Grok App Builder project 01a0925b-5bff-7bf1-bd90-f229738f4f52 (block10.grok.me)",
+    "note": "Live bundles hardcode a 10-receipt trade bar. Configs and Move settle already use Bitcoin-style time slots (minTradesPerBlock effective 0 / MAX_SETTLE_BLOCKS=1). Frontend must stop requiring 10 hops.",
+    "hopsRequired": 0,
+    "tradeBar": false,
+    "minTradesPerBlock": 0,
+    "maxSettleBlocks": 1,
+    "gateDisplay": "time-slot",
+    "headerPulse": "Next ~10 min block \u00b7 pending slots (not Gate N/10)",
+    "earnCopy": "One block per ~10 minutes. Trades accrue rewards but are not required to settle.",
+    "guideCopy": "Fill is not required. Settle when a due slot is pending (MAX_SETTLE_BLOCKS=1).",
+    "liveTape": "treatAllLiveTapeAsGated",
+    "botArmedRequiresWallet": true,
+    "botDisconnectedLabel": "Connect wallet",
+    "ignoreOnChainMinTradesPerBlockForUiBar": true,
+    "onChainMinTradesPerBlockNote": "View still returns 1; settle path ignores trade count. Prefer UI ignore over Move v23 unless a bar still binds to the view."
+  }
 }

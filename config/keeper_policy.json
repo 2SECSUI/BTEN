@@ -33,5 +33,9 @@
   "minTradesPerBlock": 0,
   "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades/attestations accrue rewards but are not required to settle",
   "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
-  "livePackageVersion": 22
+  "livePackageVersion": 22,
+  "cacheBust": "20260914T002557Z",
+  "hopsRequired": 0,
+  "tradeBar": false,
+  "maxSettleBlocks": 1
 }

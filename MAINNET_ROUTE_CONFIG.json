@@ -365,5 +365,13 @@
     "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
     "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
     "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow"
+  },
+  "cacheBust": "20260914T002557Z",
+  "uiRevision": "v22-no-trade-bar",
+  "dappUiPolicy": {
+    "hopsRequired": 0,
+    "tradeBar": false,
+    "minTradesPerBlock": 0,
+    "maxSettleBlocks": 1
   }
 }
