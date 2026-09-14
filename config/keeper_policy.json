@@ -10,7 +10,7 @@
     "maximumBlocksPerRun": 1,
     "gasBudgetMist": "30000000",
     "routesPerBlock": 0,
-    "note": "v21: Bitcoin-style ~10 min cadence. settle unlocks at most 1 block per call (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up.",
+    "note": "v22: Bitcoin-style ~10 min cadence. settle unlocks at most 1 block per call (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. auto_pay_trader uses u128 intermediate.",
     "tradeBar": false
   },
   "treasurySync": {
@@ -31,5 +31,7 @@
     "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."
   },
   "minTradesPerBlock": 0,
-  "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades/attestations accrue rewards but are not required to settle"
+  "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades/attestations accrue rewards but are not required to settle",
+  "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "livePackageVersion": 22
 }

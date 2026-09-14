@@ -1,6 +1,6 @@
 {
   "network": "mainnet",
-  "status": "v21-live",
+  "status": "v22-live",
   "publishedVersion": 22,
   "currentPackage": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
   "publicIntegration": "config/block10_integration.json",
@@ -253,7 +253,7 @@
     "managedRebalancePolicy": "config/managed_rebalance_policy.json",
     "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   },
-  "upgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
+  "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
   "v17Proofs": {
     "cetusSuiToBten": {
       "tx": "2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw",
@@ -326,14 +326,14 @@
     "maxSettleBlocks": 1,
     "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades not required",
     "externalCetusAggregator": "attestation via attest_external_cetus_route / attest_external_cetus_routes; one receipt per digest; increments batch_trades",
-    "note": "v21: settle releases at most 1 block per call (MAX_SETTLE_BLOCKS=1). advance_slots adds new pending every 600s. No bulk multi-block catch-up dumps. Trades accrue rewards only.",
+    "note": "v22: settle releases at most 1 block per call (MAX_SETTLE_BLOCKS=1). advance_slots adds new pending every 600s. No bulk multi-block catch-up dumps. Trades accrue rewards only. auto_pay_trader uses u128 intermediate.",
     "tradeBar": false,
     "blockTimeSecs": 600
   },
   "pendingPackageVersion": 22,
   "livePackageVersion": 22,
   "packageStatus": "v22-live",
-  "v20Status": "live",
+  "v20Status": "superseded-by-v22",
   "v20": {
     "live": true,
     "packageVersion": 20,
@@ -345,9 +345,9 @@
     "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
     "emission": "time-pending catch-up without trade bar; 600s pace once caught up"
   },
-  "v21Status": "live",
+  "v21Status": "superseded-by-v22",
   "v21": {
-    "live": true,
+    "live": false,
     "packageVersion": 21,
     "packageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
     "upgradeTx": "Hffs2p4ptgFpcGr5zW7JWpRj4NNXGgxQrgy3GJxgzL4N",

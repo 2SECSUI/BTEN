@@ -82,5 +82,7 @@
   "activation": "On every eligible settlement, the permissionless keeper accrues BTEN into the active programme. The treasury operator uses only registered pools and live protected quotes to add protocol-owned liquidity.",
   "lpProgramState": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
   "lpProgramCap": "0x650d04283491bba9599e03577b80676e99edf1af4f274fd3163207b71fdda538",
-  "lastDeployNote": "2026-09-13: emptied protocol_liquidity into Cetus OOR positions per weights (MAX_LP_RELEASE_PER_CALL=50 BTEN)."
+  "lastDeployNote": "2026-09-13: emptied protocol_liquidity into Cetus OOR positions per weights (MAX_LP_RELEASE_PER_CALL=50 BTEN).",
+  "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "livePackageVersion": 22
 }

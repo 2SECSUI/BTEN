@@ -113,7 +113,7 @@
     ]
   },
   "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there.",
-  "pendingPackageVersion": 20,
+  "pendingPackageVersion": 22,
   "v17Status": "superseded-by-v18",
   "sponsorship": {
     "enabled": true,
@@ -152,8 +152,10 @@
     "operatorCap": "0x828200e82d6448255fb6bb83e42dcff88b53f87039dfc0bbf19b88658cc8c58b",
     "createTx": "5LsU2Wkxe42hQp11wQK8BmoTNVXshek9rEQFcJukvx1A",
     "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9",
-    "package": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098",
-    "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76"
+    "package": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
+    "livePackage": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "typePackage": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098"
   },
   "turbosAdapters": {
     "planFile": "config/turbos_adapter_plan.json",
@@ -239,19 +241,19 @@
     }
   },
   "package": {
-    "id": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
-    "version": 20,
-    "upgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
-    "previousId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
+    "id": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "version": 22,
+    "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
+    "previousId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
     "upgradeCapPolicy": "compatible",
     "stillUpgradeable": true
   },
   "status": "live",
-  "packageStatus": "v20-live",
-  "livePackageVersion": 20,
-  "livePackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
-  "upgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
+  "packageStatus": "v22-live",
+  "livePackageVersion": 22,
+  "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
   "magmaBluefinAdapters": {
     "planFile": "config/magma_bluefin_adapter_plan.json",
     "status": "register_additional_pool-ready-native-adapters-plan-only",
@@ -259,5 +261,8 @@
     "registerAdditionalPool": "ready-for-use"
   },
   "v18Status": "live",
-  "v20Status": "live"
+  "v20Status": "superseded-by-v22",
+  "v21Status": "superseded-by-v22",
+  "v22Status": "live",
+  "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896"
 }
