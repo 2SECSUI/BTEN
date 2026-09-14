@@ -6,7 +6,8 @@
     "validate-launch": "node scripts/validate_launch_config.mjs",
     "quote:aftermath": "node scripts/aftermath_router_quote.mjs",
     "quote:hop": "node scripts/hop_router_quote.mjs",
-    "test:rebate-wal": "node scripts/test_rebate_sui_to_wal.mjs"
+    "test:rebate-wal": "node scripts/test_rebate_sui_to_wal.mjs",
+    "ops-buy-desk:sync-price": "node scripts/ops_buy_desk_sync_price.mjs"
   },
   "engines": {
     "node": ">=24"

@@ -1,0 +1,48 @@
+{
+  "status": "success",
+  "dryRun": {
+    "status": "success",
+    "simulatedPackageId": "0x19737dcd3fabfc75d7d12c3037acf7337a1226ec05c82623edb8c439dc6113f8",
+    "estimatedGasMist": 272899540,
+    "policy": "Compatible (0)"
+  },
+  "liveUpgrade": {
+    "digest": "5JcgCBKAKVEugBeaa8Fh2RS4Qeo8nrLAwBKdiZAum12W",
+    "newPackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+    "packageVersion": 23,
+    "previousPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "upgradeCapOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+    "upgradeCapPolicy": 0,
+    "gasMist": 271811540,
+    "modules": [
+      "bten",
+      "ops_buy_desk"
+    ]
+  },
+  "desk": {
+    "deskObjectId": "0xb0e9c4a61e204eb23cd408dd2e67e9da9b5c76cec76432843fb589d014fe15c1",
+    "adminCapId": "0x5c4089420effa5b9963ee152311180e2b08578842a22519f2d4c134b8983d3c4",
+    "createTx": "DjpVx1mgZno15C15tMTeRaSg1Ya5W7wjAJTi886xfNmn",
+    "initialPriceMistSuiPerBten": 428465615,
+    "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9"
+  },
+  "smokeDeposit": {
+    "tx": "Fs6jsx734MoJDbgRj3N9rj45etebHyzECSbEKGAuJYX8",
+    "amountMist": 1059820741,
+    "amountBten": 10.59820741,
+    "inventoryAfterMist": 1059820741
+  },
+  "configsUpdated": [
+    "Published.toml",
+    "config/ops_buy_desk.json",
+    "config/block10_integration.json",
+    "MAINNET_ROUTE_CONFIG.json"
+  ],
+  "safety": {
+    "packageImmutable": false,
+    "upgradeCapDestroyed": false,
+    "incentiveBotsStopped": false,
+    "privateKeysPrinted": false
+  }
+}

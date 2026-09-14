@@ -1,0 +1,97 @@
+INCLUDING DEPENDENCY IntegerMate
+INCLUDING DEPENDENCY MoveSTL
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY TurbosCLMM
+INCLUDING DEPENDENCY cetusclmm
+BUILDING bten
+warning[WC04039]: unable to determine literal's type
+    ┌─ ./tests/bten_tests.move:476:25
+    │
+476 │             let mut i = 0;
+    │                         ^ Could not determine a concrete type for this numeric literal, so defaulting to 'u64'
+    │
+    = To avoid this warning, add an explicit type annotation, e.g., '<num>u64'
+    = This warning can be suppressed with '#[allow(untyped_literal)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC04039]: unable to determine literal's type
+    ┌─ ./tests/bten_tests.move:508:25
+    │
+508 │             let mut i = 0;
+    │                         ^ Could not determine a concrete type for this numeric literal, so defaulting to 'u64'
+    │
+    = To avoid this warning, add an explicit type annotation, e.g., '<num>u64'
+    = This warning can be suppressed with '#[allow(untyped_literal)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09011]: unused constant
+    ┌─ ./sources/bten.move:133:11
+    │
+133 │     const E_MANAGED_VAULT_OPERATOR: u64 = 40;
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^ The constant 'E_MANAGED_VAULT_OPERATOR' is never used. Consider removing it.
+    │
+    = This warning can be suppressed with '#[allow(unused_const)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC04037]: deprecated usage
+    ┌─ ./sources/bten.move:536:37
+    │
+536 │         let (cap, metadata) = coin::create_currency<BTEN>(
+    │                                     ^^^^^^^^^^^^^^^ The function 'sui::coin::create_currency' is deprecated: Use `coin_registry::new_currency_with_otw` instead
+    │
+    = This warning can be suppressed with '#[allow(deprecated_usage)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:580:9
+    │
+580 │         state: &mut EmissionState,
+    │         ^^^^^ Unused parameter 'state'. Consider removing or prefixing with an underscore: '_state'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:582:9
+    │
+582 │         fee_points: u64,
+    │         ^^^^^^^^^^ Unused parameter 'fee_points'. Consider removing or prefixing with an underscore: '_fee_points'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:583:9
+    │
+583 │         clock: &Clock,
+    │         ^^^^^ Unused parameter 'clock'. Consider removing or prefixing with an underscore: '_clock'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:584:9
+    │
+584 │         ctx: &mut TxContext,
+    │         ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+Running Move unit tests
+[ PASS    ] bten::bten_tests::auto_pay_trader_u128_avoids_u64_overflow
+[ PASS    ] bten::ops_buy_desk_tests::buy_aborts_on_slippage
+[ PASS    ] bten::ops_buy_desk_tests::buy_aborts_when_paused
+[ PASS    ] bten::bten_tests::batch_attest_records_one_receipt_per_digest
+[ PASS    ] bten::bten_tests::composable_route_seal_rejects_foreign_trader
+[ PASS    ] bten::ops_buy_desk_tests::create_deposit_buy_posted_and_withdraw
+[ PASS    ] bten::ops_buy_desk_tests::posted_price_no_discount
+[ PASS    ] bten::ops_buy_desk_tests::sqrt_mid_math_matches_posted_price
+[ PASS    ] bten::bten_tests::composable_route_seal_rejects_zero_accrual
+[ PASS    ] bten::bten_tests::composable_route_seals_once_for_accrued_hops
+[ PASS    ] bten::bten_tests::external_cetus_verifier_is_capped_and_records_one_gate
+[ PASS    ] bten::bten_tests::keeper_can_only_withdraw_the_unpaused_staking_tranche
+[ PASS    ] bten::bten_tests::keeper_config_starts_paused_and_is_bounded
+[ PASS    ] bten::bten_tests::legacy_router_cap_cannot_record_routes
+[ PASS    ] bten::bten_tests::lp_program_migrates_paused_backlog_and_enforces_allowlist
+[ PASS    ] bten::bten_tests::managed_profit_fee_is_two_percent_of_profit_only
+[ PASS    ] bten::bten_tests::managed_vault_creates_and_pauses
+[ PASS    ] bten::bten_tests::native_bten_farm_returns_principal_and_new_block_reward
+[ PASS    ] bten::bten_tests::one_gated_receipt_unlocks_one_pending_block
+[ PASS    ] bten::bten_tests::pending_slots_release_without_trades
+[ PASS    ] bten::bten_tests::policy_and_one_block_allocation
+[ PASS    ] bten::bten_tests::settle_releases_at_most_one_when_pending_large
+Test result: OK. Total tests: 22; passed: 22; failed: 0

@@ -1,0 +1,10 @@
+{
+  "status": "success",
+  "simulatedPackageId": "0x19737dcd3fabfc75d7d12c3037acf7337a1226ec05c82623edb8c439dc6113f8",
+  "packageVersion": 23,
+  "modules": "bten, ops_buy_desk                                                                   \u2502",
+  "estimatedGasMist": 272899540,
+  "policy": "Compatible (0)",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapRemainsOwnedByOps": true
+}

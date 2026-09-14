@@ -1,0 +1,12 @@
+{
+  "network": "mainnet",
+  "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+  "currentSqrtPrice": "38183673712928216200",
+  "priceMistSuiPerBten": "428465615",
+  "humanSuiPerBten": 0.428465615,
+  "discountBps": 0,
+  "note": "Posted price MUST equal Cetus mid — no −2% or other discount",
+  "deskObjectId": "0xb0e9c4a61e204eb23cd408dd2e67e9da9b5c76cec76432843fb589d014fe15c1",
+  "packageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "execute": false
+}

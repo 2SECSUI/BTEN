@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v22-live",
-  "publishedVersion": 22,
-  "currentPackage": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "status": "v23-live",
+  "publishedVersion": 23,
+  "currentPackage": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -253,7 +253,7 @@
     "managedRebalancePolicy": "config/managed_rebalance_policy.json",
     "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   },
-  "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
+  "upgradeTx": "5JcgCBKAKVEugBeaa8Fh2RS4Qeo8nrLAwBKdiZAum12W",
   "v17Proofs": {
     "cetusSuiToBten": {
       "tx": "2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw",
@@ -264,9 +264,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
+  "previousPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -330,9 +330,9 @@
     "tradeBar": false,
     "blockTimeSecs": 600
   },
-  "pendingPackageVersion": 22,
-  "livePackageVersion": 22,
-  "packageStatus": "v22-live",
+  "pendingPackageVersion": 23,
+  "livePackageVersion": 23,
+  "packageStatus": "v23-live",
   "v20Status": "superseded-by-v22",
   "v20": {
     "live": true,
@@ -359,19 +359,41 @@
     "supersededBy": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6"
   },
   "v22": {
-    "live": true,
+    "live": false,
     "packageVersion": 22,
     "packageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
     "previousPackageId": "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896",
     "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
-    "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow"
+    "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow",
+    "supersededBy": "v23"
   },
-  "cacheBust": "20260914T002557Z",
+  "cacheBust": "20260914T025500Z",
   "uiRevision": "v22-no-trade-bar",
   "dappUiPolicy": {
     "hopsRequired": 0,
     "tradeBar": false,
     "minTradesPerBlock": 0,
     "maxSettleBlocks": 1
+  },
+  "v23": {
+    "live": true,
+    "packageVersion": 23,
+    "packageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+    "previousPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "upgradeTx": "5JcgCBKAKVEugBeaa8Fh2RS4Qeo8nrLAwBKdiZAum12W",
+    "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "upgradeCapPolicy": 0,
+    "modules": [
+      "bten",
+      "ops_buy_desk"
+    ],
+    "opsBuyDesk": {
+      "deskObjectId": "0xb0e9c4a61e204eb23cd408dd2e67e9da9b5c76cec76432843fb589d014fe15c1",
+      "adminCapId": "0x5c4089420effa5b9963ee152311180e2b08578842a22519f2d4c134b8983d3c4",
+      "createTx": "DjpVx1mgZno15C15tMTeRaSg1Ya5W7wjAJTi886xfNmn",
+      "smokeDepositTx": "Fs6jsx734MoJDbgRj3N9rj45etebHyzECSbEKGAuJYX8",
+      "smokeDepositMist": 1059820741
+    },
+    "note": "OpsBuyDesk at Cetus mid; UpgradeCap Compatible retained; no make_immutable"
   }
 }

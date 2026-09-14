@@ -1,0 +1,19 @@
+{
+  "opsFreeBtenMistAfterSmoke": 233583029906,
+  "opsFreeBtenHuman": 1835.83029906,
+  "deskInventoryMist": 51059820741,
+  "deskInventoryBten": 510.59820741,
+  "nextDepositCommand": "sui client call --package 0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688 --module ops_buy_desk --function deposit_bten --args 0xb0e9c4a61e204eb23cd408dd2e67e9da9b5c76cec76432843fb589d014fe15c1 0x5c4089420effa5b9963ee152311180e2b08578842a22519f2d4c134b8983d3c4 <BTEN_COIN_OBJECT_ID> --gas-budget 30000000",
+  "exampleFiftyBtenCoinIds": [
+    "0x03b98d160c63a690bd471d37dddd189ba5510313a7be98a4c4f78d0a243cc211",
+    "0x1a0d3198b09cfef2fae9031ca831961a2e2562080d6cfb4b094ab7d1e0818a32",
+    "0x1a24410dfa2b7546f4a137084587e4e8d3f440389da274e5fc405b01eefea9ba",
+    "0x1a82543db60cbe057bc546009b7ef91cfeb9be63bc63c243a6d0bf3f798f3b47",
+    "0x27afb27ddeeb9a55b136a71dc2691b02bae871e02f2288704fdc57b37452614f"
+  ],
+  "priceKeeperDryRunOk": true,
+  "priceKeeperExecute": "node scripts/ops_buy_desk_sync_price.mjs --execute  # needs BTEN_OPS_BUY_DESK_UPDATER_KEY",
+  "opsFreeBtenMistAfter500Deposit": 183583029906,
+  "lastDepositTx": "J7jkySFyNEenQnqBZQeqRHxKkKZE3BEKqsJmesrDge2v",
+  "lastDepositMist": 50000000000
+}
