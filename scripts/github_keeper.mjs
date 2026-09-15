@@ -148,6 +148,7 @@ const client = new SuiGrpcClient({ network: "mainnet", baseUrl: "https://fullnod
 if (policy.settlement.enabled) {
   let settleCalls = 0;
   let lastState = state;
+  let stoppedReason = "pending_blocks==0";
   while (settleCalls < MAX_SETTLE_CALLS) {
     const current = settleCalls === 0 ? lastState : await moveFields(mainnet.emissionState);
     lastState = current;
@@ -158,20 +159,38 @@ if (policy.settlement.enabled) {
     tx.setSender(policy.keeperAddress);
     tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
     tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.distributionState), tx.object(CLOCK)] });
-    const submitted = await execute(client, signer, tx);
-    settleCalls += 1;
-    report.submitted.push({
-      action: "settle_and_distribute",
-      call: settleCalls,
-      pendingBlocksBefore: work.pendingBlocks,
-      elapsedSlotsBefore: work.elapsedSlots,
-      ...submitted,
-    });
+    try {
+      const submitted = await execute(client, signer, tx);
+      settleCalls += 1;
+      report.submitted.push({
+        action: "settle_and_distribute",
+        call: settleCalls,
+        pendingBlocksBefore: work.pendingBlocks,
+        elapsedSlotsBefore: work.elapsedSlots,
+        ...submitted,
+      });
+    } catch (error) {
+      const message = String(error?.message ?? error);
+      // E_NO_ELIGIBLE_BLOCKS (=1): GraphQL pendingEffective was stale vs on-chain clock/slots.
+      if (/abort code:\s*1\b/i.test(message) || /E_NO_ELIGIBLE_BLOCKS/i.test(message)) {
+        stoppedReason = "no_eligible_blocks";
+        report.submitted.push({
+          action: "settle_and_distribute",
+          skipped: true,
+          reason: "E_NO_ELIGIBLE_BLOCKS",
+          pendingBlocksBefore: work.pendingBlocks,
+          elapsedSlotsBefore: work.elapsedSlots,
+          error: message,
+        });
+        break;
+      }
+      throw error;
+    }
   }
   report.settlement.settleCallsSubmitted = settleCalls;
   report.settlement.stoppedReason = settleCalls >= MAX_SETTLE_CALLS
     ? "maximumSettleCallsPerRun"
-    : "pending_blocks==0";
+    : stoppedReason;
   const finalState = await moveFields(mainnet.emissionState);
   const finalWork = pendingWork(finalState);
   report.settlement.pendingBlocksAfter = finalWork.pendingBlocks;
