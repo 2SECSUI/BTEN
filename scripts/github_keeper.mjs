@@ -7,9 +7,11 @@
  * upgrade, withdraws user stake, or holds a farm/sponsor administrator cap.
  *
  * Bitcoin-style ~10-minute cadence: advance_slots creates pending every 600s;
- * each settle releases at most one block (MAX_SETTLE_BLOCKS=1). No bulk
- * multi-block catch-up dumps. Trades still accrue trader rewards when present;
- * they do not gate unlock.
+ * each settle releases at most one block (MAX_SETTLE_BLOCKS=1). On-chain still
+ * settles one block per call; execute mode loops settle_and_distribute (re-reading
+ * emission state) until pending work is cleared or maximumSettleCallsPerRun is hit,
+ * so Actions cron lag can catch up without a Move change. Trades still accrue
+ * trader rewards when present; they do not gate unlock.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -28,6 +30,7 @@ const CLOCK = "0x6";
 const SLOT_SECONDS = 600;
 const MAX_SETTLE_BLOCKS = 1; // matches on-chain MAX_SETTLE_BLOCKS — Bitcoin-style one block per settle
 const LP_VAULT_FIELDS = ["bten_lp_vault", "cetus_vault", "haedal_vault", "blue_vault", "magma_vault", "sui_gas_vault"];
+const MAX_SETTLE_CALLS = Math.max(1, Number(policy.settlement?.maximumSettleCallsPerRun ?? 30));
 
 async function moveFields(address) {
   const query = `query($address: SuiAddress!) { object(address: $address) { asMoveObject { contents { json } } } }`;
@@ -39,6 +42,16 @@ async function moveFields(address) {
   const body = await response.json();
   if (body.errors?.length || !body.data?.object?.asMoveObject?.contents?.json) throw new Error(`Object ${address} is unavailable`);
   return body.data.object.asMoveObject.contents.json;
+}
+
+function pendingWork(state, now = Math.floor(Date.now() / 1000)) {
+  const elapsedSlots = Math.max(0, Math.floor((now - Number(state.last_slot_ts)) / SLOT_SECONDS));
+  const pendingBlocks = Number(state.pending_blocks);
+  return {
+    pendingBlocks,
+    elapsedSlots,
+    pendingEffective: pendingBlocks + elapsedSlots,
+  };
 }
 
 function keeperSigner() {
@@ -74,15 +87,24 @@ const [state, treasuryState, farmState] = await Promise.all([
   moveFields(policy.routeTreasuryState),
   policy.nativeFarmSync?.enabled && policy.nativeFarmSync?.state ? moveFields(policy.nativeFarmSync.state) : Promise.resolve(null),
 ]);
-const now = Math.floor(Date.now() / 1000);
-const elapsedSlots = Math.max(0, Math.floor((now - Number(state.last_slot_ts)) / SLOT_SECONDS));
-const pending = Number(state.pending_blocks) + elapsedSlots;
-const eligibleBlocks = Math.min(pending, MAX_SETTLE_BLOCKS, policy.settlement.maximumBlocksPerRun);
+const initialPending = pendingWork(state);
+const eligibleBlocks = Math.min(initialPending.pendingEffective, MAX_SETTLE_BLOCKS, policy.settlement.maximumBlocksPerRun);
 const syncNeeded = Number(treasuryState.next_height) < Number(state.block_height);
 const report = {
   mode: EXECUTE ? "execute" : "dry-run",
   keeper: policy.keeperAddress,
-  settlement: { eligibleBlocks, routeReceipts: Number(state.batch_trades), pendingBlocksAfterTimeAdvance: pending },
+  livePackageId: policy.livePackageId ?? PACKAGE,
+  livePackageVersion: policy.livePackageVersion ?? null,
+  settlement: {
+    enabled: Boolean(policy.settlement?.enabled),
+    eligibleBlocks,
+    maximumBlocksPerRun: policy.settlement.maximumBlocksPerRun,
+    maximumSettleCallsPerRun: MAX_SETTLE_CALLS,
+    routeReceipts: Number(state.batch_trades),
+    pendingBlocks: initialPending.pendingBlocks,
+    elapsedSlots: initialPending.elapsedSlots,
+    pendingBlocksAfterTimeAdvance: initialPending.pendingEffective,
+  },
   treasurySync: { needed: syncNeeded, nextHeight: String(treasuryState.next_height), blockHeight: String(state.block_height) },
   lpProgrammeAccrual: {
     enabled: Boolean(policy.lpProgrammeAccrual?.enabled),
@@ -108,12 +130,38 @@ if (!EXECUTE) {
 
 const signer = keeperSigner();
 const client = new SuiGrpcClient({ network: "mainnet", baseUrl: "https://fullnode.mainnet.sui.io:443" });
-if (eligibleBlocks > 0 && policy.settlement.enabled) {
-  const tx = new Transaction();
-  tx.setSender(policy.keeperAddress);
-  tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-  tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.distributionState), tx.object(CLOCK)] });
-  report.submitted.push({ action: "settle_and_distribute", ...(await execute(client, signer, tx)) });
+if (policy.settlement.enabled) {
+  let settleCalls = 0;
+  let lastState = state;
+  while (settleCalls < MAX_SETTLE_CALLS) {
+    const current = settleCalls === 0 ? lastState : await moveFields(mainnet.emissionState);
+    lastState = current;
+    const work = pendingWork(current);
+    // Catch up while time/pending work remains. On-chain still MAX_SETTLE_BLOCKS=1 per call.
+    if (work.pendingEffective <= 0) break;
+    const tx = new Transaction();
+    tx.setSender(policy.keeperAddress);
+    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+    tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.distributionState), tx.object(CLOCK)] });
+    const submitted = await execute(client, signer, tx);
+    settleCalls += 1;
+    report.submitted.push({
+      action: "settle_and_distribute",
+      call: settleCalls,
+      pendingBlocksBefore: work.pendingBlocks,
+      elapsedSlotsBefore: work.elapsedSlots,
+      ...submitted,
+    });
+  }
+  report.settlement.settleCallsSubmitted = settleCalls;
+  report.settlement.stoppedReason = settleCalls >= MAX_SETTLE_CALLS
+    ? "maximumSettleCallsPerRun"
+    : "pending_blocks==0";
+  const finalState = await moveFields(mainnet.emissionState);
+  const finalWork = pendingWork(finalState);
+  report.settlement.pendingBlocksAfter = finalWork.pendingBlocks;
+  report.settlement.elapsedSlotsAfter = finalWork.elapsedSlots;
+  report.settlement.blockHeightAfter = String(finalState.block_height);
 }
 if (policy.treasurySync.enabled) {
   const refreshed = await moveFields(mainnet.emissionState);

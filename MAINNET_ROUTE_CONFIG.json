@@ -96,9 +96,10 @@
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
     "security": "Only the verifier capability held by the dedicated keeper can attest. Attestation accrues trader points; it does not gate block release. Bitcoin-style cadence: settle unlocks at most 1 block per call; advance_slots / 600s creates pending.",
-    "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
+      "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688::bten::ExternalCetusRouteAttested",
       "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896::bten::ExternalCetusRouteAttested",
       "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc::bten::ExternalCetusRouteAttested",
       "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098::bten::ExternalCetusRouteAttested",

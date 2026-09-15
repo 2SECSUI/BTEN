@@ -49,11 +49,13 @@ function readPublishedTomlPackageIds() {
 
 function resolvePackageIds() {
   const published = readPublishedTomlPackageIds();
+  // Prefer top-level live/current package (v23+). Nested verifier.livePackageId can lag upgrades.
   const livePackageId = normalHex(
-    mainnet.livePackageId
-      || verifier.livePackageId
+    policy.livePackageId
+      || mainnet.livePackageId
       || mainnet.currentPackage
-      || published.publishedAt,
+      || published.publishedAt
+      || verifier.livePackageId,
   );
   const originalPackageId = normalHex(
     mainnet.originalPackageId
@@ -268,13 +270,20 @@ async function submit(client, signer, candidate, livePackageId, eventTypes) {
     if (String(error?.message ?? error).includes("abort code: 30")) return null;
     throw error;
   }
+  const effects = result.effects ?? result.transaction?.effects ?? result.Transaction?.effects;
+  const ok = effects?.status?.status === "success" || effects?.status?.success === true;
   const submittedDigest = result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null;
-  const eventKey = attestationKey(candidate.digestBytes, candidate.eventSequence);
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    if ((await recentAttestations(eventTypes)).has(eventKey)) return submittedDigest;
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  if (!ok) {
+    throw new Error(`Attestation transaction did not succeed for ${candidate.digest}`);
   }
-  throw new Error(`No on-chain attestation event was found for ${candidate.digest}`);
+  // Prefer effects success: GraphQL event indexing often lags a few seconds and previously
+  // threw "No on-chain attestation event was found" after a successful submit, failing the job.
+  const eventKey = attestationKey(candidate.digestBytes, candidate.eventSequence);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if ((await recentAttestations(eventTypes)).has(eventKey)) return submittedDigest;
+    await new Promise((resolve) => setTimeout(resolve, 750));
+  }
+  return submittedDigest;
 }
 
 const { livePackageId, originalPackageId } = resolvePackageIds();
