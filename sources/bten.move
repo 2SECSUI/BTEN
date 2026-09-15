@@ -1,10 +1,10 @@
-/// BlockTen (BTEN) is a fixed-cap emission token.
+/// BlockTen (BTEN) is a fixed-cap, trade-gated emission token.
 ///
-/// Bitcoin-style ~10-minute block cadence: `advance_slots` creates a new pending
-/// slot only every `BLOCK_TIME_SECS` (600s). Each `settle` call then releases at
-/// most one block (`MAX_SETTLE_BLOCKS = 1`) — no bulk multi-block catch-up dumps.
-/// Trades and external attestations still accrue trader points/rewards for the
-/// sealed round; they are not required to release pending blocks.
+/// Emission restore (v24 / v16 rules): `advance_slots` creates pending every
+/// `BLOCK_TIME_SECS` (600s). `settle` releases
+/// `min(pending_blocks, batch_trades / MIN_TRADES_PER_BLOCK, MAX_SETTLE_BLOCKS)`
+/// with `MIN_TRADES_PER_BLOCK = 10` and `MAX_SETTLE_BLOCKS = 100`.
+/// Surplus trades do not pre-unlock future slots; each settle clears the batch.
 /// Live-tape labeling is display-only and is not the gate.
 ///
 /// This package intentionally separates three concerns:
@@ -44,11 +44,10 @@ module bten::bten {
     const INITIAL_SUBSIDY: u64 = 50 * UNIT;
     const BLOCK_TIME_SECS: u64 = 600;
     const HALVING_INTERVAL: u64 = 210_000;
-    // Retained for views / compatibility. Settlement no longer requires
-    // batch_trades / MIN_TRADES_PER_BLOCK. Bitcoin-style cadence: at most one
-    // pending slot unlocks per settle call (no bulk catch-up dumps).
-    const MIN_TRADES_PER_BLOCK: u64 = 1;
-    const MAX_SETTLE_BLOCKS: u64 = 1;
+    // Trade-gated settle (v16 rules restored in v24): 10 receipts per block,
+    // capped at 100 blocks per settle call.
+    const MIN_TRADES_PER_BLOCK: u64 = 10;
+    const MAX_SETTLE_BLOCKS: u64 = 100;
     const BPS: u64 = 10_000;
     const DAY_MS: u64 = 86_400_000;
     // The route reserve may only refill the SUI sponsor gradually. These are
@@ -1290,15 +1289,16 @@ module bten::bten {
         event::emit(BlocksReleased { blocks: 1, emission, remaining_pending: state.pending_blocks });
     }
 
-    /// Permissionless settlement (Bitcoin-style ~10 min cadence).
-    /// Releases `min(pending_blocks, MAX_SETTLE_BLOCKS)` with MAX_SETTLE_BLOCKS=1,
-    /// so at most one block per call — no bulk multi-block catch-up dumps.
-    /// No trade bar: `batch_trades == 0` is fine. `advance_slots` still creates
-    /// new pending only every BLOCK_TIME_SECS (600s). Present receipts seal
-    /// trader points/rewards; they do not gate unlock.
+    /// Permissionless settlement. A routed transaction can invoke this after
+    /// recording its receipt; an ops keeper covers quiet periods.
+    /// Trade-gated (v16 rules): releases
+    /// `min(pending_blocks, batch_trades / MIN_TRADES_PER_BLOCK, MAX_SETTLE_BLOCKS)`
+    /// with MIN_TRADES=10 and MAX_SETTLE=100. Surplus trades do not pre-unlock
+    /// future slots — the batch is cleared after each settle.
     public fun settle(state: &mut EmissionState, clock: &Clock, ctx: &mut TxContext) {
         advance_slots(state, clock::timestamp_ms(clock) / 1000);
-        let mut blocks = state.pending_blocks;
+        let trade_supported = state.batch_trades / MIN_TRADES_PER_BLOCK;
+        let mut blocks = if (state.pending_blocks < trade_supported) { state.pending_blocks } else { trade_supported };
         if (blocks > MAX_SETTLE_BLOCKS) { blocks = MAX_SETTLE_BLOCKS };
         assert!(blocks > 0, E_NO_ELIGIBLE_BLOCKS);
 

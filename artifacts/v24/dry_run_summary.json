@@ -1,0 +1,15 @@
+{
+  "status": "success",
+  "simulatedPackageId": "0x7a433ffbb5abc63839c5423ae937e45b44d0d4256917e692768dd425d8630927",
+  "packageVersion": 24,
+  "estimatedGasMist": 273149740,
+  "policy": "Compatible (0)",
+  "modules": [
+    "bten",
+    "ops_buy_desk"
+  ],
+  "emission": {
+    "MIN_TRADES_PER_BLOCK": 10,
+    "MAX_SETTLE_BLOCKS": 100
+  }
+}

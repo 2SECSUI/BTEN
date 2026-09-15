@@ -7,11 +7,11 @@
   "routeTreasuryState": "0xf1992cffa7d4980cd03f37a114bd49fc01a1edef09213cffaec7c0f081fa23ce",
   "settlement": {
     "enabled": true,
-    "maximumBlocksPerRun": 1,
+    "maximumBlocksPerRun": 100,
     "gasBudgetMist": "30000000",
-    "routesPerBlock": 0,
-    "note": "v23: Bitcoin-style ~10 min cadence. Each settle_and_distribute unlocks at most 1 block (on-chain MAX_SETTLE_BLOCKS=1). GitHub execute loops settle until pending_blocks==0 (re-read emission between calls), capped by maximumSettleCallsPerRun, so Actions cron lag can catch up without changing Move. auto_pay_trader uses u128 intermediate.",
-    "tradeBar": false,
+    "routesPerBlock": 10,
+    "note": "v24: restore v16 trade-gated settle. eligible = min(pending, batch_trades/10, 100). On-chain MIN_TRADES_PER_BLOCK=10, MAX_SETTLE_BLOCKS=100. Surplus trades do not pre-unlock. GitHub execute loops settle until eligible==0 or maximumSettleCallsPerRun.",
+    "tradeBar": true,
     "maximumSettleCallsPerRun": 30
   },
   "treasurySync": {
@@ -31,12 +31,12 @@
     "enabled": false,
     "reason": "Requires a separately audited delegated KeeperCap upgrade; the GitHub keeper never receives RegistryAdminCap, UpgradeCap, farm caps, LP positions, or sponsor keys."
   },
-  "minTradesPerBlock": 0,
-  "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades/attestations accrue rewards but are not required to settle",
-  "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
-  "livePackageVersion": 23,
-  "cacheBust": "20260915T200200Z",
-  "hopsRequired": 0,
-  "tradeBar": false,
-  "maxSettleBlocks": 1
+  "minTradesPerBlock": 10,
+  "gatedMeans": "Trade-gated: min(pending, batch_trades/10, 100) per settle; 10 receipts per block",
+  "livePackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+  "livePackageVersion": 24,
+  "cacheBust": "20260915T231600Z",
+  "hopsRequired": 10,
+  "tradeBar": true,
+  "maxSettleBlocks": 100
 }

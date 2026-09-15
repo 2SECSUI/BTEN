@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v23-live",
-  "publishedVersion": 23,
-  "currentPackage": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "status": "v24-live",
+  "publishedVersion": 24,
+  "currentPackage": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -96,7 +96,7 @@
     "status": "active-public-event-reader",
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
-    "security": "Only the verifier capability held by the dedicated keeper can attest. Gated external volume includes Cetus swaps AND liquidity adds on registered BTEN pools (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event). Attestation accrues trader points; it does not gate block release. Bitcoin-style cadence: settle unlocks at most 1 block per call; advance_slots / 600s creates pending.",
+    "security": "Only the verifier capability held by the dedicated keeper can attest. Gated external volume includes Cetus swaps AND liquidity adds on registered BTEN pools (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event). Attestation increments batch_trades toward the v16 trade gate (10 receipts per block, MAX_SETTLE=100).",
     "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
@@ -269,7 +269,7 @@
     "managedRebalancePolicy": "config/managed_rebalance_policy.json",
     "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   },
-  "upgradeTx": "5JcgCBKAKVEugBeaa8Fh2RS4Qeo8nrLAwBKdiZAum12W",
+  "upgradeTx": "AwfnPvTxo1Fv7hYgE1bhjHy84VSRoGsEQRFBBR37PzLH",
   "v17Proofs": {
     "cetusSuiToBten": {
       "tx": "2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw",
@@ -280,9 +280,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "livePackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+  "previousPackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -305,7 +305,7 @@
     "treatAllLiveTapeAsGated": true,
     "blockTransactions": false,
     "dapp": "https://block10.grok.me",
-    "rule": "Tape classification is not emission gating. Registered BTEN Cetus volume (swaps and liquidity adds) without RouteRecorded becomes settle-eligible for trader points only after ExternalCetusRouteAttested. Block release remains Bitcoin-style ~10 min (MAX_SETTLE_BLOCKS=1).",
+    "rule": "Tape classification is not emission gating. Registered BTEN Cetus volume (swaps and liquidity adds) without RouteRecorded becomes settle-eligible only after ExternalCetusRouteAttested. Block release uses v16 trade gate: min(pending, batch_trades/10, 100).",
     "liveTapeClassification": {
       "everyLiveTapeRow": "gated",
       "neverLabel": "ungated",
@@ -338,17 +338,17 @@
     "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76"
   },
   "emissionGate": {
-    "minTradesPerBlock": 0,
-    "maxSettleBlocks": 1,
-    "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades not required",
+    "minTradesPerBlock": 10,
+    "maxSettleBlocks": 100,
+    "gatedMeans": "Trade-gated settle: min(pending, batch_trades/10, MAX_SETTLE=100); 10 receipts per block",
     "externalCetusAggregator": "attestation via attest_external_cetus_route / attest_external_cetus_routes; one receipt per digest; increments batch_trades",
-    "note": "v22: settle releases at most 1 block per call (MAX_SETTLE_BLOCKS=1). advance_slots adds new pending every 600s. No bulk multi-block catch-up dumps. Trades accrue rewards only. auto_pay_trader uses u128 intermediate.",
-    "tradeBar": false,
+    "note": "v24 restores v16 emission rules. settle = min(pending, batch_trades/10, 100). Surplus trades do not pre-unlock. auto_pay_trader uses u128 intermediate. ManagedVault/OpsBuyDesk/external attest retained.",
+    "tradeBar": true,
     "blockTimeSecs": 600
   },
-  "pendingPackageVersion": 23,
-  "livePackageVersion": 23,
-  "packageStatus": "v23-live",
+  "pendingPackageVersion": 24,
+  "livePackageVersion": 24,
+  "packageStatus": "v24-live",
   "v20Status": "superseded-by-v22",
   "v20": {
     "live": true,
@@ -383,16 +383,16 @@
     "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow",
     "supersededBy": "v23"
   },
-  "cacheBust": "20260914T025500Z",
-  "uiRevision": "v22-no-trade-bar",
+  "cacheBust": "20260915T231600Z",
+  "uiRevision": "v24-v16-trade-gate",
   "dappUiPolicy": {
-    "hopsRequired": 0,
-    "tradeBar": false,
-    "minTradesPerBlock": 0,
-    "maxSettleBlocks": 1
+    "hopsRequired": 10,
+    "tradeBar": true,
+    "minTradesPerBlock": 10,
+    "maxSettleBlocks": 100
   },
   "v23": {
-    "live": true,
+    "live": false,
     "packageVersion": 23,
     "packageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
     "previousPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
@@ -410,6 +410,23 @@
       "smokeDepositTx": "Fs6jsx734MoJDbgRj3N9rj45etebHyzECSbEKGAuJYX8",
       "smokeDepositMist": 1059820741
     },
-    "note": "OpsBuyDesk at Cetus mid; UpgradeCap Compatible retained; no make_immutable"
+    "note": "OpsBuyDesk at Cetus mid; UpgradeCap Compatible retained; no make_immutable",
+    "supersededBy": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f"
+  },
+  "v24": {
+    "live": true,
+    "packageVersion": 24,
+    "packageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+    "previousPackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+    "upgradeTx": "AwfnPvTxo1Fv7hYgE1bhjHy84VSRoGsEQRFBBR37PzLH",
+    "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+    "upgradeCapPolicy": 0,
+    "modules": [
+      "bten",
+      "ops_buy_desk"
+    ],
+    "emission": "v16 restore: MIN_TRADES_PER_BLOCK=10, MAX_SETTLE_BLOCKS=100, trade-gated settle",
+    "gasMist": 272061740,
+    "note": "Compatible upgrade restoring v16 emission; keep ManagedVault, OpsBuyDesk, auto_pay u128, external attest"
   }
 }

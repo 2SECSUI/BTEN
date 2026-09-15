@@ -1,0 +1,55 @@
+INCLUDING DEPENDENCY IntegerMate
+INCLUDING DEPENDENCY MoveSTL
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY TurbosCLMM
+INCLUDING DEPENDENCY cetusclmm
+BUILDING bten
+warning[WC09011]: unused constant
+    ┌─ ./sources/bten.move:132:11
+    │
+132 │     const E_MANAGED_VAULT_OPERATOR: u64 = 40;
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^ The constant 'E_MANAGED_VAULT_OPERATOR' is never used. Consider removing it.
+    │
+    = This warning can be suppressed with '#[allow(unused_const)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC04037]: deprecated usage
+    ┌─ ./sources/bten.move:535:37
+    │
+535 │         let (cap, metadata) = coin::create_currency<BTEN>(
+    │                                     ^^^^^^^^^^^^^^^ The function 'sui::coin::create_currency' is deprecated: Use `coin_registry::new_currency_with_otw` instead
+    │
+    = This warning can be suppressed with '#[allow(deprecated_usage)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:579:9
+    │
+579 │         state: &mut EmissionState,
+    │         ^^^^^ Unused parameter 'state'. Consider removing or prefixing with an underscore: '_state'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:581:9
+    │
+581 │         fee_points: u64,
+    │         ^^^^^^^^^^ Unused parameter 'fee_points'. Consider removing or prefixing with an underscore: '_fee_points'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:582:9
+    │
+582 │         clock: &Clock,
+    │         ^^^^^ Unused parameter 'clock'. Consider removing or prefixing with an underscore: '_clock'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ ./sources/bten.move:583:9
+    │
+583 │         ctx: &mut TxContext,
+    │         ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+

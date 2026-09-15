@@ -6,12 +6,11 @@
  * and permissionless native-farm reward syncing. It never swaps, controls an
  * upgrade, withdraws user stake, or holds a farm/sponsor administrator cap.
  *
- * Bitcoin-style ~10-minute cadence: advance_slots creates pending every 600s;
- * each settle releases at most one block (MAX_SETTLE_BLOCKS=1). On-chain still
- * settles one block per call; execute mode loops settle_and_distribute (re-reading
- * emission state) until pending work is cleared or maximumSettleCallsPerRun is hit,
- * so Actions cron lag can catch up without a Move change. Trades still accrue
- * trader rewards when present; they do not gate unlock.
+ * v24 / v16 emission: advance_slots creates pending every 600s; settle releases
+ * min(pending, batch_trades / MIN_TRADES_PER_BLOCK, MAX_SETTLE_BLOCKS) with
+ * MIN_TRADES=10 and MAX_SETTLE=100. Execute mode loops settle_and_distribute
+ * (re-reading emission) until no eligible blocks remain or maximumSettleCallsPerRun
+ * is hit. Surplus trades do not pre-unlock future slots.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -28,7 +27,8 @@ const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const PACKAGE = mainnet.currentPackage;
 const CLOCK = "0x6";
 const SLOT_SECONDS = 600;
-const MAX_SETTLE_BLOCKS = 1; // matches on-chain MAX_SETTLE_BLOCKS — Bitcoin-style one block per settle
+const MIN_TRADES_PER_BLOCK = 10; // matches on-chain MIN_TRADES_PER_BLOCK
+const MAX_SETTLE_BLOCKS = 100; // matches on-chain MAX_SETTLE_BLOCKS
 const LP_VAULT_FIELDS = ["bten_lp_vault", "cetus_vault", "haedal_vault", "blue_vault", "magma_vault", "sui_gas_vault"];
 const MAX_SETTLE_CALLS = Math.max(1, Number(policy.settlement?.maximumSettleCallsPerRun ?? 30));
 
@@ -104,7 +104,13 @@ const [state, treasuryState, farmState] = await Promise.all([
   policy.nativeFarmSync?.enabled && policy.nativeFarmSync?.state ? moveFields(policy.nativeFarmSync.state) : Promise.resolve(null),
 ]);
 const initialPending = pendingWork(state);
-const eligibleBlocks = Math.min(initialPending.pendingEffective, MAX_SETTLE_BLOCKS, policy.settlement.maximumBlocksPerRun);
+const tradeSupported = Math.floor(Number(state.batch_trades) / MIN_TRADES_PER_BLOCK);
+const eligibleBlocks = Math.min(
+  initialPending.pendingEffective,
+  tradeSupported,
+  MAX_SETTLE_BLOCKS,
+  policy.settlement.maximumBlocksPerRun,
+);
 const syncNeeded = Number(treasuryState.next_height) < Number(state.block_height);
 const report = {
   mode: EXECUTE ? "execute" : "dry-run",
@@ -114,6 +120,9 @@ const report = {
   settlement: {
     enabled: Boolean(policy.settlement?.enabled),
     eligibleBlocks,
+    tradeSupported,
+    minTradesPerBlock: MIN_TRADES_PER_BLOCK,
+    maxSettleBlocks: MAX_SETTLE_BLOCKS,
     maximumBlocksPerRun: policy.settlement.maximumBlocksPerRun,
     maximumSettleCallsPerRun: MAX_SETTLE_CALLS,
     routeReceipts: Number(state.batch_trades),
@@ -154,8 +163,10 @@ if (policy.settlement.enabled) {
     const current = settleCalls === 0 ? lastState : await moveFields(mainnet.emissionState);
     lastState = current;
     const work = pendingWork(current);
-    // Catch up while time/pending work remains. On-chain still MAX_SETTLE_BLOCKS=1 per call.
-    if (work.pendingEffective <= 0) break;
+    // Catch up while trade-gated eligible work remains (pending + receipts / 10, capped at 100).
+    const tradeSupportedNow = Math.floor(Number(current.batch_trades) / MIN_TRADES_PER_BLOCK);
+    const eligibleNow = Math.min(work.pendingEffective, tradeSupportedNow, MAX_SETTLE_BLOCKS);
+    if (eligibleNow <= 0) break;
     try {
       const submitted = await execute(client, signer, () => {
         const tx = new Transaction();

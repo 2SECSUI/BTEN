@@ -280,8 +280,10 @@ module bten::bten_tests {
         scenario.end();
     }
 
+    /// Trade gate: pending slots alone cannot settle when batch_trades == 0.
     #[test]
-    fun pending_slots_release_without_trades() {
+    #[expected_failure(abort_code = 1)]
+    fun pending_slots_abort_without_trades() {
         let admin = @0xA;
         let mut scenario = test_scenario::begin(admin);
         bten::initialize_for_testing(scenario.ctx());
@@ -291,26 +293,23 @@ module bten::bten_tests {
             let mut state = scenario.take_shared<bten::EmissionState>();
             let mut clock = scenario.take_shared<Clock>();
             assert!(bten::batch_trades(&state) == 0, 84);
-            assert!(bten::max_settle_blocks() == 1, 88);
+            assert!(bten::max_settle_blocks() == 100, 88);
+            assert!(bten::min_trades_per_block() == 10, 89);
             clock::set_for_testing(&mut clock, 1_000);
             bten::prime_slots_for_testing(&mut state, &clock);
-            // Two elapsed slots create pending=2, but settle releases only 1.
             clock::set_for_testing(&mut clock, 1_201_000);
+            // pending > 0 but trade_supported == 0 → E_NO_ELIGIBLE_BLOCKS
             bten::settle(&mut state, &clock, scenario.ctx());
-            assert!(bten::block_height(&state) == 1, 85);
-            assert!(bten::pending_blocks(&state) == 1, 89);
-            assert!(bten::batch_trades(&state) == 0, 86);
-            assert!(bten::total_minted(&state) == 5_000_000_000, 87);
             test_scenario::return_shared(state);
             test_scenario::return_shared(clock);
         };
         scenario.end();
     }
 
-    /// Bitcoin-style cadence: even with a large pending backlog, one settle
-    /// call unlocks at most one block (MAX_SETTLE_BLOCKS = 1).
+    /// Trade-gated catch-up: with enough receipts, one settle unlocks at most
+    /// MAX_SETTLE_BLOCKS (100) even when pending is larger.
     #[test]
-    fun settle_releases_at_most_one_when_pending_large() {
+    fun settle_caps_at_max_settle_when_pending_and_trades_large() {
         let admin = @0xA;
         let mut scenario = test_scenario::begin(admin);
         bten::initialize_for_testing(scenario.ctx());
@@ -321,19 +320,21 @@ module bten::bten_tests {
             let mut clock = scenario.take_shared<Clock>();
             clock::set_for_testing(&mut clock, 1_000);
             bten::prime_slots_for_testing(&mut state, &clock);
-            // 100 * 600s = 60_000s → 100 pending slots after advance_slots.
-            clock::set_for_testing(&mut clock, 60_001_000);
-            assert!(bten::batch_trades(&state) == 0, 90);
+            // 150 * 600s → 150 pending after advance_slots.
+            clock::set_for_testing(&mut clock, 90_001_000);
+            // 1000 trades → trade_supported = 100; pending = 150 → release 100.
+            let mut i: u64 = 0;
+            while (i < 1000) {
+                bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
+                i = i + 1;
+            };
+            assert!(bten::batch_trades(&state) == 1000, 90);
+            assert!(bten::max_settle_blocks() == 100, 94);
             bten::settle(&mut state, &clock, scenario.ctx());
-            assert!(bten::block_height(&state) == 1, 91);
-            assert!(bten::pending_blocks(&state) == 99, 92);
-            assert!(bten::total_minted(&state) == 5_000_000_000, 93);
-            assert!(bten::max_settle_blocks() == 1, 94);
-            // Second settle still only releases one more.
-            bten::settle(&mut state, &clock, scenario.ctx());
-            assert!(bten::block_height(&state) == 2, 95);
-            assert!(bten::pending_blocks(&state) == 98, 96);
-            assert!(bten::total_minted(&state) == 10_000_000_000, 97);
+            assert!(bten::block_height(&state) == 100, 91);
+            assert!(bten::pending_blocks(&state) == 50, 92);
+            assert!(bten::total_minted(&state) == 500_000_000_000, 93);
+            assert!(bten::batch_trades(&state) == 0, 95);
             test_scenario::return_shared(state);
             test_scenario::return_shared(clock);
         };
@@ -341,7 +342,7 @@ module bten::bten_tests {
     }
 
     #[test]
-    fun one_gated_receipt_unlocks_one_pending_block() {
+    fun ten_gated_receipts_unlock_one_pending_block() {
         let admin = @0xA;
         let mut scenario = test_scenario::begin(admin);
         bten::initialize_for_testing(scenario.ctx());
@@ -350,10 +351,14 @@ module bten::bten_tests {
         {
             let mut state = scenario.take_shared<bten::EmissionState>();
             let mut clock = scenario.take_shared<Clock>();
-            assert!(bten::min_trades_per_block() == 1, 80);
+            assert!(bten::min_trades_per_block() == 10, 80);
             clock::set_for_testing(&mut clock, 1_000);
-            bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
-            assert!(bten::batch_trades(&state) == 1, 81);
+            let mut i: u64 = 0;
+            while (i < 10) {
+                bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
+                i = i + 1;
+            };
+            assert!(bten::batch_trades(&state) == 10, 81);
             clock::set_for_testing(&mut clock, 601_000);
             bten::settle(&mut state, &clock, scenario.ctx());
             assert!(bten::block_height(&state) == 1, 82);
@@ -657,6 +662,11 @@ module bten::bten_tests {
             clock::set_for_testing(&mut clock, 1_000);
             // 50e9 * 500e6 = 2.5e19 > u64::MAX (~1.84e19) — overflows in u64 math
             bten::record_qualified_route_for_testing(&mut state, 50_000_000_000, &clock, scenario.ctx());
+            let mut i: u64 = 0;
+            while (i < 9) {
+                bten::record_qualified_route_for_testing(&mut state, 1, &clock, scenario.ctx());
+                i = i + 1;
+            };
             clock::set_for_testing(&mut clock, 601_000);
             bten::settle(&mut state, &clock, scenario.ctx());
             assert!(bten::block_height(&state) == 1, 0);

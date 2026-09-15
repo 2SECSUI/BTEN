@@ -1,0 +1,189 @@
+[Note]: Dependency sources are no longer verified automatically during publication and upgrade. You can pass the `--verify-deps` option if you would like to verify them as part of publication or upgrade.
+INCLUDING DEPENDENCY IntegerMate
+INCLUDING DEPENDENCY MoveSTL
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY TurbosCLMM
+INCLUDING DEPENDENCY cetusclmm
+BUILDING bten
+warning[WC09011]: unused constant
+    ┌─ /workspace/BTEN-work/sources/bten.move:132:11
+    │
+132 │     const E_MANAGED_VAULT_OPERATOR: u64 = 40;
+    │           ^^^^^^^^^^^^^^^^^^^^^^^^ The constant 'E_MANAGED_VAULT_OPERATOR' is never used. Consider removing it.
+    │
+    = This warning can be suppressed with '#[allow(unused_const)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC04037]: deprecated usage
+    ┌─ /workspace/BTEN-work/sources/bten.move:535:37
+    │
+535 │         let (cap, metadata) = coin::create_currency<BTEN>(
+    │                                     ^^^^^^^^^^^^^^^ The function 'sui::coin::create_currency' is deprecated: Use `coin_registry::new_currency_with_otw` instead
+    │
+    = This warning can be suppressed with '#[allow(deprecated_usage)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:579:9
+    │
+579 │         state: &mut EmissionState,
+    │         ^^^^^ Unused parameter 'state'. Consider removing or prefixing with an underscore: '_state'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:581:9
+    │
+581 │         fee_points: u64,
+    │         ^^^^^^^^^^ Unused parameter 'fee_points'. Consider removing or prefixing with an underscore: '_fee_points'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:582:9
+    │
+582 │         clock: &Clock,
+    │         ^^^^^ Unused parameter 'clock'. Consider removing or prefixing with an underscore: '_clock'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[WC09002]: unused variable
+    ┌─ /workspace/BTEN-work/sources/bten.move:583:9
+    │
+583 │         ctx: &mut TxContext,
+    │         ^^^ Unused parameter 'ctx'. Consider removing or prefixing with an underscore: '_ctx'
+    │
+    = This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+Transaction Digest: AwfnPvTxo1Fv7hYgE1bhjHy84VSRoGsEQRFBBR37PzLH
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Transaction Data                                                                                                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sender: 0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a                                                               │
+│ Gas Owner: 0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a                                                            │
+│ Gas Budget: 500000000 MIST                                                                                                               │
+│ Gas Price: 100 MIST                                                                                                                      │
+│ Gas Payment:                                                                                                                             │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│ Transaction Kind: Programmable                                                                                                           │
+│ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+│ │ Input Objects                                                                                                                        │ │
+│ ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ │
+│ │ 0   Imm/Owned Object ID: 0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c                                          │ │
+│ │ 1   Pure Arg: [0]                                                                                                                    │ │
+│ │ 2   Pure Arg: [32,113,10,116,237,245,46,179,95,135,117,29,57,88,173,15,237,132,82,128,45,148,177,131,79,117,97,187,98,75,239,11,132] │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│ ╭───────────────────────────────────────────────────────────────────────────────────────────╮                                            │
+│ │ Commands                                                                                  │                                            │
+│ ├───────────────────────────────────────────────────────────────────────────────────────────┤                                            │
+│ │ 0  MoveCall:                                                                              │                                            │
+│ │  ┌                                                                                        │                                            │
+│ │  │ Function:  authorize_upgrade                                                           │                                            │
+│ │  │ Module:    package                                                                     │                                            │
+│ │  │ Package:   0x0000000000000000000000000000000000000000000000000000000000000002          │                                            │
+│ │  │ Arguments:                                                                             │                                            │
+│ │  │   Input  0                                                                             │                                            │
+│ │  │   Input  1                                                                             │                                            │
+│ │  │   Input  2                                                                             │                                            │
+│ │  └                                                                                        │                                            │
+│ │                                                                                           │                                            │
+│ │ 1  Upgrade:                                                                               │                                            │
+│ │  ┌                                                                                        │                                            │
+│ │  │ Dependencies:                                                                          │                                            │
+│ │  │   0xdfaadf86be9af246900d1e3f3b996cf549e7948e662a9977bdd7646d8fa3a778                   │                                            │
+│ │  │   0x8569b7efebec65c73b9dc15c5ac2a9542870d286fa79a3feedffbaa94ed53002                   │                                            │
+│ │  │   0x0000000000000000000000000000000000000000000000000000000000000001                   │                                            │
+│ │  │   0x0000000000000000000000000000000000000000000000000000000000000002                   │                                            │
+│ │  │   0xa5a0c25c79e428eba04fb98b3fb2a34db45ab26d4c8faf0d7e39d66a63891e64                   │                                            │
+│ │  │   0x25ebb9a7c50eb17b3fa9c5a30fb8b5ad8f97caaf4928943acbcff7153dfee5e3                   │                                            │
+│ │  │ Current Package ID: 0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688 │                                            │
+│ │  │ Ticket: Result 0                                                                       │                                            │
+│ │  └                                                                                        │                                            │
+│ │                                                                                           │                                            │
+│ │ 2  MoveCall:                                                                              │                                            │
+│ │  ┌                                                                                        │                                            │
+│ │  │ Function:  commit_upgrade                                                              │                                            │
+│ │  │ Module:    package                                                                     │                                            │
+│ │  │ Package:   0x0000000000000000000000000000000000000000000000000000000000000002          │                                            │
+│ │  │ Arguments:                                                                             │                                            │
+│ │  │   Input  0                                                                             │                                            │
+│ │  │   Result 1                                                                             │                                            │
+│ │  └                                                                                        │                                            │
+│ ╰───────────────────────────────────────────────────────────────────────────────────────────╯                                            │
+│                                                                                                                                          │
+│ Signatures:                                                                                                                              │
+│    65HrqpwhLeebf+ZJpYbwpL3xTk9KVyVxxoZwhBRHYFKRuG66dIQhnGoad+LN7tDGHzQ9Ut0omk0poHw2gtP5AQ==                                              │
+│                                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Transaction Effects                                                                               │
+├───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Digest: AwfnPvTxo1Fv7hYgE1bhjHy84VSRoGsEQRFBBR37PzLH                                              │
+│ Status: Success                                                                                   │
+│ Executed Epoch: 1251                                                                              │
+│                                                                                                   │
+│ Created Objects:                                                                                  │
+│  ┌──                                                                                              │
+│  │ ID: 0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f                         │
+│  │ Owner: Immutable                                                                               │
+│  │ Version: 24                                                                                    │
+│  │ Digest: 8bSGPDG5ngwv1f7q4vCXRb78jZ92RiwXPbe2aon12t7i                                           │
+│  └──                                                                                              │
+│ Mutated Objects:                                                                                  │
+│  ┌──                                                                                              │
+│  │ ID: 0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c                         │
+│  │ Owner: Account Address ( 0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a )  │
+│  │ Version: 25                                                                                    │
+│  │ Digest: GscM76gs4RaENFgRDCo8kU4Tdfw4PMF3sb6w2pJ6x98m                                           │
+│  └──                                                                                              │
+│ Gas Object:                                                                                       │
+│  ┌──                                                                                              │
+│  │ ID: 0x0000000000000000000000000000000000000000000000000000000000000000                         │
+│  │ Owner: Account Address ( 0x0000000000000000000000000000000000000000000000000000000000000000 )  │
+│  │ Version: 0                                                                                     │
+│  │ Digest: 11111111111111111111111111111111                                                       │
+│  └──                                                                                              │
+│ Gas Cost Summary:                                                                                 │
+│    Storage Cost: 273136400 MIST                                                                   │
+│    Computation Cost: 543000 MIST                                                                  │
+│    Storage Rebate: 1617660 MIST                                                                   │
+│    Non-refundable Storage Fee: 16340 MIST                                                         │
+│                                                                                                   │
+│ Transaction Dependencies:                                                                         │
+│    4iZ5nMJbgU6VtoDXg8TsuAEg6K6y4zovDgcMqxNn4diS                                                   │
+│    5JcgCBKAKVEugBeaa8Fh2RS4Qeo8nrLAwBKdiZAum12W                                                   │
+│    67LPZppkWnB3dYZwjJ9vS6n7jb5rG8HvXtXXZCUaRVLy                                                   │
+│    6z8MQyrxFEN5H3hshBGWLxNcY5sUQShysFVNoqLzWAQG                                                   │
+│    9feeN5tyxKLPPt1nRERtddp8xzxMVefNufkhxWAT1Jja                                                   │
+│    Byks2LBG2cNGT9fmhYyDwh3d9oreBnf6sMuE9SzuQGdP                                                   │
+│    FzmkKxeiwFgu6kDupWEZjmVgLkznXhK2bLk447o8cJ2u                                                   │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Object Changes                                                                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Mutated Objects:                                                                                 │
+│  ┌──                                                                                             │
+│  │ ObjectID: 0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c                  │
+│  │ Sender: 0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a                    │
+│  │ Owner: Account Address ( 0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a ) │
+│  │ ObjectType: 0x2::package::UpgradeCap                                                          │
+│  │ Version: 25                                                                                   │
+│  │ Digest: GscM76gs4RaENFgRDCo8kU4Tdfw4PMF3sb6w2pJ6x98m                                          │
+│  └──                                                                                             │
+│ Published Objects:                                                                               │
+│  ┌──                                                                                             │
+│  │ PackageID: 0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f                 │
+│  │ Version: 24                                                                                   │
+│  │ Digest: 8bSGPDG5ngwv1f7q4vCXRb78jZ92RiwXPbe2aon12t7i                                          │
+│  │ Modules: bten, ops_buy_desk                                                                   │
+│  └──                                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Balance Changes                                                                                   │
+├───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──                                                                                              │
+│  │ Owner: Account Address ( 0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a )  │
+│  │ CoinType: 0x2::sui::SUI                                                                        │
+│  │ Amount: -272061740                                                                             │
+│  └──                                                                                              │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────╯

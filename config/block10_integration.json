@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
-  "publishedVersion": 23,
+  "currentPackage": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+  "publishedVersion": 24,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -101,7 +101,7 @@
     "status": "active-public-event-reader",
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
-    "dappRequirement": "Bitcoin-style ~10 min cadence: settle releases at most 1 block per call. External verifier attests registered-pool Cetus swaps AND liquidity adds (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event) for trader points. No bulk multi-block catch-up; advance_slots (600s) creates the next pending slot. Not a 10-trade bar.",
+    "dappRequirement": "v24 / v16 trade gate: settle releases min(pending, batch_trades/10, 100). External verifier attests registered-pool Cetus swaps AND liquidity adds for receipts. 10 qualifying receipts per block; surplus does not pre-unlock.",
     "liveTapeRule": "treatAllLiveTapeAsGated",
     "enabled": true,
     "paused": false,
@@ -156,7 +156,7 @@
     "registryAdminCap": "0x950ef4d2afc672d684e54e39204b6d7f328d76f47590da73463f525e531973e9",
     "package": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
     "vaultState": "0xf0b602704c571f73f77b478c58cf6b35ce4725650fde6524b631b6f15c03bd76",
-    "livePackage": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
+    "livePackage": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
     "typePackage": "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098"
   },
   "turbosAdapters": {
@@ -183,11 +183,11 @@
     "managedVaultsProfitFeeToOpsWallets": true,
     "blockTransactions": false,
     "treatAllLiveTapeAsGated": true,
-    "note": "Bitcoin-style ~10 min cadence. settle unlocks at most 1 block (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. Trades/attestations still credit trader rewards; they are not required to unlock.",
-    "gatedMeans": "time-pending slots; trades not required",
-    "minTradesPerBlock": 0,
-    "hopsRequired": 0,
-    "tradeBar": false
+    "note": "v24 restores v16 trade gate. settle = min(pending, batch_trades/10, 100). Trades/attestations required to unlock; surplus does not pre-unlock future slots.",
+    "gatedMeans": "Trade-gated: min(pending, batch_trades/10, 100); 10 receipts per block",
+    "minTradesPerBlock": 10,
+    "hopsRequired": 10,
+    "tradeBar": true
   },
   "gatePolicy": {
     "allDappTransactionsBtenGated": true,
@@ -210,7 +210,7 @@
       "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
       "exampleExternalAggregatorDigest": "49jxC25U1xxSrMKtbjBs38c1ggWoLbQs9Kb1zLTNtr1v"
     },
-    "rule": "Bitcoin-style ~10 min cadence. settle unlocks at most one pending ten-minute slot per call (MAX_SETTLE_BLOCKS=1) without requiring batch_trades. Adapter and external Cetus attestations still accrue trader points. Do not block transactions. Live-tape labels are not the gate.",
+    "rule": "v16 trade gate: settle unlocks min(pending, batch_trades/10, 100). Adapter and external Cetus attestations increment receipts. Live-tape labels are not the gate.",
     "liveTapeClassification": {
       "everyLiveTapeRow": "gated",
       "neverLabel": "ungated",
@@ -226,11 +226,11 @@
       },
       "note": "Tape classification is not emission gating. A row labeled gated on the tape does not unlock a block unless attest_external_cetus_route or a package adapter recorded the receipt."
     },
-    "minTradesPerBlock": 0,
-    "gatedMeans": "time-pending slots release; trades not required",
+    "minTradesPerBlock": 10,
+    "gatedMeans": "Trade-gated: min(pending, batch_trades/10, 100); 10 receipts per block",
     "emissionGate": {
-      "minTradesPerBlock": 0,
-      "maxSettleBlocks": 1,
+      "minTradesPerBlock": 10,
+      "maxSettleBlocks": 100,
       "countsTowardBlockRelease": [
         "RouteRecorded (package adapters / composable seal)",
         "ExternalCetusRouteAttested (aggregator/direct Cetus on registered BTEN pools)"
@@ -240,12 +240,12 @@
         "bten::attest_external_cetus_routes"
       ],
       "oneReceiptPerDigest": true,
-      "note": "Bitcoin-style ~10 min cadence. settle unlocks at most 1 block (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. Trades/attestations still credit trader rewards; they are not required to unlock.",
-      "tradeBar": false,
-      "hopsRequired": 0
+      "note": "v24 restores v16 trade gate. settle = min(pending, batch_trades/10, 100). Trades/attestations required to unlock; surplus does not pre-unlock future slots.",
+      "tradeBar": true,
+      "hopsRequired": 10
     },
-    "hopsRequired": 0,
-    "tradeBar": false
+    "hopsRequired": 10,
+    "tradeBar": true
   },
   "package": {
     "id": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
@@ -258,8 +258,8 @@
   },
   "status": "live",
   "packageStatus": "v23-live",
-  "livePackageVersion": 23,
-  "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "livePackageVersion": 24,
+  "livePackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
   "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
   "magmaBluefinAdapters": {
     "planFile": "config/magma_bluefin_adapter_plan.json",
@@ -277,20 +277,20 @@
   "uiRevision": "v22-no-trade-bar",
   "dappUiPolicy": {
     "source": "Grok App Builder project 01a0925b-5bff-7bf1-bd90-f229738f4f52 (block10.grok.me)",
-    "note": "Live bundles hardcode a 10-receipt trade bar. Configs and Move settle already use Bitcoin-style time slots (minTradesPerBlock effective 0 / MAX_SETTLE_BLOCKS=1). Frontend must stop requiring 10 hops.",
-    "hopsRequired": 0,
-    "tradeBar": false,
-    "minTradesPerBlock": 0,
-    "maxSettleBlocks": 1,
+    "note": "v24 restores v16 trade gate. settle = min(pending, batch_trades/10, 100). Trades/attestations required to unlock; surplus does not pre-unlock future slots.",
+    "hopsRequired": 10,
+    "tradeBar": true,
+    "minTradesPerBlock": 10,
+    "maxSettleBlocks": 100,
     "gateDisplay": "time-slot",
     "headerPulse": "Next ~10 min block \u00b7 pending slots (not Gate N/10)",
-    "earnCopy": "One block per ~10 minutes. Trades accrue rewards but are not required to settle.",
-    "guideCopy": "Fill is not required. Settle when a due slot is pending (MAX_SETTLE_BLOCKS=1).",
+    "earnCopy": "10 qualifying routes release one pending ~10-minute block (up to 100 per settle).",
+    "guideCopy": "Fill the gate to 10/10. Settle unlocks min(pending, trades/10, 100).",
     "liveTape": "treatAllLiveTapeAsGated",
     "botArmedRequiresWallet": true,
     "botDisconnectedLabel": "Connect wallet",
     "ignoreOnChainMinTradesPerBlockForUiBar": true,
-    "onChainMinTradesPerBlockNote": "View still returns 1; settle path ignores trade count. Prefer UI ignore over Move v23 unless a bar still binds to the view."
+    "onChainMinTradesPerBlockNote": "View returns 10; settle requires batch_trades/10 eligible blocks (MAX_SETTLE=100)."
   },
   "v23Status": "live",
   "opsBuyDesk": {
@@ -311,7 +311,7 @@
     "opsAddress": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
     "deskObjectId": "0xb0e9c4a61e204eb23cd408dd2e67e9da9b5c76cec76432843fb589d014fe15c1",
     "adminCapId": "0x5c4089420effa5b9963ee152311180e2b08578842a22519f2d4c134b8983d3c4",
-    "packageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+    "packageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
     "dappRule": "Buy desk sells ops inventory for SUI at Cetus mid. Wallet-sign buy_with_sui with the live BTEN/SUI pool + min_bten_out. Never embed private keys.",
     "entrypoints": {
       "create": "ops_buy_desk::create",
@@ -328,8 +328,8 @@
     "status": "live-adapters-v23-package; republish-ui-may-404",
     "dapp": "https://block10.grok.me",
     "siteNote": "Site may 404 until Grok App Builder republishes the Swap/Buy UI. Configs below are the source of truth for the builder.",
-    "packageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
-    "packageVersion": 23,
+    "packageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+    "packageVersion": 24,
     "pendingPackageVersion": 23,
     "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
     "cetusGlobalConfig": "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f",

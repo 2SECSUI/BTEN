@@ -7,7 +7,7 @@
  * attests them so they count as gated (`attest_external_cetus_route` ->
  * `record_atomic_route` -> `batch_trades` / trader points). On-chain attestation
  * only requires registered pool + digest + event_sequence (no SwapEvent requirement).
- * Live-tape labeling is not the block-release gate; Bitcoin-style ~10 min settle is.
+ * Live-tape labeling is not the block-release gate; v16 trade gate (10 receipts / block, MAX_SETTLE=100) is.
  * OpenPositionEvent alone is not attested; prefer AddLiquidityV2 sequence when an
  * open+add pair shares a digest. One emission-gate receipt per transaction digest,
  * including multi-pool aggregator PTBs. Never quotes, swaps, transfers treasury, or
