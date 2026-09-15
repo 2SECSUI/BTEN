@@ -76,10 +76,25 @@ function balanceValue(value) {
   return BigInt(value?.value ?? 0);
 }
 
-async function execute(client, signer, transaction) {
-  const result = await client.signAndExecuteTransaction({ signer, transaction, include: { effects: true, events: true } });
-  if (!succeeded(result)) throw new Error("Keeper transaction did not report success");
-  return { digest: result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null, effects: result.effects ?? result.transaction?.effects ?? result.Transaction?.effects };
+async function execute(client, signer, transaction, { retries = 2 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const result = await client.signAndExecuteTransaction({ signer, transaction, include: { effects: true, events: true } });
+      if (!succeeded(result)) throw new Error("Keeper transaction did not report success");
+      return { digest: result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null, effects: result.effects ?? result.transaction?.effects ?? result.Transaction?.effects };
+    } catch (error) {
+      lastError = error;
+      const message = String(error?.message ?? error);
+      // Stale object / concurrent settle races — rebuild once or twice then surface.
+      if (attempt < retries && /unavailable for consumption|Transaction needs to be rebuilt|OBJECT_VERSION/i.test(message)) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
 }
 
 const [state, treasuryState, farmState] = await Promise.all([

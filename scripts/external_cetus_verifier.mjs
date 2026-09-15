@@ -2,12 +2,15 @@
 /**
  * BTEN direct-Cetus event verifier.
  *
- * Narrow public-data keeper: examines successful Cetus SwapEvent records from
- * registered BTEN pools and attests them so they count as gated for emission
- * block release (`attest_external_cetus_route` -> `record_atomic_route` ->
- * `batch_trades` / settle unlock). Live-tape labeling is not the gate.
- * One emission-gate receipt per transaction digest, including multi-pool
- * aggregator PTBs. It never quotes, swaps, transfers treasury funds, or
+ * Narrow public-data keeper: examines successful Cetus SwapEvent and liquidity-add
+ * records (AddLiquidityEvent / AddLiquidityV2Event) on registered BTEN pools and
+ * attests them so they count as gated (`attest_external_cetus_route` ->
+ * `record_atomic_route` -> `batch_trades` / trader points). On-chain attestation
+ * only requires registered pool + digest + event_sequence (no SwapEvent requirement).
+ * Live-tape labeling is not the block-release gate; Bitcoin-style ~10 min settle is.
+ * OpenPositionEvent alone is not attested; prefer AddLiquidityV2 sequence when an
+ * open+add pair shares a digest. One emission-gate receipt per transaction digest,
+ * including multi-pool aggregator PTBs. Never quotes, swaps, transfers treasury, or
  * prints private keys.
  *
  * Usage:
@@ -31,6 +34,9 @@ const TARGET_DIGEST = digestFlagIndex >= 0 ? String(process.argv[digestFlagIndex
 const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const CLOCK = "0x6";
 const CETUS_SWAP_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent";
+const CETUS_ADD_LIQUIDITY_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::AddLiquidityEvent";
+const CETUS_ADD_LIQUIDITY_V2_EVENT = "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event";
+const CETUS_OPEN_POSITION_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::OpenPositionEvent";
 const verifier = mainnet.externalCetusVerifier;
 
 if (!verifier?.state || !verifier?.cap || !verifier?.activationAfterMs) {
@@ -192,6 +198,27 @@ async function recentAttestations(eventTypes) {
   return keys;
 }
 
+function matchPoolEvent(event, pool, sender) {
+  const type = event.contents?.type?.repr;
+  const json = event.contents?.json ?? {};
+  if (normal(json.pool) !== normal(pool)) return null;
+  if (normal(event.sender?.address) !== sender) return null;
+  if (type === CETUS_SWAP_EVENT && positive(json.amount_in) && positive(json.amount_out)) {
+    return { kind: "swap", event };
+  }
+  if (type === CETUS_ADD_LIQUIDITY_V2_EVENT && (positive(json.amount_a) || positive(json.amount_b))) {
+    return { kind: "liquidity_add", event };
+  }
+  if (type === CETUS_ADD_LIQUIDITY_EVENT && (positive(json.amount_a) || positive(json.amount_b) || positive(json.liquidity))) {
+    return { kind: "liquidity_add", event };
+  }
+  // OpenPosition alone is never attested; only note it when an add also exists.
+  if (type === CETUS_OPEN_POSITION_EVENT) {
+    return { kind: "open_position", event };
+  }
+  return null;
+}
+
 function candidateFromTransaction(transaction, pool) {
   if (!transaction || transaction.effects?.status !== "SUCCESS") return null;
   const timestamp = Date.parse(transaction.effects?.timestamp ?? "");
@@ -201,14 +228,19 @@ function candidateFromTransaction(transaction, pool) {
   const events = transaction.effects?.events?.nodes ?? [];
   // Protected adapter already emitted RouteRecorded — already emission-gated.
   if (events.some((event) => event.contents?.type?.repr?.endsWith("::bten::RouteRecorded"))) return null;
-  const match = events.find((event) => {
-    const json = event.contents?.json ?? {};
-    return event.contents?.type?.repr === CETUS_SWAP_EVENT
-      && normal(json.pool) === normal(pool)
-      && normal(event.sender?.address) === sender
-      && positive(json.amount_in) && positive(json.amount_out);
-  });
-  if (!match) return null;
+  const matched = [];
+  for (const event of events) {
+    const hit = matchPoolEvent(event, pool, sender);
+    if (hit) matched.push(hit);
+  }
+  const hasAdd = matched.some((item) => item.kind === "liquidity_add");
+  // Prefer AddLiquidityV2/AddLiquidity sequence; ignore bare OpenPosition.
+  // Otherwise take the first swap (or liquidity) on this pool in the PTB.
+  const preferred = matched.find((item) => item.kind === "liquidity_add")
+    || matched.find((item) => item.kind === "swap")
+    || (hasAdd ? matched.find((item) => item.kind === "open_position") : null);
+  if (!preferred || preferred.kind === "open_position") return null;
+  const match = preferred.event;
   const digestBytes = decodeBase58(transaction.digest);
   if (digestBytes.length !== 32) return null;
   return {
@@ -218,6 +250,7 @@ function candidateFromTransaction(transaction, pool) {
     pool,
     trader: transaction.sender.address,
     timestamp: transaction.effects.timestamp,
+    kind: preferred.kind,
     // Fixed one point prevents token decimal units from inflating rewards.
     feePoints: "1",
   };
@@ -323,20 +356,32 @@ if (TARGET_DIGEST) {
     .filter(Boolean)));
 }
 
+const kindRank = { liquidity_add: 0, swap: 1 };
 const byDigest = new Map();
 for (const candidate of batches.flat()) {
-  // Multi-pool aggregator PTBs (e.g. 7K through BTEN/SUI + BTEN/MAGMA) earn ONE gate receipt.
+  // Multi-pool aggregator PTBs earn ONE gate receipt (swap or liquidity add).
   const current = byDigest.get(candidate.digest);
-  if (!current || candidate.eventSequence < current.eventSequence) {
+  const nextRank = kindRank[candidate.kind] ?? 9;
+  const curRank = current ? (kindRank[current.kind] ?? 9) : 99;
+  if (!current || nextRank < curRank || (nextRank === curRank && candidate.eventSequence < current.eventSequence)) {
     byDigest.set(candidate.digest, candidate);
   }
 }
 
 const remainingDaily = Math.max(0, Number(state.daily_event_cap) - Number(state.events_today));
-const candidates = [...byDigest.values()]
+const runCap = TARGET_DIGEST ? 1 : Math.min(remainingDaily, verifier.maxEventsPerRun ?? 10);
+const priority = new Set((verifier.priorityDigests ?? []).map((d) => String(d)));
+// Priority digests first, then newest-first so WAL swaps/adds are not starved when
+// GraphQL attestation indexing lags (on-chain abort 30 is the authoritative replay guard).
+const allCandidates = [...byDigest.values()]
   .filter((candidate) => !attestations.has(attestationKey(candidate.digestBytes, candidate.eventSequence)))
-  .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
-  .slice(0, TARGET_DIGEST ? 1 : Math.min(remainingDaily, verifier.maxEventsPerRun ?? 10));
+  .sort((a, b) => {
+    const ap = priority.has(a.digest) ? 0 : 1;
+    const bp = priority.has(b.digest) ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    return Date.parse(b.timestamp) - Date.parse(a.timestamp);
+  });
+const candidates = allCandidates.slice(0, runCap);
 
 const report = {
   mode: EXECUTE ? "execute" : "dry-run",
@@ -356,10 +401,12 @@ const report = {
     blockTransactions: false,
     scannedPools: pools.length,
     alreadyAttestedInPublicLog: attestations.size,
+    eligibleBeforeCap: allCandidates.length,
     attestationKeyFormat: "base64(digest):event_sequence",
+    gatedKinds: ["swap", "liquidity_add"],
   },
-  candidates: candidates.map(({ digest, eventSequence, pool, trader, timestamp, feePoints }) => ({
-    digest, eventSequence, pool, trader, timestamp, feePoints,
+  candidates: candidates.map(({ digest, eventSequence, pool, trader, timestamp, feePoints, kind }) => ({
+    digest, eventSequence, pool, trader, timestamp, feePoints, kind: kind ?? "swap",
   })),
   submitted: [],
 };
@@ -371,10 +418,23 @@ if (!EXECUTE || state.paused || candidates.length === 0) {
 
 const client = new SuiGrpcClient({ network: "mainnet", baseUrl: "https://fullnode.mainnet.sui.io:443" });
 const signer = keeperSigner();
-for (const candidate of candidates) {
+// Walk newest-first beyond the initial slice when abort-30 skips already-processed digests
+// so WAL / liquidity-add backlog can clear within remainingDaily / maxEventsPerRun.
+let successCount = 0;
+let cursor = 0;
+const queue = allCandidates;
+while (successCount < runCap && cursor < queue.length) {
+  const candidate = queue[cursor];
+  cursor += 1;
+  const attestation = await submit(client, signer, candidate, livePackageId, eventTypes);
   report.submitted.push({
     digest: candidate.digest,
-    attestation: await submit(client, signer, candidate, livePackageId, eventTypes),
+    kind: candidate.kind ?? "swap",
+    pool: candidate.pool,
+    attestation,
   });
+  if (attestation) successCount += 1;
 }
+report.policy.attempted = report.submitted.length;
+report.policy.attestedThisRun = successCount;
 console.log(JSON.stringify(report, null, 2));

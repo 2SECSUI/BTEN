@@ -51,7 +51,8 @@
       ],
       "excludedPairs": [
         "BTEN/vSUI"
-      ]
+      ],
+      "walPoolNote": "BTEN/WAL pool 0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7 is registered (bucket 1). Swaps and liquidity adds are external-verifier gated; block release stays ~10 min time slots, not a 10-trade bar."
     },
     {
       "name": "turbos",
@@ -90,12 +91,12 @@
     "dailyEventCap": 25,
     "activationAfterMs": "1789210768409",
     "scanTransactionsPerPool": 50,
-    "maxEventsPerRun": 10,
+    "maxEventsPerRun": 25,
     "fixedFeePoints": "1",
     "status": "active-public-event-reader",
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
-    "security": "Only the verifier capability held by the dedicated keeper can attest. Attestation accrues trader points; it does not gate block release. Bitcoin-style cadence: settle unlocks at most 1 block per call; advance_slots / 600s creates pending.",
+    "security": "Only the verifier capability held by the dedicated keeper can attest. Gated external volume includes Cetus swaps AND liquidity adds on registered BTEN pools (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event). Attestation accrues trader points; it does not gate block release. Bitcoin-style cadence: settle unlocks at most 1 block per call; advance_slots / 600s creates pending.",
     "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
@@ -106,7 +107,7 @@
       "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
       "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested"
     ],
-    "liveTapeRule": "Display only. Emission gating is the attestation receipt itself. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
+    "liveTapeRule": "Display only. Emission gating is the attestation receipt itself for swaps and liquidity adds on registered BTEN Cetus pools. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
     "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
     "attestationKeyFormat": "base64(32-byte-digest):event_sequence",
     "paused": false,
@@ -123,7 +124,21 @@
       "bten::attest_external_cetus_route",
       "bten::attest_external_cetus_routes"
     ],
-    "oneReceiptPerDigest": true
+    "oneReceiptPerDigest": true,
+    "gatedEventKinds": [
+      "swap",
+      "liquidity_add"
+    ],
+    "cetusEventTypes": [
+      "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent",
+      "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::AddLiquidityEvent",
+      "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event"
+    ],
+    "exampleLiquidityAddDigest": "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz",
+    "priorityDigests": [
+      "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz",
+      "DjSKSZ45mVEdwUgXiXrrb8xipfK4s6ipX8PcCRQNNkfZ"
+    ]
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -290,7 +305,7 @@
     "treatAllLiveTapeAsGated": true,
     "blockTransactions": false,
     "dapp": "https://block10.grok.me",
-    "rule": "Tape classification is not emission gating. Registered BTEN Cetus volume without RouteRecorded becomes settle-eligible only after ExternalCetusRouteAttested.",
+    "rule": "Tape classification is not emission gating. Registered BTEN Cetus volume (swaps and liquidity adds) without RouteRecorded becomes settle-eligible for trader points only after ExternalCetusRouteAttested. Block release remains Bitcoin-style ~10 min (MAX_SETTLE_BLOCKS=1).",
     "liveTapeClassification": {
       "everyLiveTapeRow": "gated",
       "neverLabel": "ungated",

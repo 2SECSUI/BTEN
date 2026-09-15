@@ -101,7 +101,7 @@
     "status": "active-public-event-reader",
     "sourceOfTruth": "MAINNET_ROUTE_CONFIG.json#externalCetusVerifier",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
-    "dappRequirement": "Bitcoin-style ~10 min cadence: settle releases at most 1 block per call. Attestation still accrues trader points. No bulk multi-block catch-up; advance_slots (600s) creates the next pending slot.",
+    "dappRequirement": "Bitcoin-style ~10 min cadence: settle releases at most 1 block per call. External verifier attests registered-pool Cetus swaps AND liquidity adds (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event) for trader points. No bulk multi-block catch-up; advance_slots (600s) creates the next pending slot. Not a 10-trade bar.",
     "liveTapeRule": "treatAllLiveTapeAsGated",
     "enabled": true,
     "paused": false,
@@ -110,7 +110,9 @@
     "entrypoints": [
       "bten::attest_external_cetus_route",
       "bten::attest_external_cetus_routes"
-    ]
+    ],
+    "gatedVolume": "swaps_and_liquidity_adds_on_registered_bten_cetus_pools",
+    "exampleLiquidityAddDigest": "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz"
   },
   "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there.",
   "pendingPackageVersion": 23,
