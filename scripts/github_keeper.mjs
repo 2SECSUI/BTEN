@@ -76,19 +76,20 @@ function balanceValue(value) {
   return BigInt(value?.value ?? 0);
 }
 
-async function execute(client, signer, transaction, { retries = 2 } = {}) {
+async function execute(client, signer, buildTx, { retries = 3 } = {}) {
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
+      const transaction = typeof buildTx === "function" ? buildTx() : buildTx;
       const result = await client.signAndExecuteTransaction({ signer, transaction, include: { effects: true, events: true } });
       if (!succeeded(result)) throw new Error("Keeper transaction did not report success");
       return { digest: result.digest ?? result.transaction?.digest ?? result.Transaction?.digest ?? null, effects: result.effects ?? result.transaction?.effects ?? result.Transaction?.effects };
     } catch (error) {
       lastError = error;
       const message = String(error?.message ?? error);
-      // Stale object / concurrent settle races — rebuild once or twice then surface.
-      if (attempt < retries && /unavailable for consumption|Transaction needs to be rebuilt|OBJECT_VERSION/i.test(message)) {
-        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      // Stale gas/shared object versions — rebuild a fresh PTB and retry.
+      if (attempt < retries && /unavailable for consumption|Transaction needs to be rebuilt|OBJECT_VERSION|abort code:\s*1\b/i.test(message)) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
         continue;
       }
       throw error;
@@ -155,12 +156,14 @@ if (policy.settlement.enabled) {
     const work = pendingWork(current);
     // Catch up while time/pending work remains. On-chain still MAX_SETTLE_BLOCKS=1 per call.
     if (work.pendingEffective <= 0) break;
-    const tx = new Transaction();
-    tx.setSender(policy.keeperAddress);
-    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-    tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.distributionState), tx.object(CLOCK)] });
     try {
-      const submitted = await execute(client, signer, tx);
+      const submitted = await execute(client, signer, () => {
+        const tx = new Transaction();
+        tx.setSender(policy.keeperAddress);
+        tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+        tx.moveCall({ target: `${PACKAGE}::bten::settle_and_distribute`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.distributionState), tx.object(CLOCK)] });
+        return tx;
+      });
       settleCalls += 1;
       report.submitted.push({
         action: "settle_and_distribute",
@@ -171,13 +174,13 @@ if (policy.settlement.enabled) {
       });
     } catch (error) {
       const message = String(error?.message ?? error);
-      // E_NO_ELIGIBLE_BLOCKS (=1): GraphQL pendingEffective was stale vs on-chain clock/slots.
-      if (/abort code:\s*1\b/i.test(message) || /E_NO_ELIGIBLE_BLOCKS/i.test(message)) {
-        stoppedReason = "no_eligible_blocks";
+      // Soft-skip so attestation step can still run: stale pendingEffective or gas races.
+      if (/abort code:\s*1\b/i.test(message) || /E_NO_ELIGIBLE_BLOCKS/i.test(message) || /unavailable for consumption|Transaction needs to be rebuilt/i.test(message)) {
+        stoppedReason = /abort code:\s*1\b/i.test(message) ? "no_eligible_blocks" : "settle_skipped_transient";
         report.submitted.push({
           action: "settle_and_distribute",
           skipped: true,
-          reason: "E_NO_ELIGIBLE_BLOCKS",
+          reason: stoppedReason,
           pendingBlocksBefore: work.pendingBlocks,
           elapsedSlotsBefore: work.elapsedSlots,
           error: message,
@@ -201,33 +204,39 @@ if (policy.treasurySync.enabled) {
   const refreshed = await moveFields(mainnet.emissionState);
   const refreshedTreasury = await moveFields(policy.routeTreasuryState);
   if (Number(refreshedTreasury.next_height) < Number(refreshed.block_height)) {
-    const tx = new Transaction();
-    tx.setSender(policy.keeperAddress);
-    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-    tx.moveCall({ target: `${PACKAGE}::bten::sync_route_treasury`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.routeTreasuryState)] });
-    report.submitted.push({ action: "sync_route_treasury", ...(await execute(client, signer, tx)) });
+    report.submitted.push({ action: "sync_route_treasury", ...(await execute(client, signer, () => {
+      const tx = new Transaction();
+      tx.setSender(policy.keeperAddress);
+      tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+      tx.moveCall({ target: `${PACKAGE}::bten::sync_route_treasury`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.routeTreasuryState)] });
+      return tx;
+    })) });
   }
 }
 if (policy.lpProgrammeAccrual?.enabled && policy.lpProgrammeAccrual?.state) {
   const refreshed = await moveFields(mainnet.emissionState);
   const available = LP_VAULT_FIELDS.reduce((total, field) => total + balanceValue(refreshed[field]), 0n);
   if (available > 0n) {
-    const tx = new Transaction();
-    tx.setSender(policy.keeperAddress);
-    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-    tx.moveCall({ target: `${PACKAGE}::bten::accrue_lp_program`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.lpProgrammeAccrual.state)] });
-    report.submitted.push({ action: "accrue_lp_program", ...(await execute(client, signer, tx)) });
+    report.submitted.push({ action: "accrue_lp_program", ...(await execute(client, signer, () => {
+      const tx = new Transaction();
+      tx.setSender(policy.keeperAddress);
+      tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+      tx.moveCall({ target: `${PACKAGE}::bten::accrue_lp_program`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.lpProgrammeAccrual.state)] });
+      return tx;
+    })) });
   }
 }
 if (policy.nativeFarmSync?.enabled && policy.nativeFarmSync?.state) {
   const refreshedState = await moveFields(mainnet.emissionState);
   const refreshedFarm = await moveFields(policy.nativeFarmSync.state);
   if (Boolean(refreshedFarm.started) && Number(refreshedFarm.next_height) < Number(refreshedState.block_height)) {
-    const tx = new Transaction();
-    tx.setSender(policy.keeperAddress);
-    tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-    tx.moveCall({ target: `${PACKAGE}::bten::sync_bten_staking_farm_rewards`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.nativeFarmSync.state)] });
-    report.submitted.push({ action: "sync_bten_staking_farm_rewards", ...(await execute(client, signer, tx)) });
+    report.submitted.push({ action: "sync_bten_staking_farm_rewards", ...(await execute(client, signer, () => {
+      const tx = new Transaction();
+      tx.setSender(policy.keeperAddress);
+      tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
+      tx.moveCall({ target: `${PACKAGE}::bten::sync_bten_staking_farm_rewards`, arguments: [tx.object(mainnet.emissionState), tx.object(policy.nativeFarmSync.state)] });
+      return tx;
+    })) });
   }
 }
 console.log(JSON.stringify(report, null, 2));
