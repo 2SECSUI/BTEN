@@ -10,8 +10,9 @@
     "maximumBlocksPerRun": 1,
     "gasBudgetMist": "30000000",
     "routesPerBlock": 0,
-    "note": "v22: Bitcoin-style ~10 min cadence. settle unlocks at most 1 block per call (MAX_SETTLE_BLOCKS=1) after advance_slots even when batch_trades==0. No bulk multi-block catch-up. auto_pay_trader uses u128 intermediate.",
-    "tradeBar": false
+    "note": "v23: Bitcoin-style ~10 min cadence. Each settle_and_distribute unlocks at most 1 block (on-chain MAX_SETTLE_BLOCKS=1). GitHub execute loops settle until pending_blocks==0 (re-read emission between calls), capped by maximumSettleCallsPerRun, so Actions cron lag can catch up without changing Move. auto_pay_trader uses u128 intermediate.",
+    "tradeBar": false,
+    "maximumSettleCallsPerRun": 30
   },
   "treasurySync": {
     "enabled": true
@@ -32,9 +33,9 @@
   },
   "minTradesPerBlock": 0,
   "gatedMeans": "Bitcoin-style one block per settle after 600s slots; trades/attestations accrue rewards but are not required to settle",
-  "livePackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
-  "livePackageVersion": 22,
-  "cacheBust": "20260914T002557Z",
+  "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "livePackageVersion": 23,
+  "cacheBust": "20260915T200200Z",
   "hopsRequired": 0,
   "tradeBar": false,
   "maxSettleBlocks": 1
