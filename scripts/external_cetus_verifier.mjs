@@ -137,16 +137,26 @@ function attestationKeyFromEventJson(json) {
   return attestationKey(digestBytes, json.event_sequence);
 }
 
-async function graphql(query, variables) {
-  const response = await fetch(GRAPHQL, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!response.ok) throw new Error(`GraphQL request failed: ${response.status}`);
-  const body = await response.json();
-  if (body.errors?.length) throw new Error(body.errors.map((item) => item.message).join("; "));
-  return body.data;
+async function graphql(query, variables, { retries = 4 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetch(GRAPHQL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+      });
+      if (!response.ok) throw new Error(`GraphQL request failed: ${response.status}`);
+      const body = await response.json();
+      if (body.errors?.length) throw new Error(body.errors.map((item) => item.message).join("; "));
+      return body.data;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retries) break;
+      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+    }
+  }
+  throw lastError;
 }
 
 async function moveFields(address) {
