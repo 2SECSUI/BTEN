@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
-  "publishedVersion": 24,
+  "currentPackage": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+  "publishedVersion": 25,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -349,11 +349,8 @@
       "0x2eb3cd887c38a20c7d4775a02847f8cbf55f1648bbfe3931420cb06180eb9128",
       "0xf6c5df04eb488373c8309b96f0ea187aada7c3b446b3fb6ef5f73f222eaa5f0c",
       "0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6",
-      "0x924c998ea2acc2bd1c91377a5d5f6ac1b634037bd05c4ebf67f5ad0d98bad835",
-      "0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c",
-      "0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45",
-      "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
-      "0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427"
+      "0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427",
+      "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17"
     ],
     "adapterEntrypoints": {
       "assetToBtenSecond": "bten::cetus_swap_to_bten",
@@ -381,7 +378,7 @@
       "1. Connect wallet; every swap/buy is wallet-signed. neverEmbedPrivateKeys.",
       "2. Use live package id from this file (v23 live).",
       "3. Pass Cetus GlobalConfig + Clock (0x6) + registered pool object for each hop.",
-      "4. Wire the 10 registered Cetus BTEN pools from publicSwap.tenRegisteredCetusPools / MAINNET_ROUTE_CONFIG.json#venues[0].pools.",
+      "4. Wire registered Cetus pools from publicSwap.tenRegisteredCetusPools / MAINNET_ROUTE_CONFIG.json#venues[0].pools. WAL/SUI Bandbot desk is registry-gated for attest only \u2014 not a BTEN-pair adapter pool.",
       "5. Direct SUI\u2192BTEN on Pool<BTEN,SUI>: bten::cetus_swap_to_bten_b2a (or *_return for composable).",
       "6. Asset\u2192BTEN / BTEN\u2192asset: use adapterEntrypoints matching pool coin order (A/B).",
       "7. Via-BTEN multi-hop: cetus_sui_to_asset_via_bten_* ; optional rebate variants when RouteRebateState funded.",
@@ -396,6 +393,23 @@
       "MAINNET_ROUTE_CONFIG.json",
       "config/ops_buy_desk.json",
       "Published.toml"
-    ]
+    ],
+    "bandbotWalSuiPool": {
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "pair": "WAL/SUI",
+      "note": "WAL/SUI Bandbot desk \u2014 registered for gate/attest; not a BTEN-pair adapter pool"
+    }
+  },
+  "v25Unregister": {
+    "digest": "F8GcLjB4DRJVykfu7pQ8m6roZixyLnfYLbLZbE9ztwEW",
+    "upgradeDigest": "FdGQDSwPsVH85gZNme1cSzAMpGixG5MFT26fxRW7fLsF",
+    "package": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+    "pools": {
+      "USDT": "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
+      "USDC": "0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45",
+      "DEEP": "0x924c998ea2acc2bd1c91377a5d5f6ac1b634037bd05c4ebf67f5ad0d98bad835",
+      "NS": "0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c"
+    },
+    "at": "2026-09-15T23:47:58Z"
   }
 }

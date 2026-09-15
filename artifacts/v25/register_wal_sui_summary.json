@@ -1,0 +1,13 @@
+{
+  "action": "register_additional_pool",
+  "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+  "pair": "WAL/SUI",
+  "bucket": 1,
+  "package": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+  "registry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
+  "digest": "Htvyk9p7VPVkeZpu8TbvsNKE9bNrhn5iyipTNmqHr3MM",
+  "registrySizeAfter": 8,
+  "finalized": true,
+  "note": "WAL/SUI Bandbot desk \u2014 registered for gate/attest; not a BTEN-pair adapter pool",
+  "adminCapOwnerConfirmed": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+}
