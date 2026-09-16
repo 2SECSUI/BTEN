@@ -6,7 +6,7 @@
   "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
   "routeTreasuryState": "0xf1992cffa7d4980cd03f37a114bd49fc01a1edef09213cffaec7c0f081fa23ce",
   "settlement": {
-    "enabled": false,
+    "enabled": true,
     "maximumBlocksPerRun": 100,
     "gasBudgetMist": "30000000",
     "routesPerBlock": 10,
@@ -15,15 +15,15 @@
     "maximumSettleCallsPerRun": 30
   },
   "treasurySync": {
-    "enabled": false
+    "enabled": true
   },
   "lpProgrammeAccrual": {
-    "enabled": false,
+    "enabled": true,
     "state": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
     "reason": "The finalized, unpaused V9 LP programme may receive accrued BTEN. The keeper cannot withdraw, swap, add liquidity, fund farms, or access any capability."
   },
   "nativeFarmSync": {
-    "enabled": false,
+    "enabled": true,
     "state": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
     "reason": "Permissionless deterministic sync only moves the fixed staking allocation for blocks released after the farm started. The keeper receives no farm admin capability and cannot withdraw principal or rewards."
   },
@@ -35,9 +35,8 @@
   "gatedMeans": "Trade-gated: min(pending, batch_trades/10, 100) per settle; 10 receipts per block",
   "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
   "livePackageVersion": 28,
-  "cacheBust": "20260916T013200Z-attest-only",
+  "cacheBust": "20260916T003800Z-restore-after-attest",
   "hopsRequired": 10,
   "tradeBar": true,
-  "maxSettleBlocks": 100,
-  "_attestOnlyNote": "Temporary: disable settle/treasury/LP/farm so workflow execute is attest-only; restore after backlog."
+  "maxSettleBlocks": 100
 }

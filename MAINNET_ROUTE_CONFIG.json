@@ -175,20 +175,9 @@
       "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event"
     ],
     "exampleLiquidityAddDigest": "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz",
-    "priorityDigests": [
-      "3aDZBohb7ZucsUV2RaCKucpAxvFPYZvH2xYF9X8xzyFQ",
-      "Hp5WipXogwdF4nyCesarWhovTLfLhAqAuMBQwkprWKJs",
-      "J3nRxHygE8P9xHSSntBQAMuFroXSJEMPVCRmVJyhnBWA",
-      "2TazBHN2fmDQxBAwYQ31XAugnyhfA4E5ZK1y6aEhgDvb",
-      "31xueuG6zU98hvRYivDuwiDKFowYGXKCRyM7XTaSs1Z2",
-      "8LVwErA9PdAz137WP2GEteitK6a9K4VXDDuApErx2rEH",
-      "EH64g8xgphXq8dUX6dGNZr5xUpixsEX5Mb9AJxnfTeYt",
-      "HdWS7ocwPASmqY3hE9DiFdR98xakA5f7KDhXfGT6qgtN",
-      "DdFtxDoTbtx883tibKW54E7AUntPdZH3dVwdxynBxS6B",
-      "CAF8ftuWHT8a5h4R14VoDaX7ma3T14NSYYafgJBNnYaV",
-      "AFf5uCU3WJfsVvK48Zhc1mZzp8Xv3NLdRjhvMxhKTZyv"
-    ],
-    "dailyEventCapNote": "0 = unlimited (v28); on-chain assert skipped when daily_event_cap==0"
+    "priorityDigests": [],
+    "dailyEventCapNote": "0 = unlimited (v28); on-chain assert skipped when daily_event_cap==0",
+    "autoGateNote": "WAL/SUI pool 0x72f5\u2026 is in venues.cetus.pools; SwapEvent+AddLiquidity(+V2) attested by external_cetus_verifier when keeper loop runs. Registered cetus_swap_registered_* emit RouteRecorded instantly. Continuous schedule left DISABLED pending gas OK."
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
