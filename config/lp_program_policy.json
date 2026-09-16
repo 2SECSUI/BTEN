@@ -31,27 +31,27 @@
     {
       "pair": "BTEN/SUI",
       "poolId": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
-      "weightBps": 2500
+      "weightBps": 3000
     },
     {
       "pair": "BTEN/WAL",
       "poolId": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
-      "weightBps": 1500
+      "weightBps": 2500
     },
     {
       "pair": "BTEN/NAVX",
       "poolId": "0x2eb3cd887c38a20c7d4775a02847f8cbf55f1648bbfe3931420cb06180eb9128",
-      "weightBps": 1000
+      "weightBps": 1500
     },
     {
       "pair": "BTEN/CETUS",
       "poolId": "0xf6c5df04eb488373c8309b96f0ea187aada7c3b446b3fb6ef5f73f222eaa5f0c",
-      "weightBps": 1000
+      "weightBps": 1250
     },
     {
       "pair": "BTEN/MAGMA",
       "poolId": "0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6",
-      "weightBps": 1000
+      "weightBps": 1250
     },
     {
       "pair": "BTEN/TURBOS",
@@ -99,5 +99,5 @@
       "disabledAt": "2026-09-15T23:47:58Z"
     }
   ],
-  "weightNote": "USDT/USDC/DEEP/NS removed from active allowlist after v25 unregister; remaining weightBps may not sum to 10000 \u2014 do not deploy protocol LP until reweighted."
+  "weightNote": "v25+ after bleed unregister: redistribute former DEEP/NS/USDC/USDT 2500 bps into SUI/WAL/NAVX/CETUS/MAGMA; TURBOS unchanged 500. Temporary validate unblock for attest-only keeper run."
 }
