@@ -1,0 +1,105 @@
+{
+  "network": "mainnet",
+  "status": "paste-ready-for-bandbot-ai",
+  "dapp": "https://bandbot.grok.me",
+  "docs": "docs/BANDBOT_BTEN_INTEGRATION.md",
+  "buyViaWalDocs": "docs/BUY_VIA_WAL.md",
+  "dryRunScript": "scripts/bandbot_harvest_sink_settle_dryrun.mjs",
+  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "livePackageVersion": 28,
+  "coinTypes": {
+    "BTEN": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
+    "WAL": "0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL",
+    "SUI": "0x2::sui::SUI"
+  },
+  "objects": {
+    "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
+    "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
+    "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
+    "cetusGlobalConfig": "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f",
+    "clock": "0x6",
+    "btenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "walSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17"
+  },
+  "pools": {
+    "btenWal": {
+      "id": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+      "coinOrder": "Pool<WAL,BTEN>",
+      "role": "primary-sink-and-bten-purchase-leg"
+    },
+    "walSui": {
+      "id": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "coinOrder": "Pool<WAL,SUI>",
+      "role": "bandbot-desk-and-optional-sui-to-wal"
+    },
+    "btenSuiLegacy": {
+      "id": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+      "role": "legacy-display-only",
+      "neverUnregister": true,
+      "neverUseAsBtenPurchaseLeg": true
+    }
+  },
+  "ptbOrder": [
+    {
+      "step": 1,
+      "optional": true,
+      "action": "SUI\u2192WAL",
+      "target": "bten::cetus_swap_registered_b2a",
+      "altRebate": "bten::cetus_swap_registered_b2a_rebate",
+      "pool": "walSui",
+      "note": "Only if harvesting/holding SUI that should become WAL first"
+    },
+    {
+      "step": 2,
+      "optional": false,
+      "action": "WAL\u2192BTEN",
+      "target": "bten::cetus_swap_to_bten",
+      "altIfBFirst": "bten::cetus_swap_to_bten_b2a",
+      "pool": "btenWal",
+      "note": "BTEN purchase leg MUST be BTEN/WAL adapters only"
+    },
+    {
+      "step": 3,
+      "optional": false,
+      "action": "addLiquidity BTEN/WAL",
+      "venue": "Cetus CLMM",
+      "pool": "btenWal",
+      "note": "Sink harvest into BTEN/WAL only \u2014 never open side BTEN LPs"
+    },
+    {
+      "step": 4,
+      "optional": true,
+      "action": "settle_and_distribute",
+      "target": "bten::settle_and_distribute",
+      "args": [
+        "emissionState",
+        "distributionState",
+        "clock"
+      ],
+      "when": "pending_blocks>=1 && batch_trades+1>=10",
+      "note": "Skip entirely if not eligible"
+    }
+  ],
+  "settleEligibility": {
+    "minTradesPerBlock": 10,
+    "maxSettleBlocks": 100,
+    "formula": "min(pending_blocks, batch_trades/10, 100)",
+    "bandbotReadyRule": "pending_blocks>=1 && (batch_trades+1)>=10",
+    "doNotSettleIfNotEligible": true
+  },
+  "priceTruth": {
+    "mode": "wal-implied-bten",
+    "docs": "docs/BUY_VIA_WAL.md"
+  },
+  "safety": {
+    "nonCustodial": true,
+    "requiresWalletSignature": true,
+    "neverEmbedPrivateKeys": true,
+    "gasBudgetMistSuggested": "80000000",
+    "noExecuteFromDryRunScript": true,
+    "neverUnregisterBtenSui": true,
+    "neverOpenSideBtenLps": true
+  },
+  "bandbotAiPromptSnippet": "Use config/bandbot_bten_integration.json. After harvest: optional SUI\u2192WAL (registered b2a on WAL/SUI), then WAL\u2192BTEN via cetus_swap_to_bten on BTEN/WAL only, then Cetus addLiquidity on BTEN/WAL. Call settle_and_distribute only if pending_blocks>=1 and batch_trades+1>=10. Wallet-sign; never embed keys; never buy BTEN via BTEN/SUI; never unregister BTEN/SUI; never open side BTEN LPs. Dry-run with scripts/bandbot_harvest_sink_settle_dryrun.mjs before any live PTB.",
+  "cacheBust": "20260916T194500Z-wal-buy-path"
+}

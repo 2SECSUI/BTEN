@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 /**
- * OpsBuyDesk price keeper — sets posted mid equal to the Cetus BTEN/SUI pool mid.
+ * OpsBuyDesk price keeper — posts mist SUI per BTEN implied by the WAL home book.
  *
- * NO discount (−0%). Reads current_sqrt_price from the configured pool and calls
- * `ops_buy_desk::set_price_mist_sui_per_bten` as `price_updater`.
+ * Source (no discount):
+ *   1) Cetus Pool<WAL,BTEN>  (home book)
+ *   2) Cetus Pool<WAL,SUI>   (WAL leg → SUI)
+ *
+ * mist_sui_per_full_bten = UNIT * sqrt_wal_sui^2 / sqrt_wal_bten^2
+ * (Cetus Q64.64: coin_b/coin_a = sqrt^2/2^128; 2^128 cancels across the two pools.)
+ *
+ * Calls `ops_buy_desk::set_price_mist_sui_per_bten` as `price_updater`.
+ * Dapp should prefer `buy_with_sui_posted_price` (no on-chain BTEN/SUI pool read).
+ * Cetus BTEN/SUI pool is left OPEN — optional/legacy display only; do not unregister.
  *
  * Usage:
  *   node scripts/ops_buy_desk_sync_price.mjs            # dry-run (print mid)
@@ -25,7 +33,17 @@ const cfg = JSON.parse(fs.readFileSync(path.join(root, "config", "ops_buy_desk.j
 const EXECUTE = process.argv.includes("--execute");
 const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const CLOCK = "0x6";
-const UNIT = 100_000_000n;
+const UNIT = 100_000_000n; // 1 full BTEN in mist (8 decimals)
+
+const WAL_BTEN_POOL =
+  cfg.cetusBtenWalPool ||
+  "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7";
+const WAL_SUI_POOL =
+  cfg.cetusWalSuiPool ||
+  "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17";
+const LEGACY_BTEN_SUI_POOL =
+  cfg.cetusBtenSuiPool ||
+  "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950";
 
 async function gql(query, variables = {}) {
   const response = await fetch(GRAPHQL, {
@@ -39,7 +57,7 @@ async function gql(query, variables = {}) {
   return body.data;
 }
 
-async function readPoolSqrtPrice(poolId) {
+async function readPool(poolId, { expectA, expectB, label }) {
   const data = await gql(
     `query($address: SuiAddress!) {
       object(address: $address) {
@@ -49,22 +67,49 @@ async function readPoolSqrtPrice(poolId) {
     { address: poolId },
   );
   const contents = data?.object?.asMoveObject?.contents;
-  if (!contents?.json) throw new Error(`Pool ${poolId} unavailable`);
+  if (!contents?.json) throw new Error(`Pool ${poolId} (${label}) unavailable`);
   const typeRepr = contents.type?.repr ?? "";
-  if (!typeRepr.includes("::pool::Pool") || !typeRepr.includes("::bten::BTEN") || !typeRepr.includes("::sui::SUI")) {
-    throw new Error(`Unexpected pool type: ${typeRepr}`);
+  if (!typeRepr.includes("::pool::Pool")) {
+    throw new Error(`Unexpected pool type for ${label}: ${typeRepr}`);
+  }
+  const lower = typeRepr.toLowerCase();
+  for (const needle of [expectA, expectB]) {
+    if (!lower.includes(needle.toLowerCase())) {
+      throw new Error(`${label} type missing ${needle}: ${typeRepr}`);
+    }
+  }
+  // Enforce coin order: Pool<A,B>
+  const m = typeRepr.match(/Pool<([^,]+),\s*([^>]+)>/);
+  if (!m) throw new Error(`${label}: cannot parse Pool type params: ${typeRepr}`);
+  const coinA = m[1].trim();
+  const coinB = m[2].trim();
+  if (!coinA.toLowerCase().includes(expectA.toLowerCase()) || !coinB.toLowerCase().includes(expectB.toLowerCase())) {
+    throw new Error(
+      `${label}: expected Pool<…${expectA}…, …${expectB}…> got Pool<${coinA}, ${coinB}>`,
+    );
   }
   const sqrt = BigInt(contents.json.current_sqrt_price);
-  if (sqrt <= 0n) throw new Error("current_sqrt_price is zero");
-  return sqrt;
+  if (sqrt <= 0n) throw new Error(`${label}: current_sqrt_price is zero`);
+  return { sqrt, typeRepr, coinA, coinB };
 }
 
-/** mist SUI per 1 full BTEN = sqrt^2 * UNIT / 2^128 */
-function priceMistSuiPerBtenFromSqrt(sqrt) {
+/** mist SUI per 1 full BTEN from Pool<WAL,BTEN> + Pool<WAL,SUI> */
+function priceMistSuiPerBtenFromWal(sqrtWalBten, sqrtWalSui) {
+  // UNIT * sqrt_ws^2 / sqrt_wb^2
+  const num = UNIT * sqrtWalSui * sqrtWalSui;
+  const den = sqrtWalBten * sqrtWalBten;
+  const price = num / den;
+  if (price <= 0n) throw new Error("computed WAL-implied mid price is zero");
+  if (price > 0xffffffffffffffffn) throw new Error("computed WAL-implied mid price overflows u64");
+  return price;
+}
+
+/** Legacy comparator: mist SUI per 1 full BTEN from Pool<BTEN,SUI> mid */
+function priceMistSuiPerBtenFromSqrtBtenSui(sqrt) {
   const sq = sqrt * sqrt;
   const price = (sq * UNIT) >> 128n;
-  if (price <= 0n) throw new Error("computed mid price is zero");
-  if (price > 0xffffffffffffffffn) throw new Error("computed mid price overflows u64");
+  if (price <= 0n) return null;
+  if (price > 0xffffffffffffffffn) return null;
   return price;
 }
 
@@ -85,18 +130,59 @@ function resolvePackage() {
   return cfg.packageId || cfg.livePackageId || null;
 }
 
-const sqrt = await readPoolSqrtPrice(cfg.cetusBtenSuiPool);
-const mid = priceMistSuiPerBtenFromSqrt(sqrt);
+const walBten = await readPool(WAL_BTEN_POOL, {
+  expectA: "::wal::WAL",
+  expectB: "::bten::BTEN",
+  label: "WAL/BTEN",
+});
+const walSui = await readPool(WAL_SUI_POOL, {
+  expectA: "::wal::WAL",
+  expectB: "::sui::SUI",
+  label: "WAL/SUI",
+});
+
+const mid = priceMistSuiPerBtenFromWal(walBten.sqrt, walSui.sqrt);
 const humanSuiPerBten = Number(mid) / 1e9;
+
+let legacyMid = null;
+let legacyHuman = null;
+try {
+  const legacy = await readPool(LEGACY_BTEN_SUI_POOL, {
+    expectA: "::bten::BTEN",
+    expectB: "::sui::SUI",
+    label: "BTEN/SUI-legacy",
+  });
+  legacyMid = priceMistSuiPerBtenFromSqrtBtenSui(legacy.sqrt);
+  if (legacyMid != null) legacyHuman = Number(legacyMid) / 1e9;
+} catch (err) {
+  // Pool stays open; comparator is best-effort only.
+  legacyMid = null;
+  legacyHuman = null;
+}
 
 const report = {
   network: cfg.network,
-  pool: cfg.cetusBtenSuiPool,
-  currentSqrtPrice: sqrt.toString(),
+  pricingMode: "wal-implied-bten",
+  homeBook: {
+    pool: WAL_BTEN_POOL,
+    type: walBten.typeRepr,
+    currentSqrtPrice: walBten.sqrt.toString(),
+  },
+  walSuiLeg: {
+    pool: WAL_SUI_POOL,
+    type: walSui.typeRepr,
+    currentSqrtPrice: walSui.sqrt.toString(),
+  },
   priceMistSuiPerBten: mid.toString(),
   humanSuiPerBten,
+  legacyBtenSuiPool: {
+    pool: LEGACY_BTEN_SUI_POOL,
+    note: "Optional/legacy display only — pool left OPEN; not used for desk pricing",
+    priceMistSuiPerBten: legacyMid != null ? legacyMid.toString() : null,
+    humanSuiPerBten: legacyHuman,
+  },
   discountBps: 0,
-  note: "Posted price MUST equal Cetus mid — no −2% or other discount",
+  note: "Posted price = WAL-implied mid (BTEN/WAL home book × WAL/SUI). No discount. Prefer buy_with_sui_posted_price.",
   deskObjectId: cfg.deskObjectId ?? null,
   packageId: resolvePackage(),
   execute: EXECUTE,
@@ -110,7 +196,7 @@ if (!EXECUTE) {
 if (!cfg.deskObjectId) throw new Error("config/ops_buy_desk.json#deskObjectId missing — create desk first");
 const packageId = resolvePackage();
 if (!packageId || packageId.includes("PENDING")) {
-  throw new Error("packageId not set — upgrade to v23 and update config/ops_buy_desk.json");
+  throw new Error("packageId not set — update config/ops_buy_desk.json");
 }
 
 const signer = updaterSigner();

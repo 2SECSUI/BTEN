@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
-  "publishedVersion": 27,
+  "currentPackage": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "publishedVersion": 28,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -32,7 +32,7 @@
     "selectBtenOnlyWhenNetOutputIsHigher": true,
     "minimumNetImprovementBps": 1,
     "quoteIncludesVenueFeePriceImpactAndGas": true,
-    "fallback": "Compare-only display when a BTEN path is not net-cheaper. External volume that still hits a registered BTEN pool is emission-gated via attestation (counts toward settle), not by tape label.",
+    "fallback": "Compare-only display when a BTEN path is not net-cheaper. External volume that still hits a registered BTEN pool is emission-gated via attestation (counts toward settle), not by tape label. BTEN/SUI remains registered/OPEN for legacy display only — never primary buy.",
     "aftermathSmartOrderRouter": {
       "enabled": true,
       "mode": "quote-only",
@@ -41,10 +41,13 @@
       "rule": "Independent direct-route comparator for quotes. If the resulting swap touches a registered BTEN Cetus pool, external attestation gates that digest for emission-block release. This helper does not itself unlock blocks."
     },
     "compareVenues": [
-      "cetus-direct",
-      "cetus-bten",
+      "cetus-wal-implied",
+      "cetus-bten-wal",
       "turbos-bten-when-live"
-    ]
+    ],
+    "priceTruth": "wal-implied-bten",
+    "btenPurchaseLeg": "BTEN/WAL adapters only",
+    "buyPathMandate": "any-input → WAL → BTEN on Pool<WAL,BTEN>; do not route Buy through BTEN/SUI or other BTEN pairs"
   },
   "routeRebate": {
     "policyFile": "config/route_rebate_policy.json",
@@ -125,7 +128,7 @@
     "exampleLiquidityAddDigest": "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz"
   },
   "upgradeNotice": "Read Published.toml and verification/manifest.json before constructing transactions after a package upgrade; package IDs and state IDs are versioned there.",
-  "pendingPackageVersion": 23,
+  "pendingPackageVersion": 28,
   "v17Status": "superseded-by-v18",
   "sponsorship": {
     "enabled": true,
@@ -267,7 +270,7 @@
     "stillUpgradeable": true
   },
   "status": "live",
-  "packageStatus": "v23-live",
+  "packageStatus": "v28-live",
   "livePackageVersion": 28,
   "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
   "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
@@ -282,9 +285,9 @@
   "v21Status": "superseded-by-v22",
   "v22Status": "superseded-by-v23",
   "previousPackageId": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
-  "cacheBust": "20260914T025500Z",
-  "configRevision": "20260914T025500Z",
-  "uiRevision": "v22-no-trade-bar",
+  "cacheBust": "20260916T194500Z-wal-buy-path",
+  "configRevision": "20260916T194500Z-wal-buy-path",
+  "uiRevision": "v28-wal-buy-path",
   "dappUiPolicy": {
     "source": "Grok App Builder project 01a0925b-5bff-7bf1-bd90-f229738f4f52 (block10.grok.me)",
     "note": "v24 restores v16 trade gate. settle = min(pending, batch_trades/10, 100). Trades/attestations required to unlock; surplus does not pre-unlock future slots.",
@@ -293,7 +296,7 @@
     "minTradesPerBlock": 10,
     "maxSettleBlocks": 100,
     "gateDisplay": "time-slot",
-    "headerPulse": "Next ~10 min block \u00b7 pending slots (not Gate N/10)",
+    "headerPulse": "Next ~10 min block · pending slots (not Gate N/10)",
     "earnCopy": "10 qualifying routes release one pending ~10-minute block (up to 100 per settle).",
     "guideCopy": "Fill the gate to 10/10. Settle unlocks min(pending, trades/10, 100).",
     "liveTape": "treatAllLiveTapeAsGated",
@@ -307,22 +310,25 @@
     "configuration": "config/ops_buy_desk.json",
     "docs": "docs/OPS_BUY_DESK.md",
     "upgradeNotes": "V23_OPS_BUY_DESK_UPGRADE.md",
-    "status": "live-v23",
+    "status": "live-v28-wal-pricing",
     "pricing": {
-      "mode": "cetus-bten-sui-pool-mid",
+      "mode": "wal-implied-bten",
       "discountBps": 0,
-      "rule": "Same price as Cetus BTEN/SUI pool mid. No \u22122% discount.",
+      "rule": "WAL home book (Pool<WAL,BTEN>) × WAL/SUI mid → mist SUI per BTEN. No −2% discount. Cetus BTEN/SUI pool stays OPEN (legacy display only). Same priceTruth as publicSwap Buy.",
+      "cetusBtenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+      "cetusWalSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
       "cetusBtenSuiPool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
-      "primaryEntrypoint": "ops_buy_desk::buy_with_sui",
-      "fallbackEntrypoint": "ops_buy_desk::buy_with_sui_posted_price",
+      "cetusBtenSuiPoolRole": "optional-legacy-display-only",
+      "primaryEntrypoint": "ops_buy_desk::buy_with_sui_posted_price",
+      "legacyEntrypoint": "ops_buy_desk::buy_with_sui",
       "keeperScript": "scripts/ops_buy_desk_sync_price.mjs"
     },
     "module": "bten::ops_buy_desk",
     "opsAddress": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
     "deskObjectId": "0xb0e9c4a61e204eb23cd408dd2e67e9da9b5c76cec76432843fb589d014fe15c1",
     "adminCapId": "0x5c4089420effa5b9963ee152311180e2b08578842a22519f2d4c134b8983d3c4",
-    "packageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
-    "dappRule": "Buy desk sells ops inventory for SUI at Cetus mid. Wallet-sign buy_with_sui with the live BTEN/SUI pool + min_bten_out. Never embed private keys.",
+    "packageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+    "dappRule": "Buy desk sells ops inventory for SUI at WAL-implied BTEN mid. Wallet-sign buy_with_sui_posted_price + min_bten_out. Keeper syncs price from BTEN/WAL × WAL/SUI. Cetus BTEN/SUI pool left open (do not unregister). Never embed private keys.",
     "entrypoints": {
       "create": "ops_buy_desk::create",
       "depositBten": "ops_buy_desk::deposit_bten",
@@ -330,16 +336,17 @@
       "setPaused": "ops_buy_desk::set_paused",
       "buyWithSuiPoolMid": "ops_buy_desk::buy_with_sui",
       "buyWithSuiPostedPrice": "ops_buy_desk::buy_with_sui_posted_price",
-      "setPriceKeeper": "ops_buy_desk::set_price_mist_sui_per_bten"
+      "setPriceKeeper": "ops_buy_desk::set_price_mist_sui_per_bten",
+      "buyWithSuiPoolMidLegacy": "ops_buy_desk::buy_with_sui"
     },
     "createTx": "DjpVx1mgZno15C15tMTeRaSg1Ya5W7wjAJTi886xfNmn"
   },
   "publicSwap": {
-    "status": "live-adapters-v23-package; republish-ui-may-404",
+    "status": "live-adapters-v28-wal-buy-path",
     "dapp": "https://block10.grok.me",
     "siteNote": "Site may 404 until Grok App Builder republishes the Swap/Buy UI. Configs below are the source of truth for the builder.",
-    "packageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
-    "packageVersion": 24,
+    "packageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+    "packageVersion": 28,
     "pendingPackageVersion": 23,
     "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
     "cetusGlobalConfig": "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f",
@@ -395,17 +402,18 @@
     },
     "grokAppBuilderChecklist": [
       "1. Connect wallet; every swap/buy is wallet-signed. neverEmbedPrivateKeys.",
-      "2. Use live package id from this file (v27 live: registered adapters + WAL/SUI 1-raw rebate).",
+      "2. Use live package id from this file (v28: 0x6e46f9b9…324c). currentPackage + livePackageId + publicSwap.packageId must all be v28.",
       "3. Pass Cetus GlobalConfig + Clock (0x6) + registered pool object for each hop.",
-      "4. Wire registered Cetus pools from publicSwap.tenRegisteredCetusPools / MAINNET_ROUTE_CONFIG.json#venues[0].pools. Bandbot WAL/SUI (Pool<WAL,SUI>) uses adapterEntrypoints.registeredB2a (SUI\u2192WAL) / registeredA2b (WAL\u2192SUI) so the hop is in-contract gated; WAL\u2192BTEN still uses BTEN-pair adapters.",
-      "5. Direct SUI\u2192BTEN on Pool<BTEN,SUI>: bten::cetus_swap_to_bten_b2a (or *_return for composable).",
-      "6. Asset\u2192BTEN / BTEN\u2192asset: use adapterEntrypoints matching pool coin order (A/B).",
-      "7. Via-BTEN multi-hop: cetus_sui_to_asset_via_bten_* ; optional rebate variants when RouteRebateState funded.",
-      "8. Always set min_out + sqrt_price_limit; requireMinimumOutput=true.",
-      "9. After protected swap, optionally append auto_pay_trader_entry when unpaid prior-round allocation exists.",
-      "10. Ops Buy desk (: ops_buy_desk::buy_with_sui at Cetus mid (discountBps=0) \u2014 separate from pool swap UI.",
-      "11. Republish block10.grok.me after wiring; expect 404 until republish succeeds.",
-      "12. Read Published.toml / verification after every upgrade before constructing PTBs."
+      "4. PRICE TRUTH: show WAL-implied BTEN (BTEN/WAL 0xa9f12a… × WAL/SUI 0x72f5c6…). Never price Buy from BTEN/SUI mid.",
+      "5. BUY PATH: any input coin → WAL → BTEN. BTEN purchase leg MUST be Pool<WAL,BTEN> via cetus_swap_to_bten / cetus_swap_to_bten_b2a. Never use BTEN/SUI, BTEN/CETUS, etc. as the BTEN buy leg.",
+      "6. Optional SUI→WAL hop: registered b2a on Pool<WAL,SUI> 0x72f5c6… (optionally *_rebate). Then WAL→BTEN on BTEN/WAL.",
+      "7. Cetus BTEN/SUI 0x7f46…2950 stays OPEN but legacy/display-only — not pricing, not primary buy. Do not unregister.",
+      "8. Via-BTEN multi-hop / composable: still seal once; intermediate BTEN acquire for Buy UI must come from WAL path.",
+      "9. Always set min_out + sqrt_price_limit; requireMinimumOutput=true.",
+      "10. After protected swap, optionally append auto_pay_trader_entry when unpaid prior-round allocation exists.",
+      "11. Ops Buy desk: ops_buy_desk::buy_with_sui_posted_price at WAL-implied mid (discountBps=0). Keeper scripts/ops_buy_desk_sync_price.mjs.",
+      "12. Republish block10.grok.me after wiring; expect stale UI until republish succeeds.",
+      "13. Read Published.toml / verification after every upgrade before constructing PTBs."
     ],
     "sourceOfTruth": [
       "config/block10_integration.json",
@@ -416,7 +424,7 @@
     "bandbotWalSuiPool": {
       "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
       "pair": "WAL/SUI",
-      "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> \u2014 use cetus_swap_registered_*_rebate for in-contract RouteRecorded + 1-raw pending rebate from route_fee_vault; keeper pay_wal_sui_trader_rebates (max 1000). WAL\u2192BTEN uses BTEN-pair adapters.",
+      "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> — use cetus_swap_registered_*_rebate for in-contract RouteRecorded + 1-raw pending rebate from route_fee_vault; keeper pay_wal_sui_trader_rebates (max 1000). WAL→BTEN uses BTEN-pair adapters.",
       "coinOrder": "Pool<WAL,SUI>",
       "a2b": "bten::cetus_swap_registered_a2b",
       "b2a": "bten::cetus_swap_registered_b2a",
@@ -426,7 +434,14 @@
       "rebatePolicy": "pay-what-you-can if vault empty mid-batch; no abort of prior pays",
       "a2bRebate": "bten::cetus_swap_registered_a2b_rebate",
       "b2aRebate": "bten::cetus_swap_registered_b2a_rebate"
-    }
+    },
+    "priceTruth": "wal-implied-bten",
+    "buyPath": "any-input → WAL → BTEN on BTEN/WAL adapters only",
+    "cetusBtenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "cetusWalSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+    "cetusBtenSuiPoolRole": "legacy-display-only",
+    "cetusBtenSuiPoolNote": "OPEN on Cetus; registered for emission/attestation. Demoted: not pricing truth, not primary Buy leg. Do not unregister.",
+    "primaryBtenBuyPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7"
   },
   "v25Unregister": {
     "digest": "F8GcLjB4DRJVykfu7pQ8m6roZixyLnfYLbLZbE9ztwEW",
@@ -440,7 +455,7 @@
     },
     "at": "2026-09-15T23:47:58Z"
   },
-  "previousPackage": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+  "previousPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
   "v26RegisteredAdapters": {
     "digest": "7U81cRhXeoiLNEMfCfbPmBT3NZvtwjXZP5d4hLzgLHdz",
     "package": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
@@ -481,5 +496,62 @@
     "rebateState": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a",
     "createDigest": "5Ck3So5X8YvBsGpKboxCyiXWshaNAu3tLzHeCWnLRSw5",
     "at": "2026-09-16T01:08:48.116422+01:00"
+  },
+  "priceTruth": {
+    "mode": "wal-implied-bten",
+    "rule": "Single price story for Block10 Buy/Swap display and OpsBuyDesk: BTEN/WAL mid × WAL/SUI mid → mist SUI per BTEN. Never use BTEN/SUI, BTEN/CETUS, or other side pairs as pricing truth.",
+    "cetusBtenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "cetusWalSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+    "cetusBtenSuiPool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+    "cetusBtenSuiPoolRole": "legacy-display-only",
+    "formula": "price_mist_sui_per_bten = UNIT * sqrt_wal_sui^2 / sqrt_wal_bten^2",
+    "docs": "docs/BUY_VIA_WAL.md"
+  },
+  "buyPath": {
+    "mandate": "any-input-coin → WAL → BTEN",
+    "rule": "Every Block10 Buy/Swap that acquires BTEN must terminate on BTEN/WAL adapters only (cetus_swap_to_bten / cetus_swap_to_bten_b2a on Pool<WAL,BTEN>). Never use BTEN/SUI, BTEN/CETUS, BTEN/NAVX, etc. as the BTEN purchase leg.",
+    "primaryBtenPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "primaryBtenPoolCoinOrder": "Pool<WAL,BTEN>",
+    "walToBtenAdapters": {
+      "a2b": "bten::cetus_swap_to_bten",
+      "b2a": "bten::cetus_swap_to_bten_b2a",
+      "note": "Pool<WAL,BTEN>: WAL is coin A → WAL→BTEN uses cetus_swap_to_bten (a2b)."
+    },
+    "optionalInputToWal": {
+      "suiToWal": {
+        "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+        "coinOrder": "Pool<WAL,SUI>",
+        "adapter": "bten::cetus_swap_registered_b2a",
+        "note": "SUI is coin B → SUI→WAL uses registered b2a (optionally *_rebate)."
+      },
+      "otherCoins": "Route input→WAL via registered non-BTEN adapters / external quotes, then WAL→BTEN on BTEN/WAL only."
+    },
+    "forbiddenAsBtenPurchaseLeg": [
+      "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+      "any BTEN/* pool other than BTEN/WAL"
+    ],
+    "legacyBtenSuiPool": {
+      "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+      "role": "OPEN but demoted to legacy/display-only",
+      "mayUseFor": [
+        "display",
+        "compare-only quotes",
+        "sell/exit paths if already holding"
+      ],
+      "mayNotUseFor": [
+        "pricing truth",
+        "primary Buy path",
+        "OpsBuyDesk pricing"
+      ],
+      "neverUnregister": true
+    },
+    "docs": "docs/BUY_VIA_WAL.md"
+  },
+  "bandbotIntegration": {
+    "configuration": "config/bandbot_bten_integration.json",
+    "docs": "docs/BANDBOT_BTEN_INTEGRATION.md",
+    "dryRunScript": "scripts/bandbot_harvest_sink_settle_dryrun.mjs",
+    "sinkPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "rule": "Harvest fees → (optional SUI→WAL) → WAL→BTEN on BTEN/WAL → addLiquidity BTEN/WAL → settle_and_distribute when eligible."
   }
 }

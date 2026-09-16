@@ -1,21 +1,22 @@
 {
   "network": "mainnet",
-  "status": "live-v23",
+  "status": "live-v28-wal-pricing",
   "module": "bten::ops_buy_desk",
   "pricing": {
-    "mode": "cetus-pool-mid",
+    "mode": "wal-implied-bten",
     "discountBps": 0,
-    "rule": "Public buys price at the Cetus BTEN/SUI pool mid. buy_with_sui reads current_sqrt_price in-tx. buy_with_sui_posted_price uses keeper-synced price_mist_sui_per_bten which MUST equal mid (no \u22122%).",
-    "priceUnit": "mist SUI per 1 full BTEN (1e8 mist BTEN)"
+    "rule": "Public buys price at WAL-implied BTEN mid: Cetus Pool<WAL,BTEN> home book × Pool<WAL,SUI> leg → mist SUI per 1 full BTEN. Primary settlement: buy_with_sui_posted_price (keeper-synced). buy_with_sui (Pool<BTEN,SUI> in-tx mid) is legacy/optional only. Cetus BTEN/SUI pool stays OPEN — do not unregister.",
+    "priceUnit": "mist SUI per 1 full BTEN (1e8 mist BTEN)",
+    "formula": "price_mist_sui_per_bten = UNIT * sqrt_wal_sui^2 / sqrt_wal_bten^2"
   },
   "cetusBtenSuiPool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
-  "poolType": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::Pool<0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN, 0x2::sui::SUI>",
+  "poolType": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::Pool<0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL, 0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN>",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
   "opsAddress": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
   "suiRecipient": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
   "priceUpdater": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
-  "packageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
-  "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "packageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
   "typePackage": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
   "currentPackageV22": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6",
   "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
@@ -33,17 +34,18 @@
     "setPriceAdmin": "ops_buy_desk::set_price_mist_sui_per_bten_admin",
     "setPriceKeeper": "ops_buy_desk::set_price_mist_sui_per_bten",
     "buyWithSuiPoolMid": "ops_buy_desk::buy_with_sui",
-    "buyWithSuiPostedPrice": "ops_buy_desk::buy_with_sui_posted_price"
+    "buyWithSuiPostedPrice": "ops_buy_desk::buy_with_sui_posted_price",
+    "buyWithSuiPoolMidLegacy": "ops_buy_desk::buy_with_sui"
   },
   "keeper": {
     "script": "scripts/ops_buy_desk_sync_price.mjs",
     "mustStayRunning": true,
     "gasBudgetMist": "20000000",
     "envKey": "BTEN_OPS_BUY_DESK_UPDATER_KEY",
-    "note": "Keeper is required for posted-price path and UI quotes. Prefer buy_with_sui (in-tx mid) for settlement fairness."
+    "note": "Keeper required for posted-price path and UI quotes. Syncs WAL-implied mist SUI/BTEN. Prefer buy_with_sui_posted_price for settlement."
   },
   "createChecklist": [
-    "Compatible upgrade to v23 with UpgradeCap 0x97744b\u2026c10c (do not make_immutable)",
+    "Compatible upgrade to v23 with UpgradeCap 0x97744b…c10c (do not make_immutable)",
     "Update packageId in this file + block10_integration.json",
     "Call ops_buy_desk::create with RegistryAdminCap: operator=ops, sui_recipient=ops, price_updater=ops (or dedicated updater), pool_id=cetusBtenSuiPool, initial_price from dry-run of sync script",
     "Record deskObjectId + adminCapId from create effects",
@@ -62,5 +64,30 @@
   "lastDepositMist": 50000000000,
   "lastDepositBten": 500,
   "lastDepositAt": "2026-09-14T03:09:56Z",
-  "opsFreeBtenMistAfterDeposit": 183583029906
+  "opsFreeBtenMistAfterDeposit": 183583029906,
+  "cetusBtenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+  "cetusBtenWalPoolType": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::Pool<0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL, 0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN>",
+  "cetusWalSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+  "cetusWalSuiPoolType": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::Pool<0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL, 0x2::sui::SUI>",
+  "cetusBtenSuiPoolRole": "optional-legacy-display-only",
+  "cetusBtenSuiPoolNote": "LEFT OPEN on Cetus. Not used for OpsBuyDesk pricing after WAL rewire. Do not unregister or destroy.",
+  "typePackageOpsBuyDesk": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "pricingPrimaryEntrypoint": "ops_buy_desk::buy_with_sui_posted_price",
+  "pricingLegacyEntrypoint": "ops_buy_desk::buy_with_sui",
+  "walPricingRewireAt": "2026-09-16T01:40:00+01:00",
+  "walPricingRewireNote": "Config+keeper only; no package upgrade. Cetus BTEN/SUI pool remains open.",
+  "lastPriceSync": {
+    "digest": "22jBHSkwSb6fCaDPGaGSALrF23hunY4Q962E7a45KPZ9",
+    "priceMistSuiPerBten": 4116398,
+    "humanSuiPerBten": 0.004116398,
+    "legacyBtenSuiMidMist": 417005244,
+    "source": "wal-implied (Pool<WAL,BTEN> x Pool<WAL,SUI>)",
+    "at": "2026-09-16T02:45:00+01:00",
+    "gasComputationMist": 100000,
+    "note": "Price sync only; Cetus BTEN/SUI pool untouched/open"
+  },
+  "postedPriceMistSuiPerBten": 4116398,
+  "buyPathNote": "OpsBuyDesk sells inventory for SUI at WAL-implied mid. Public Swap Buy path (any coin→WAL→BTEN) is separate — see docs/BUY_VIA_WAL.md. Desk does not swap through BTEN/SUI.",
+  "priceTruthAlignedWith": "config/block10_integration.json#priceTruth",
+  "cacheBust": "20260916T194500Z-wal-buy-path"
 }

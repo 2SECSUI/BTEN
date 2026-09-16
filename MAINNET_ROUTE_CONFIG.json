@@ -72,12 +72,12 @@
           "disabledAt": "2026-09-15T23:47:58Z"
         }
       ],
-      "poolRegistryNote": "USDT/USDC/DEEP/NS unregistered on-chain via bten::unregister_pool in v25. WAL/SUI Bandbot desk 0x72f5\u20263f17 registered (bucket=1). v26: Bandbot SUI\u2194WAL via bten::cetus_swap_registered_b2a / a2b (Pool<WAL,SUI>) natively emits RouteRecorded; WAL\u2192BTEN still uses BTEN-pair adapters.",
+      "poolRegistryNote": "USDT/USDC/DEEP/NS unregistered on-chain via bten::unregister_pool in v25. WAL/SUI Bandbot desk 0x72f5…3f17 registered (bucket=1). v26: Bandbot SUI↔WAL via bten::cetus_swap_registered_b2a / a2b (Pool<WAL,SUI>) natively emits RouteRecorded; WAL→BTEN still uses BTEN-pair adapters.",
       "bandbotWalSuiPool": {
         "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
         "pair": "WAL/SUI",
         "bucket": 1,
-        "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> \u2014 registered adapters + 1-raw trader rebate from route_fee_vault via *_rebate / pay_wal_sui_trader_rebates (max 1000).",
+        "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> — registered adapters + 1-raw trader rebate from route_fee_vault via *_rebate / pay_wal_sui_trader_rebates (max 1000).",
         "registeredDigest": "Htvyk9p7VPVkeZpu8TbvsNKE9bNrhn5iyipTNmqHr3MM",
         "registeredAt": "2026-09-16T00:00:00+01:00",
         "coinOrder": "Pool<WAL,SUI>",
@@ -91,6 +91,13 @@
         "rebateSource": "route_fee_vault",
         "rebateBatchMax": 1000,
         "rebatePolicy": "pay-what-you-can from route_fee_vault; no uncapped mint"
+      },
+      "priceTruthNote": "Buy/Swap pricing = WAL-implied BTEN (BTEN/WAL × WAL/SUI). Pool 0x7f46…2950 BTEN/SUI is OPEN legacy/display-only.",
+      "buyPathNote": "Primary BTEN purchase = BTEN/WAL 0xa9f12a… only. any-coin → WAL → BTEN.",
+      "btenSuiPoolRole": {
+        "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+        "role": "legacy-display-only",
+        "neverUnregister": true
       }
     },
     {
@@ -177,7 +184,7 @@
     "exampleLiquidityAddDigest": "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz",
     "priorityDigests": [],
     "dailyEventCapNote": "0 = unlimited (v28); on-chain assert skipped when daily_event_cap==0",
-    "autoGateNote": "WAL/SUI pool 0x72f5\u2026 is in venues.cetus.pools; SwapEvent+AddLiquidity(+V2) attested by external_cetus_verifier when keeper loop runs. Registered cetus_swap_registered_* emit RouteRecorded instantly. Continuous schedule left DISABLED pending gas OK."
+    "autoGateNote": "WAL/SUI pool 0x72f5… is in venues.cetus.pools; SwapEvent+AddLiquidity(+V2) attested by external_cetus_verifier when keeper loop runs. Registered cetus_swap_registered_* emit RouteRecorded instantly. Continuous schedule left DISABLED pending gas OK."
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -296,9 +303,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+  "previousPackageId": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -315,7 +322,7 @@
     "magmaBluefinAdapterPlan": "config/magma_bluefin_adapter_plan.json",
     "liveTape": "treatAllLiveTapeAsGated",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable"
+    "upgradeCapPolicy": "compatible (0) — still upgradeable"
   },
   "liveTape": {
     "treatAllLiveTapeAsGated": true,
@@ -362,9 +369,9 @@
     "tradeBar": true,
     "blockTimeSecs": 600
   },
-  "pendingPackageVersion": 24,
-  "livePackageVersion": 24,
-  "packageStatus": "v24-live",
+  "pendingPackageVersion": 28,
+  "livePackageVersion": 28,
+  "packageStatus": "v28-live",
   "v20Status": "superseded-by-v22",
   "v20": {
     "live": true,
@@ -374,7 +381,7 @@
     "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
     "v19UpgradeTx": "aZXWoQssttz7N6EQSwziYdyuQKh3642R61rXYLxjXsB",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
+    "upgradeCapPolicy": "compatible (0) — still upgradeable",
     "emission": "time-pending catch-up without trade bar; 600s pace once caught up"
   },
   "v21Status": "superseded-by-v22",
@@ -386,7 +393,7 @@
     "previousPackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
     "v20UpgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
+    "upgradeCapPolicy": "compatible (0) — still upgradeable",
     "emission": "Bitcoin-style MAX_SETTLE_BLOCKS=1; 600s advance_slots; no bulk catch-up dumps",
     "supersededBy": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6"
   },
@@ -399,8 +406,8 @@
     "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow",
     "supersededBy": "v23"
   },
-  "cacheBust": "20260915T231600Z",
-  "uiRevision": "v24-v16-trade-gate",
+  "cacheBust": "20260916T194500Z-wal-buy-path",
+  "uiRevision": "v28-wal-buy-path",
   "dappUiPolicy": {
     "hopsRequired": 10,
     "tradeBar": true,
@@ -445,7 +452,7 @@
     "gasMist": 272061740,
     "note": "Compatible upgrade restoring v16 emission; keep ManagedVault, OpsBuyDesk, auto_pay u128, external attest"
   },
-  "previousPackage": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+  "previousPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
   "v25": {
     "package": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
     "upgradeDigest": "FdGQDSwPsVH85gZNme1cSzAMpGixG5MFT26fxRW7fLsF",
@@ -507,5 +514,35 @@
     "dailyCap": "0 = unlimited; setter resets events_today",
     "setDailyCapDigest": "26NRdyGhtHuuAnBz9wNbkEeYvV44jwVmFbBzpy8CWTbE",
     "at": "2026-09-16T01:22:46.336455+01:00"
+  },
+  "priceTruth": {
+    "mode": "wal-implied-bten",
+    "cetusBtenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "cetusWalSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+    "cetusBtenSuiPoolLegacy": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+    "rule": "One price story: BTEN/WAL × WAL/SUI. BTEN/SUI is OPEN legacy display only — not pricing, not primary buy.",
+    "docs": "docs/BUY_VIA_WAL.md"
+  },
+  "buyPath": {
+    "mandate": "any-input-coin → WAL → BTEN",
+    "primaryBtenPurchasePool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
+    "adapters": [
+      "bten::cetus_swap_to_bten",
+      "bten::cetus_swap_to_bten_b2a"
+    ],
+    "neverPurchaseBtenVia": [
+      "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+      "BTEN/CETUS",
+      "BTEN/NAVX",
+      "BTEN/MAGMA",
+      "BTEN/TURBOS"
+    ],
+    "note": "Side BTEN LPs may remain registered for emission/attestation and exits, but Block10 Buy must not open or use them as the purchase leg. Never unregister BTEN/SUI. Never open new side BTEN LPs for Buy.",
+    "docs": "docs/BUY_VIA_WAL.md"
+  },
+  "bandbotIntegration": {
+    "configuration": "config/bandbot_bten_integration.json",
+    "docs": "docs/BANDBOT_BTEN_INTEGRATION.md",
+    "dryRunScript": "scripts/bandbot_harvest_sink_settle_dryrun.mjs"
   }
 }

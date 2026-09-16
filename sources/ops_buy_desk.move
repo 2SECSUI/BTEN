@@ -1,11 +1,11 @@
-/// OpsBuyDesk: public sale of ops-held BTEN inventory at the Cetus BTEN/SUI
-/// pool mid price (no discount).
+/// OpsBuyDesk: public sale of ops-held BTEN inventory at WAL-implied BTEN mid
+/// (no discount). Pricing source of truth is keeper-posted mist SUI/BTEN from
+/// Cetus `Pool<WAL,BTEN>` × `Pool<WAL,SUI>` (see scripts/ops_buy_desk_sync_price.mjs).
 ///
-/// Primary buy path reads `current_sqrt_price` on the configured
-/// `Pool<BTEN, SUI>` in-transaction and prices exactly at mid.
-/// A keeper-posted `price_mist_sui_per_bten` is also kept in sync for
-/// quotes / UI / fallback `buy_with_sui_posted_price` when a pool object
-/// is not passed (keeper must stay running for fair posted pricing).
+/// Prefer `buy_with_sui_posted_price` for settlement. Legacy `buy_with_sui` still
+/// reads `current_sqrt_price` on a configured `Pool<BTEN, SUI>` in-transaction;
+/// that path is optional — the Cetus BTEN/SUI pool is left OPEN and must not be
+/// unregistered for this desk rewire. Keeper must stay running for fair posted pricing.
 module bten::ops_buy_desk {
     use bten::bten::{BTEN, RegistryAdminCap};
     use sui::balance::{Self, Balance};
@@ -35,7 +35,7 @@ module bten::ops_buy_desk {
     /// Capability for ops inventory / config of the buy desk.
     public struct OpsBuyDeskAdminCap has key, store { id: UID }
 
-    /// Shared desk holding BTEN inventory sold for SUI at Cetus mid.
+    /// Shared desk holding BTEN inventory sold for SUI at keeper-posted WAL-implied mid.
     public struct OpsBuyDesk has key {
         id: UID,
         /// Ops BTEN inventory available for public purchase.
@@ -46,7 +46,7 @@ module bten::ops_buy_desk {
         price_updater: address,
         /// Expected Cetus `Pool<BTEN, SUI>` object id.
         pool_id: address,
-        /// Mist SUI required to buy 1 full BTEN (UNIT mist). Equal to Cetus mid — **no discount**.
+        /// Mist SUI required to buy 1 full BTEN (UNIT mist). Equal to WAL-implied mid — **no discount**.
         price_mist_sui_per_bten: u64,
         /// Last keeper / admin price update (ms), 0 if never set by clock.
         price_updated_ms: u64,
@@ -266,9 +266,8 @@ module bten::ops_buy_desk {
         settle_buy(desk, payment, sui_in, bten_out, min_bten_out, effective_price, /*pricing=*/0, ctx);
     }
 
-    /// Fallback buy at the keeper-posted mid (`price_mist_sui_per_bten`).
-    /// Keeper must keep this equal to Cetus mid (no discount). Prefer `buy_with_sui`
-    /// with the live pool when available.
+    /// Primary buy at the keeper-posted mid (`price_mist_sui_per_bten`).
+    /// Keeper must keep this equal to WAL-implied mid (BTEN/WAL × WAL/SUI; no discount).
     public entry fun buy_with_sui_posted_price(
         desk: &mut OpsBuyDesk,
         payment: Coin<SUI>,
