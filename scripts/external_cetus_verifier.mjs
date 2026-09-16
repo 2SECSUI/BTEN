@@ -378,7 +378,11 @@ for (const candidate of batches.flat()) {
   }
 }
 
-const remainingDaily = Math.max(0, Number(state.daily_event_cap) - Number(state.events_today));
+const dailyCap = Number(state.daily_event_cap);
+// daily_event_cap == 0 means unlimited on-chain (v28+).
+const remainingDaily = dailyCap === 0
+  ? Number.POSITIVE_INFINITY
+  : Math.max(0, dailyCap - Number(state.events_today));
 const runCap = TARGET_DIGEST ? 1 : Math.min(remainingDaily, verifier.maxEventsPerRun ?? 10);
 const priority = new Set((verifier.priorityDigests ?? []).map((d) => String(d)));
 // Priority digests first, then newest-first so WAL swaps/adds are not starved when

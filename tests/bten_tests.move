@@ -784,4 +784,141 @@ module bten::bten_tests {
         };
         scenario.end();
     }
+
+    /// daily_event_cap == 0 means unlimited; setter resets events_today.
+    #[test]
+    fun external_verifier_unlimited_cap_and_setter() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let pool = @0xC;
+        let trader = @0xD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            // Create with limited cap 1, then switch to unlimited via setter.
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 1, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_paused(&mut verifier, &admin_cap, false);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        // Use up the limited cap of 1.
+        scenario.next_tx(keeper);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let cap = scenario.take_from_sender<bten::ExternalRouteVerifierCap>();
+            let clock = scenario.take_shared<Clock>();
+            let digest = vector[
+                2u8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            ];
+            bten::attest_external_cetus_route(
+                &mut state, &registry, &mut verifier, &cap, pool, digest, 0,
+                trader, 1, &clock, scenario.ctx(),
+            );
+            assert!(bten::external_verifier_events_today(&verifier) == 1, 600);
+            assert!(bten::external_verifier_daily_cap(&verifier) == 1, 601);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(cap);
+        };
+
+        // Admin sets unlimited (0) and resets events_today.
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_daily_cap(&mut verifier, &admin_cap, 0);
+            assert!(bten::external_verifier_daily_cap(&verifier) == 0, 602);
+            assert!(bten::external_verifier_events_today(&verifier) == 0, 603);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        // Attest again under unlimited — must succeed even after many events_today.
+        scenario.next_tx(keeper);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let cap = scenario.take_from_sender<bten::ExternalRouteVerifierCap>();
+            let clock = scenario.take_shared<Clock>();
+            let mut i = 0u64;
+            while (i < 5) {
+                let mut digest = vector::empty<u8>();
+                let mut j = 0u64;
+                while (j < 32) {
+                    vector::push_back(&mut digest, ((i + 3) as u8));
+                    j = j + 1;
+                };
+                bten::attest_external_cetus_route(
+                    &mut state, &registry, &mut verifier, &cap, pool, digest, i,
+                    trader, 1, &clock, scenario.ctx(),
+                );
+                i = i + 1;
+            };
+            assert!(bten::external_verifier_events_today(&verifier) == 5, 604);
+            assert!(bten::external_verifier_daily_cap(&verifier) == 0, 605);
+            assert!(bten::batch_trades(&state) == 6, 606); // 1 limited + 5 unlimited
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(cap);
+        };
+        scenario.end();
+    }
+
+    /// create_external_route_verifier accepts daily_event_cap == 0 (unlimited).
+    #[test]
+    fun external_verifier_create_unlimited() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let pool = @0xC;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 0, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            assert!(bten::external_verifier_daily_cap(&verifier) == 0, 610);
+            assert!(bten::external_verifier_is_paused(&verifier), 611);
+            test_scenario::return_shared(verifier);
+        };
+        scenario.end();
+    }
+
 }

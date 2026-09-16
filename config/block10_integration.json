@@ -268,8 +268,8 @@
   },
   "status": "live",
   "packageStatus": "v23-live",
-  "livePackageVersion": 24,
-  "livePackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+  "livePackageVersion": 28,
+  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
   "upgradeTx": "37cfcJGcrNECdnmEHHdwN7jEuxGzsks9LAqBwkYL8bMf",
   "magmaBluefinAdapters": {
     "planFile": "config/magma_bluefin_adapter_plan.json",

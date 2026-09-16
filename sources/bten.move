@@ -1834,7 +1834,8 @@ module bten::bten {
     ) {
         assert!(registry.finalized, E_REGISTRY_FINAL);
         assert!(keeper != @0x0, E_EXTERNAL_VERIFIER_SENDER);
-        assert!(daily_event_cap > 0 && daily_event_cap <= MAX_EXTERNAL_EVENTS_PER_DAY, E_EXTERNAL_EVENT_CAP);
+        // 0 = unlimited (no daily cap). Non-zero must be within MAX_EXTERNAL_EVENTS_PER_DAY.
+        assert!(daily_event_cap == 0 || daily_event_cap <= MAX_EXTERNAL_EVENTS_PER_DAY, E_EXTERNAL_EVENT_CAP);
         transfer::public_transfer(ExternalRouteVerifierCap { id: object::new(ctx) }, keeper);
         transfer::share_object(ExternalRouteVerifierState {
             id: object::new(ctx), keeper, paused: true, daily_event_cap,
@@ -1849,6 +1850,19 @@ module bten::bten {
         paused: bool,
     ) { verifier.paused = paused; }
 
+    /// Sets the daily attestation cap. `daily_event_cap == 0` means unlimited
+    /// (skip the events_today assert). Non-zero values must be <= MAX.
+    /// Also resets `events_today` so a raise or unlimited switch unblocks today.
+    public fun set_external_route_verifier_daily_cap(
+        verifier: &mut ExternalRouteVerifierState,
+        _admin: &RegistryAdminCap,
+        daily_event_cap: u64,
+    ) {
+        assert!(daily_event_cap == 0 || daily_event_cap <= MAX_EXTERNAL_EVENTS_PER_DAY, E_EXTERNAL_EVENT_CAP);
+        verifier.daily_event_cap = daily_event_cap;
+        verifier.events_today = 0;
+    }
+
     /// Records one publicly auditable, off-chain verified Cetus SwapEvent so
     /// it is gated for emission-block release: this calls `record_atomic_route`,
     /// which increments `batch_trades` used by `settle`. Live-tape labeling is
@@ -1858,7 +1872,7 @@ module bten::bten {
     /// digest (keeper submits once). The verifier must validate the event
     /// against public Sui data before calling. The contract enforces
     /// registered-pool scope, one-time digest/event key, keeper identity, and
-    /// a rolling daily cap.
+    /// an optional rolling daily cap (`0` = unlimited).
     public entry fun attest_external_cetus_route(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -2009,7 +2023,10 @@ module bten::bten {
             verifier.accounting_day = day;
             verifier.events_today = 0;
         };
-        assert!(verifier.events_today < verifier.daily_event_cap, E_EXTERNAL_EVENT_CAP);
+        // daily_event_cap == 0 means unlimited — do not enforce events_today.
+        if (verifier.daily_event_cap > 0) {
+            assert!(verifier.events_today < verifier.daily_event_cap, E_EXTERNAL_EVENT_CAP);
+        };
         let key = ExternalEventKey { transaction_digest, event_sequence };
         assert!(!table::contains(&verifier.processed, key), E_EXTERNAL_EVENT_REPLAY);
         table::add(&mut verifier.processed, key, true);

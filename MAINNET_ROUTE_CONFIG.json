@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v27-live",
-  "publishedVersion": 27,
-  "currentPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "status": "v28-live",
+  "publishedVersion": 28,
+  "currentPackage": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -127,18 +127,19 @@
     "entrypoint": "bten::attest_external_cetus_route",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
     "cap": "0xd321f14d2620a79c1c7da73c0f4149b6abeb2a19251fd0e423c27fd1d9f10e1d",
-    "dailyEventCap": 25,
+    "dailyEventCap": 0,
     "activationAfterMs": "1789210768409",
     "scanTransactionsPerPool": 50,
-    "maxEventsPerRun": 25,
+    "maxEventsPerRun": 250,
     "fixedFeePoints": "1",
     "status": "active-public-event-reader",
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
     "security": "Only the verifier capability held by the dedicated keeper can attest. Gated external volume includes Cetus swaps AND liquidity adds on registered BTEN pools (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event). Attestation increments batch_trades toward the v16 trade gate (10 receipts per block, MAX_SETTLE=100).",
-    "livePackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+    "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
+      "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c::bten::ExternalCetusRouteAttested",
       "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688::bten::ExternalCetusRouteAttested",
       "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896::bten::ExternalCetusRouteAttested",
       "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc::bten::ExternalCetusRouteAttested",
@@ -177,7 +178,8 @@
     "priorityDigests": [
       "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz",
       "DjSKSZ45mVEdwUgXiXrrb8xipfK4s6ipX8PcCRQNNkfZ"
-    ]
+    ],
+    "dailyEventCapNote": "0 = unlimited (v28); on-chain assert skipped when daily_event_cap==0"
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -496,5 +498,16 @@
     ],
     "rebate": "1 raw BTEN from route_fee_vault per WAL/SUI qualifying trade; max 1000/batch; pay-what-you-can",
     "at": "2026-09-16T01:08:48.116422+01:00"
+  },
+  "v28": {
+    "digest": "n1ocCrsNRwbX1AhCnaKf1SyV78h97fjMtKMBWZc71Rq",
+    "package": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+    "previous": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+    "added": [
+      "bten::set_external_route_verifier_daily_cap"
+    ],
+    "dailyCap": "0 = unlimited; setter resets events_today",
+    "setDailyCapDigest": "26NRdyGhtHuuAnBz9wNbkEeYvV44jwVmFbBzpy8CWTbE",
+    "at": "2026-09-16T01:22:46.336455+01:00"
   }
 }

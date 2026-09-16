@@ -1,0 +1,20 @@
+{
+  "status": "success",
+  "digest": "n1ocCrsNRwbX1AhCnaKf1SyV78h97fjMtKMBWZc71Rq",
+  "newPackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "packageVersion": 28,
+  "previousPackageId": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapPolicy": 0,
+  "gasMist": 300962820,
+  "setDailyCapDigest": "26NRdyGhtHuuAnBz9wNbkEeYvV44jwVmFbBzpy8CWTbE",
+  "verifier": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
+  "daily_event_cap": 0,
+  "events_today": 0,
+  "safety": {
+    "packageImmutable": false,
+    "upgradeCapDestroyed": false,
+    "upgradeCapPolicyCompatible": true
+  },
+  "tests": "27/27 pass"
+}
