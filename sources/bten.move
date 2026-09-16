@@ -15,8 +15,12 @@
 /// Qualifying routes are recorded only by adapters that complete their swap in
 /// the same transaction. The retained `RouterCap` entry is deliberately
 /// disabled for upgrade compatibility with the development deployment.
-/// External Cetus/aggregator volume on registered BTEN pools is emission-gated
+/// External Cetus/aggregator volume on registered pools is emission-gated
 /// via `attest_external_cetus_route` (same `record_atomic_route` path).
+/// Registered non-BTEN Cetus pools (e.g. Bandbot WAL/SUI) can also gate in-contract
+/// via `cetus_swap_registered_a2b` / `cetus_swap_registered_b2a`.
+/// WAL/SUI traders earn 1 raw BTEN from `route_fee_vault` via `*_rebate` adapters /
+/// `attest_external_cetus_route_rebate`, flushed by `pay_wal_sui_trader_rebates` (max 1000).
 module bten::bten {
     use std::ascii;
     use std::string;
@@ -132,7 +136,14 @@ module bten::bten {
     const E_MANAGED_VAULT_OPERATOR: u64 = 40;
     const E_MANAGED_VAULT_PAUSED: u64 = 41;
     const E_MANAGED_VAULT_TAKEN: u64 = 42;
+    const E_WAL_SUI_REBATE_BATCH: u64 = 43;
     const MANAGED_PROFIT_FEE_BPS: u64 = 200;
+    /// Bandbot WAL/SUI Cetus pool — sole pool eligible for the 1-raw trader rebate.
+    const WAL_SUI_POOL_ID: address = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+    /// 0.00000001 BTEN (1 raw unit at 8 decimals) per qualifying WAL/SUI trade.
+    const WAL_SUI_TRADER_REBATE_RAW: u64 = 1;
+    /// Max 1-raw pays per `pay_wal_sui_trader_rebates` call.
+    const MAX_WAL_SUI_REBATE_BATCH: u64 = 1000;
 
     public struct BTEN has drop {}
 
@@ -490,6 +501,35 @@ module bten::bten {
         events_today: u64,
     }
 
+    /// Pending 1-raw BTEN rebates for traders who hit the registered WAL/SUI
+    /// pool via in-contract `cetus_swap_registered_*_rebate` adapters or via
+    /// `attest_external_cetus_route_rebate`. Funded only from `route_fee_vault`
+    /// (no uncapped mint). Paid in batches of <= `MAX_WAL_SUI_REBATE_BATCH`.
+    public struct WalSuiTraderRebateState has key {
+        id: UID,
+        pool_id: address,
+        /// Pending qualifying trades (each unit pays WAL_SUI_TRADER_REBATE_RAW).
+        pending: Table<address, u64>,
+        total_accrued: u64,
+        total_paid: u64,
+    }
+
+    public struct WalSuiTraderRebateAccrued has copy, drop {
+        trader: address,
+        pool_id: address,
+        pending_after: u64,
+        total_accrued: u64,
+    }
+
+    public struct WalSuiTraderRebatePaid has copy, drop {
+        trader: address,
+        amount: u64,
+        remaining_pending: u64,
+        total_paid: u64,
+        vault_left: u64,
+    }
+
+
     /// Evidence for a protected protocol-owned Cetus liquidity deployment.
     public struct ProtocolLiquidityDeployed has copy, drop {
         pool_id: address,
@@ -719,6 +759,216 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
+    /// Swap coin A -> coin B on any registered Cetus pool (`Pool<A, B>` by object
+    /// id). Used for non-BTEN pairs such as Bandbot WAL/SUI (`Pool<WAL, SUI>`):
+    /// a2b is WAL->SUI. Records one `RouteRecorded` / bumps `batch_trades` via
+    /// `record_atomic_route` using the Cetus-paid input amount as fee_points.
+    public entry fun cetus_swap_registered_a2b<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<A>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_b, receipt) = pool::flash_swap<A, B>(
+            config, pool, true, true, requested, sqrt_price_limit, clock
+        );
+        let paid = pool::swap_pay_amount(&receipt);
+        let out = balance::value(&receive_b);
+        assert!(out >= min_out, E_MIN_OUTPUT);
+        let pay_a = coin::into_balance(coin::split(&mut input, paid, ctx));
+        pool::repay_flash_swap(config, pool, pay_a, balance::zero<B>(), receipt);
+        coin::join(&mut input, coin::from_balance(receive_a, ctx));
+        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        transfer::public_transfer(input, tx_context::sender(ctx));
+        transfer::public_transfer(coin::from_balance(receive_b, ctx), tx_context::sender(ctx));
+    }
+
+    /// Swap coin B -> coin A on any registered Cetus pool (`Pool<A, B>`).
+    /// For Bandbot WAL/SUI this is SUI->WAL (buy path). Same gating as a2b.
+    public entry fun cetus_swap_registered_b2a<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<B>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_b, receipt) = pool::flash_swap<A, B>(
+            config, pool, false, true, requested, sqrt_price_limit, clock
+        );
+        let paid = pool::swap_pay_amount(&receipt);
+        let out = balance::value(&receive_a);
+        assert!(out >= min_out, E_MIN_OUTPUT);
+        let pay_b = coin::into_balance(coin::split(&mut input, paid, ctx));
+        pool::repay_flash_swap(config, pool, balance::zero<A>(), pay_b, receipt);
+        coin::join(&mut input, coin::from_balance(receive_b, ctx));
+        record_atomic_route(state, paid, clock, tx_context::sender(ctx));
+        transfer::public_transfer(input, tx_context::sender(ctx));
+        transfer::public_transfer(coin::from_balance(receive_a, ctx), tx_context::sender(ctx));
+    }
+
+    /// Create the shared WAL/SUI trader-rebate ledger (once). Pool id is fixed
+    /// to the Bandbot WAL/SUI desk; pays come from `EmissionState.route_fee_vault`.
+    public entry fun create_wal_sui_trader_rebate_state(
+        _admin: &RegistryAdminCap,
+        ctx: &mut TxContext,
+    ) {
+        transfer::share_object(WalSuiTraderRebateState {
+            id: object::new(ctx),
+            pool_id: WAL_SUI_POOL_ID,
+            pending: table::new(ctx),
+            total_accrued: 0,
+            total_paid: 0,
+        });
+    }
+
+    fun try_accrue_wal_sui_trader_rebate(
+        rebate: &mut WalSuiTraderRebateState,
+        pool_id: address,
+        trader: address,
+    ) {
+        if (pool_id != rebate.pool_id) {
+            return
+        };
+        if (!table::contains(&rebate.pending, trader)) {
+            table::add(&mut rebate.pending, trader, 1);
+        } else {
+            let p = table::borrow_mut(&mut rebate.pending, trader);
+            *p = *p + 1;
+        };
+        rebate.total_accrued = rebate.total_accrued + 1;
+        event::emit(WalSuiTraderRebateAccrued {
+            trader,
+            pool_id,
+            pending_after: *table::borrow(&rebate.pending, trader),
+            total_accrued: rebate.total_accrued,
+        });
+    }
+
+    /// Same as `cetus_swap_registered_a2b`, then accrues +1 pending WAL/SUI
+    /// trader rebate when `pool` is the Bandbot WAL/SUI desk.
+    public entry fun cetus_swap_registered_a2b_rebate<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        rebate: &mut WalSuiTraderRebateState,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<A>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_cetus_pool(registry, pool);
+        let pool_address = object::id_to_address(&object::id(pool));
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_b, receipt) = pool::flash_swap<A, B>(
+            config, pool, true, true, requested, sqrt_price_limit, clock
+        );
+        let paid = pool::swap_pay_amount(&receipt);
+        let out = balance::value(&receive_b);
+        assert!(out >= min_out, E_MIN_OUTPUT);
+        let pay_a = coin::into_balance(coin::split(&mut input, paid, ctx));
+        pool::repay_flash_swap(config, pool, pay_a, balance::zero<B>(), receipt);
+        coin::join(&mut input, coin::from_balance(receive_a, ctx));
+        let sender = tx_context::sender(ctx);
+        record_atomic_route(state, paid, clock, sender);
+        try_accrue_wal_sui_trader_rebate(rebate, pool_address, sender);
+        transfer::public_transfer(input, sender);
+        transfer::public_transfer(coin::from_balance(receive_b, ctx), sender);
+    }
+
+    /// Same as `cetus_swap_registered_b2a`, then accrues +1 pending WAL/SUI
+    /// trader rebate when `pool` is the Bandbot WAL/SUI desk (SUI→WAL buy).
+    public entry fun cetus_swap_registered_b2a_rebate<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        rebate: &mut WalSuiTraderRebateState,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<B>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_registered_cetus_pool(registry, pool);
+        let pool_address = object::id_to_address(&object::id(pool));
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_b, receipt) = pool::flash_swap<A, B>(
+            config, pool, false, true, requested, sqrt_price_limit, clock
+        );
+        let paid = pool::swap_pay_amount(&receipt);
+        let out = balance::value(&receive_a);
+        assert!(out >= min_out, E_MIN_OUTPUT);
+        let pay_b = coin::into_balance(coin::split(&mut input, paid, ctx));
+        pool::repay_flash_swap(config, pool, balance::zero<A>(), pay_b, receipt);
+        coin::join(&mut input, coin::from_balance(receive_b, ctx));
+        let sender = tx_context::sender(ctx);
+        record_atomic_route(state, paid, clock, sender);
+        try_accrue_wal_sui_trader_rebate(rebate, pool_address, sender);
+        transfer::public_transfer(input, sender);
+        transfer::public_transfer(coin::from_balance(receive_a, ctx), sender);
+    }
+
+    /// Pay accrued WAL/SUI trader rebates from `route_fee_vault` only (no mint).
+    /// Each vector element is one pay of `WAL_SUI_TRADER_REBATE_RAW` (1 raw) to
+    /// that address if they have pending > 0. Length must be in 1..=1000.
+    /// **Pay-what-you-can:** if the vault runs empty mid-batch, remaining
+    /// entries are skipped (pending left intact); the call still succeeds.
+    public entry fun pay_wal_sui_trader_rebates(
+        state: &mut EmissionState,
+        rebate: &mut WalSuiTraderRebateState,
+        traders: vector<address>,
+        ctx: &mut TxContext,
+    ) {
+        let n = vector::length(&traders);
+        assert!(n > 0 && n <= MAX_WAL_SUI_REBATE_BATCH, E_WAL_SUI_REBATE_BATCH);
+        let mut i = 0;
+        while (i < n) {
+            let trader = *vector::borrow(&traders, i);
+            i = i + 1;
+            if (!table::contains(&rebate.pending, trader)) {
+                continue
+            };
+            let owed_ref = table::borrow_mut(&mut rebate.pending, trader);
+            if (*owed_ref == 0) {
+                continue
+            };
+            if (balance::value(&state.route_fee_vault) < WAL_SUI_TRADER_REBATE_RAW) {
+                // Vault empty: stop; leave remaining pending for a later call.
+                break
+            };
+            *owed_ref = *owed_ref - 1;
+            let remaining = *owed_ref;
+            let pay = balance::split(&mut state.route_fee_vault, WAL_SUI_TRADER_REBATE_RAW);
+            rebate.total_paid = rebate.total_paid + WAL_SUI_TRADER_REBATE_RAW;
+            event::emit(WalSuiTraderRebatePaid {
+                trader,
+                amount: WAL_SUI_TRADER_REBATE_RAW,
+                remaining_pending: remaining,
+                total_paid: rebate.total_paid,
+                vault_left: balance::value(&state.route_fee_vault),
+            });
+            transfer::public_transfer(coin::from_balance(pay, ctx), trader);
+        };
+    }
 
     /// Open a composable multi-hop route ticket for the transaction sender.
     public fun open_composable_route(ctx: &TxContext): ComposableRouteTicket {
@@ -819,6 +1069,48 @@ module bten::bten {
         ticket.paid_points = ticket.paid_points + paid;
         (input, coin::from_balance(receive_asset, ctx))
     }
+
+    /// Composable A->B hop on any registered Cetus `Pool<A, B>` (e.g. WAL->SUI).
+    /// Accrues paid points; seal once at the end.
+    public fun cetus_swap_registered_a2b_return<A, B>(
+        registry: &PoolRegistry, config: &GlobalConfig,
+        pool: &mut Pool<A, B>, mut input: Coin<A>, min_out: u64,
+        sqrt_price_limit: u128, clock: &Clock,
+        ticket: &mut ComposableRouteTicket, ctx: &mut TxContext,
+    ): (Coin<A>, Coin<B>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_b, receipt) = pool::flash_swap<A, B>(config, pool, true, true, requested, sqrt_price_limit, clock);
+        let paid = pool::swap_pay_amount(&receipt);
+        assert!(balance::value(&receive_b) >= min_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, pool, coin::into_balance(coin::split(&mut input, paid, ctx)), balance::zero<B>(), receipt);
+        coin::join(&mut input, coin::from_balance(receive_a, ctx));
+        ticket.paid_points = ticket.paid_points + paid;
+        (input, coin::from_balance(receive_b, ctx))
+    }
+
+    /// Composable B->A hop on any registered Cetus `Pool<A, B>` (e.g. SUI->WAL).
+    public fun cetus_swap_registered_b2a_return<A, B>(
+        registry: &PoolRegistry, config: &GlobalConfig,
+        pool: &mut Pool<A, B>, mut input: Coin<B>, min_out: u64,
+        sqrt_price_limit: u128, clock: &Clock,
+        ticket: &mut ComposableRouteTicket, ctx: &mut TxContext,
+    ): (Coin<B>, Coin<A>) {
+        assert!(ticket.trader == tx_context::sender(ctx), E_COMPOSABLE_ROUTE);
+        assert_registered_cetus_pool(registry, pool);
+        let requested = coin::value(&input);
+        assert!(requested > 0, E_ZERO_INPUT);
+        let (receive_a, receive_b, receipt) = pool::flash_swap<A, B>(config, pool, false, true, requested, sqrt_price_limit, clock);
+        let paid = pool::swap_pay_amount(&receipt);
+        assert!(balance::value(&receive_a) >= min_out, E_MIN_OUTPUT);
+        pool::repay_flash_swap(config, pool, balance::zero<A>(), coin::into_balance(coin::split(&mut input, paid, ctx)), receipt);
+        coin::join(&mut input, coin::from_balance(receive_b, ctx));
+        ticket.paid_points = ticket.paid_points + paid;
+        (input, coin::from_balance(receive_a, ctx))
+    }
+
 
     /// Atomically route SUI through BTEN and into a BTEN-first Cetus partner
     /// pool. This records one receipt only after both flash swaps settle and
@@ -1276,6 +1568,21 @@ module bten::bten {
         let ComposableRouteTicket { trader: _, paid_points: _ } = ticket;
     }
 
+    #[test_only]
+    public fun fund_route_fee_vault_for_testing(state: &mut EmissionState, amount: u64) {
+        balance::join(&mut state.route_fee_vault, balance::create_for_testing(amount));
+    }
+
+    #[test_only]
+    public fun accrue_wal_sui_trader_rebate_for_testing(
+        rebate: &mut WalSuiTraderRebateState,
+        pool_id: address,
+        trader: address,
+    ) {
+        try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
+    }
+
+
     /// The Bitcoin-style genesis block: 50 BTEN is available to bootstrap
     /// routing and liquidity before any trade-gated ten-minute block is due.
     /// It occupies height zero, so it is included in the fixed emission cap.
@@ -1359,6 +1666,17 @@ module bten::bten {
         );
         assert!(!table::contains(&registry.pools, pool_id), E_DUPLICATE_POOL);
         table::add(&mut registry.pools, pool_id, bucket);
+    }
+
+    /// Admin remove of a previously registered pool id (works after finalize).
+    /// Does not touch on-chain Cetus pool objects — only the BTEN PoolRegistry table.
+    public fun unregister_pool(
+        registry: &mut PoolRegistry,
+        _admin: &RegistryAdminCap,
+        pool_id: address,
+    ) {
+        assert!(table::contains(&registry.pools, pool_id), E_POOL_NOT_REGISTERED);
+        let _bucket = table::remove(&mut registry.pools, pool_id);
     }
 
     /// One-time setup for the gas-subsidy route. The owner of RegistryAdminCap
@@ -1599,6 +1917,71 @@ module bten::bten {
                 clock,
                 ctx,
             );
+            i = i + 1;
+        };
+    }
+
+    /// Like `attest_external_cetus_route`, then accrues +1 WAL/SUI trader rebate
+    /// pending when `pool_id` is the Bandbot WAL/SUI desk.
+    public entry fun attest_external_cetus_route_rebate(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        rebate: &mut WalSuiTraderRebateState,
+        _cap: &ExternalRouteVerifierCap,
+        pool_id: address,
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+        trader: address,
+        fee_points: u64,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        attest_external_cetus_route_internal(
+            state, registry, verifier, pool_id, transaction_digest,
+            event_sequence, trader, fee_points, clock, ctx,
+        );
+        try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
+    }
+
+    /// Batch variant of `attest_external_cetus_route_rebate`.
+    public entry fun attest_external_cetus_routes_rebate(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        rebate: &mut WalSuiTraderRebateState,
+        _cap: &ExternalRouteVerifierCap,
+        pool_ids: vector<address>,
+        transaction_digests: vector<vector<u8>>,
+        event_sequences: vector<u64>,
+        traders: vector<address>,
+        fee_points_vec: vector<u64>,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let n = vector::length(&pool_ids);
+        assert!(n > 0, E_BAD_AMOUNT);
+        assert!(vector::length(&transaction_digests) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&event_sequences) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&traders) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&fee_points_vec) == n, E_BAD_AMOUNT);
+        let mut i = 0;
+        while (i < n) {
+            let pool_id = *vector::borrow(&pool_ids, i);
+            let trader = *vector::borrow(&traders, i);
+            attest_external_cetus_route_internal(
+                state,
+                registry,
+                verifier,
+                pool_id,
+                *vector::borrow(&transaction_digests, i),
+                *vector::borrow(&event_sequences, i),
+                trader,
+                *vector::borrow(&fee_points_vec, i),
+                clock,
+                ctx,
+            );
+            try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
             i = i + 1;
         };
     }
@@ -2405,6 +2788,13 @@ module bten::bten {
         *table::borrow(&registry.pools, pool_id)
     }
     public fun registry_is_finalized(registry: &PoolRegistry): bool { registry.finalized }
+
+    public fun wal_sui_trader_rebate_pool_id(rebate: &WalSuiTraderRebateState): address { rebate.pool_id }
+    public fun wal_sui_trader_rebate_total_accrued(rebate: &WalSuiTraderRebateState): u64 { rebate.total_accrued }
+    public fun wal_sui_trader_rebate_total_paid(rebate: &WalSuiTraderRebateState): u64 { rebate.total_paid }
+    public fun wal_sui_trader_rebate_pending_of(rebate: &WalSuiTraderRebateState, trader: address): u64 {
+        if (table::contains(&rebate.pending, trader)) { *table::borrow(&rebate.pending, trader) } else { 0 }
+    }
 
     /// Create the shared managed-vault programme. Caller with admin cap receives the operator cap.
     public entry fun create_managed_vault(

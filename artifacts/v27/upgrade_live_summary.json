@@ -1,0 +1,41 @@
+{
+  "status": "success",
+  "digest": "6ijN86FiJCU1emcnAD5pargwHe5tVJodXRiA9z34144A",
+  "newPackageId": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "packageVersion": 27,
+  "previousPackageId": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+  "v26AdaptersPackage": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapPolicy": 0,
+  "gasMist": 299883940,
+  "walSuiRebateState": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a",
+  "createRebateDigest": "5Ck3So5X8YvBsGpKboxCyiXWshaNAu3tLzHeCWnLRSw5",
+  "functions": {
+    "adapters": [
+      "bten::cetus_swap_registered_a2b",
+      "bten::cetus_swap_registered_b2a",
+      "bten::cetus_swap_registered_a2b_return",
+      "bten::cetus_swap_registered_b2a_return"
+    ],
+    "rebate": [
+      "bten::cetus_swap_registered_a2b_rebate",
+      "bten::cetus_swap_registered_b2a_rebate",
+      "bten::pay_wal_sui_trader_rebates",
+      "bten::create_wal_sui_trader_rebate_state",
+      "bten::attest_external_cetus_route_rebate",
+      "bten::attest_external_cetus_routes_rebate"
+    ]
+  },
+  "walSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+  "walSuiCoinOrder": "Pool<WAL,SUI>",
+  "rebateRaw": 1,
+  "rebateFunding": "route_fee_vault",
+  "rebateBatchMax": 1000,
+  "underfundedPolicy": "pay-what-you-can",
+  "safety": {
+    "packageImmutable": false,
+    "upgradeCapDestroyed": false,
+    "upgradeCapPolicyCompatible": true
+  },
+  "tests": "25/25 pass"
+}

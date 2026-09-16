@@ -1,0 +1,28 @@
+{
+  "status": "success",
+  "digest": "7U81cRhXeoiLNEMfCfbPmBT3NZvtwjXZP5d4hLzgLHdz",
+  "newPackageId": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+  "packageVersion": 26,
+  "previousPackageId": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapPolicy": 0,
+  "gasMist": 281488140,
+  "functions": [
+    "bten::cetus_swap_registered_a2b",
+    "bten::cetus_swap_registered_b2a",
+    "bten::cetus_swap_registered_a2b_return",
+    "bten::cetus_swap_registered_b2a_return"
+  ],
+  "walSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+  "walSuiCoinOrder": "Pool<WAL,SUI>",
+  "safety": {
+    "packageImmutable": false,
+    "upgradeCapDestroyed": false,
+    "upgradeCapPolicyCompatible": true
+  },
+  "modules": [
+    "bten",
+    "ops_buy_desk"
+  ],
+  "tests": "23/23 pass"
+}

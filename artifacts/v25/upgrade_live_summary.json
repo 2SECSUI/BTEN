@@ -1,0 +1,30 @@
+{
+  "status": "success",
+  "digest": "FdGQDSwPsVH85gZNme1cSzAMpGixG5MFT26fxRW7fLsF",
+  "newPackageId": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+  "packageVersion": 25,
+  "previousPackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+  "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
+  "upgradeCapPolicy": 0,
+  "gasMist": 272601340,
+  "unregisterDigest": "F8GcLjB4DRJVykfu7pQ8m6roZixyLnfYLbLZbE9ztwEW",
+  "unregisteredPools": {
+    "USDT": "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
+    "USDC": "0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45",
+    "DEEP": "0x924c998ea2acc2bd1c91377a5d5f6ac1b634037bd05c4ebf67f5ad0d98bad835",
+    "NS": "0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c"
+  },
+  "registryPoolsSizeAfter": 7,
+  "lpCloses": {
+    "NS": "F85vUEv2VjjLaaoWoSrnxtAUTWxfcaV5EZmMYwVn4b4X",
+    "USDC": "6jCBZp2eBE4Aj4cuiwMBEZTrXPLsKBsSRyjKfRdnuZbc"
+  },
+  "safety": {
+    "packageImmutable": false,
+    "upgradeCapDestroyed": false
+  },
+  "modules": [
+    "bten",
+    "ops_buy_desk"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "stopped59tx": true,
+  "lpCloses": {
+    "NS": {
+      "pos": "0x7c25c5a58cce09f4119d50a07bd31c1e810affd8b03ee0445760aebd5418ae49",
+      "digest": "F85vUEv2VjjLaaoWoSrnxtAUTWxfcaV5EZmMYwVn4b4X",
+      "recovered": {
+        "BTEN": "7821725519",
+        "NS": "21917975"
+      }
+    },
+    "USDC": {
+      "pos": "0xa60d60b4d83f4b2ecfffba54ad7f50c61590d1e521484723b498419690bcd6e4",
+      "digest": "6jCBZp2eBE4Aj4cuiwMBEZTrXPLsKBsSRyjKfRdnuZbc",
+      "recovered": {
+        "BTEN": "12024310636",
+        "USDC": "332164"
+      }
+    },
+    "USDT": "already zero ops positions",
+    "DEEP": "already zero ops positions"
+  },
+  "opsLpConfirm": {
+    "USDT": 0,
+    "USDC": 0,
+    "DEEP": 0,
+    "NS": 0
+  },
+  "v25": {
+    "upgradeDigest": "FdGQDSwPsVH85gZNme1cSzAMpGixG5MFT26fxRW7fLsF",
+    "package": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+    "previous": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+    "upgradeCapPolicy": 0,
+    "added": "bten::unregister_pool"
+  },
+  "unregister": {
+    "digest": "F8GcLjB4DRJVykfu7pQ8m6roZixyLnfYLbLZbE9ztwEW",
+    "pools": [
+      "USDT",
+      "USDC",
+      "DEEP",
+      "NS"
+    ],
+    "registryPoolsSizeAfter": 7,
+    "reUnregisterAbortCode": 12
+  },
+  "gasLeftSui": 10.888,
+  "configsUpdated": [
+    "Published.toml",
+    "MAINNET_ROUTE_CONFIG.json",
+    "config/lp_program_policy.json",
+    "V25_*.md",
+    "artifacts/v25/*"
+  ]
+}

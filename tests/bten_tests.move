@@ -5,6 +5,7 @@ module bten::bten_tests {
     use sui::clock::{Self, Clock};
     use sui::test_scenario;
     use sui::transfer;
+    use std::vector;
 
     #[test]
     fun policy_and_one_block_allocation() {
@@ -681,6 +682,105 @@ module bten::bten_tests {
             let reward = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
             assert!(coin::value(&reward) == 500_000_000, 3);
             scenario.return_to_sender(reward);
+        };
+        scenario.end();
+    }
+
+    /// Registry accepts a non-BTEN Cetus pool id post-finalize (Bandbot WAL/SUI style).
+    /// Swap adapters call assert_registered_cetus_pool by object id — same table path.
+    #[test]
+    fun register_additional_cetus_pool_id_for_registered_adapters() {
+        let admin = @0xA;
+        // Mock Bandbot-style WAL/SUI pool object id (not a BTEN pair).
+        let wal_sui_pool = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::register_additional_pool(&mut registry, &admin_cap, wal_sui_pool, 1);
+            assert!(bten::pool_bucket(&registry, wal_sui_pool) == 1, 400);
+            assert!(bten::registry_is_finalized(&registry), 401);
+            test_scenario::return_shared(registry);
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.end();
+    }
+
+    /// Accrue + pay 1-raw WAL/SUI rebates from route_fee_vault; pay-what-you-can when vault empty.
+    #[test]
+    fun wal_sui_trader_rebate_accrues_and_pays_from_route_fee_vault() {
+        let admin = @0xA;
+        let trader = @0xB;
+        let other = @0xC;
+        let wal_sui = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+        let other_pool = @0x1111;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_wal_sui_trader_rebate_state(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut rebate = scenario.take_shared<bten::WalSuiTraderRebateState>();
+            assert!(bten::wal_sui_trader_rebate_pool_id(&rebate) == wal_sui, 500);
+            // Non-WAL/SUI pool does not accrue.
+            bten::accrue_wal_sui_trader_rebate_for_testing(&mut rebate, other_pool, trader);
+            assert!(bten::wal_sui_trader_rebate_pending_of(&rebate, trader) == 0, 501);
+            // Two qualifying trades.
+            bten::accrue_wal_sui_trader_rebate_for_testing(&mut rebate, wal_sui, trader);
+            bten::accrue_wal_sui_trader_rebate_for_testing(&mut rebate, wal_sui, trader);
+            assert!(bten::wal_sui_trader_rebate_pending_of(&rebate, trader) == 2, 502);
+            assert!(bten::wal_sui_trader_rebate_total_accrued(&rebate) == 2, 503);
+            // Fund vault with only 1 raw — first pay succeeds, second stops (pay-what-you-can).
+            bten::fund_route_fee_vault_for_testing(&mut state, 1);
+            let traders = vector[trader, trader, other]; // other has no pending — skip
+            bten::pay_wal_sui_trader_rebates(&mut state, &mut rebate, traders, scenario.ctx());
+            assert!(bten::wal_sui_trader_rebate_pending_of(&rebate, trader) == 1, 504);
+            assert!(bten::wal_sui_trader_rebate_total_paid(&rebate) == 1, 505);
+            assert!(bten::route_fee_balance(&state) == 0, 506);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(rebate);
+        };
+        scenario.next_tx(trader);
+        {
+            let c = scenario.take_from_sender<coin::Coin<bten::BTEN>>();
+            assert!(coin::value(&c) == 1, 507);
+            scenario.return_to_sender(c);
+        };
+        scenario.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = 43)]
+    fun wal_sui_trader_rebate_batch_rejects_empty() {
+        let admin = @0xA;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_wal_sui_trader_rebate_state(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(admin);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let mut rebate = scenario.take_shared<bten::WalSuiTraderRebateState>();
+            bten::pay_wal_sui_trader_rebates(&mut state, &mut rebate, vector[], scenario.ctx());
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(rebate);
         };
         scenario.end();
     }

@@ -4,8 +4,8 @@
   "sourceRepository": "https://github.com/2SECSUI/BTEN",
   "externalRouteProviders": "config/external_route_providers.json",
   "coinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
-  "currentPackage": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
-  "publishedVersion": 25,
+  "currentPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "publishedVersion": 27,
   "mainnetPoolConfiguration": "MAINNET_ROUTE_CONFIG.json",
   "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
   "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
@@ -24,7 +24,7 @@
     "requireBtenLeg": true,
     "oneReceiptPerCompletedAtomicRoute": true,
     "requireMinimumOutput": true,
-    "currentScope": "direct Cetus BTEN pairs + atomic via_bten multi-hop + composable return hops sealed once; Turbos adapters included in v17 plan",
+    "currentScope": "direct Cetus BTEN pairs + registered non-BTEN Cetus pools (cetus_swap_registered_*) + atomic via_bten multi-hop + composable return hops sealed once; Turbos adapters included in v17 plan",
     "composableReceiptRule": "open_composable_route -> one or more *_return hops -> seal_composable_route once"
   },
   "routeSelection": {
@@ -80,7 +80,17 @@
     "turbosAssetToBtenFirst": "bten::turbos_swap_to_bten_b_first",
     "turbosBtenToAssetFirst": "bten::turbos_swap_from_bten_a_first",
     "turbosAssetToBtenSecondReturn": "bten::turbos_swap_to_bten_return",
-    "turbosBtenToAssetSecondReturn": "bten::turbos_swap_from_bten_return"
+    "turbosBtenToAssetSecondReturn": "bten::turbos_swap_from_bten_return",
+    "registeredA2b": "bten::cetus_swap_registered_a2b",
+    "registeredB2a": "bten::cetus_swap_registered_b2a",
+    "registeredA2bReturn": "bten::cetus_swap_registered_a2b_return",
+    "registeredB2aReturn": "bten::cetus_swap_registered_b2a_return",
+    "registeredA2bRebate": "bten::cetus_swap_registered_a2b_rebate",
+    "registeredB2aRebate": "bten::cetus_swap_registered_b2a_rebate",
+    "payWalSuiTraderRebates": "bten::pay_wal_sui_trader_rebates",
+    "createWalSuiTraderRebateState": "bten::create_wal_sui_trader_rebate_state",
+    "attestExternalCetusRouteRebate": "bten::attest_external_cetus_route_rebate",
+    "attestExternalCetusRoutesRebate": "bten::attest_external_cetus_routes_rebate"
   },
   "protocolLiquidity": {
     "entrypoints": [
@@ -372,13 +382,22 @@
       "turbosAssetToBtenFirst": "bten::turbos_swap_to_bten_b_first",
       "turbosBtenToAssetFirst": "bten::turbos_swap_from_bten_a_first",
       "turbosAssetToBtenSecondReturn": "bten::turbos_swap_to_bten_return",
-      "turbosBtenToAssetSecondReturn": "bten::turbos_swap_from_bten_return"
+      "turbosBtenToAssetSecondReturn": "bten::turbos_swap_from_bten_return",
+      "registeredA2b": "bten::cetus_swap_registered_a2b",
+      "registeredB2a": "bten::cetus_swap_registered_b2a",
+      "registeredA2bReturn": "bten::cetus_swap_registered_a2b_return",
+      "registeredB2aReturn": "bten::cetus_swap_registered_b2a_return",
+      "registeredA2bRebate": "bten::cetus_swap_registered_a2b_rebate",
+      "registeredB2aRebate": "bten::cetus_swap_registered_b2a_rebate",
+      "payWalSuiTraderRebates": "bten::pay_wal_sui_trader_rebates",
+      "attestExternalCetusRouteRebate": "bten::attest_external_cetus_route_rebate",
+      "attestExternalCetusRoutesRebate": "bten::attest_external_cetus_routes_rebate"
     },
     "grokAppBuilderChecklist": [
       "1. Connect wallet; every swap/buy is wallet-signed. neverEmbedPrivateKeys.",
-      "2. Use live package id from this file (v23 live).",
+      "2. Use live package id from this file (v27 live: registered adapters + WAL/SUI 1-raw rebate).",
       "3. Pass Cetus GlobalConfig + Clock (0x6) + registered pool object for each hop.",
-      "4. Wire registered Cetus pools from publicSwap.tenRegisteredCetusPools / MAINNET_ROUTE_CONFIG.json#venues[0].pools. WAL/SUI Bandbot desk is registry-gated for attest only \u2014 not a BTEN-pair adapter pool.",
+      "4. Wire registered Cetus pools from publicSwap.tenRegisteredCetusPools / MAINNET_ROUTE_CONFIG.json#venues[0].pools. Bandbot WAL/SUI (Pool<WAL,SUI>) uses adapterEntrypoints.registeredB2a (SUI\u2192WAL) / registeredA2b (WAL\u2192SUI) so the hop is in-contract gated; WAL\u2192BTEN still uses BTEN-pair adapters.",
       "5. Direct SUI\u2192BTEN on Pool<BTEN,SUI>: bten::cetus_swap_to_bten_b2a (or *_return for composable).",
       "6. Asset\u2192BTEN / BTEN\u2192asset: use adapterEntrypoints matching pool coin order (A/B).",
       "7. Via-BTEN multi-hop: cetus_sui_to_asset_via_bten_* ; optional rebate variants when RouteRebateState funded.",
@@ -397,7 +416,16 @@
     "bandbotWalSuiPool": {
       "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
       "pair": "WAL/SUI",
-      "note": "WAL/SUI Bandbot desk \u2014 registered for gate/attest; not a BTEN-pair adapter pool"
+      "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> \u2014 use cetus_swap_registered_*_rebate for in-contract RouteRecorded + 1-raw pending rebate from route_fee_vault; keeper pay_wal_sui_trader_rebates (max 1000). WAL\u2192BTEN uses BTEN-pair adapters.",
+      "coinOrder": "Pool<WAL,SUI>",
+      "a2b": "bten::cetus_swap_registered_a2b",
+      "b2a": "bten::cetus_swap_registered_b2a",
+      "rebateRaw": 1,
+      "rebateSource": "EmissionState.route_fee_vault",
+      "rebateBatchMax": 1000,
+      "rebatePolicy": "pay-what-you-can if vault empty mid-batch; no abort of prior pays",
+      "a2bRebate": "bten::cetus_swap_registered_a2b_rebate",
+      "b2aRebate": "bten::cetus_swap_registered_b2a_rebate"
     }
   },
   "v25Unregister": {
@@ -411,5 +439,47 @@
       "NS": "0x41ee9006ba9f62124a354cf47eea019b9d51d95687aeddbb12eb3439d36e8c2c"
     },
     "at": "2026-09-15T23:47:58Z"
+  },
+  "previousPackage": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+  "v26RegisteredAdapters": {
+    "digest": "7U81cRhXeoiLNEMfCfbPmBT3NZvtwjXZP5d4hLzgLHdz",
+    "package": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+    "functions": [
+      "bten::cetus_swap_registered_a2b",
+      "bten::cetus_swap_registered_b2a",
+      "bten::cetus_swap_registered_a2b_return",
+      "bten::cetus_swap_registered_b2a_return"
+    ]
+  },
+  "walSuiTraderRebate": {
+    "amountRaw": 1,
+    "amountBten": "0.00000001",
+    "funding": "EmissionState.route_fee_vault",
+    "noMint": true,
+    "maxBatch": 1000,
+    "underfundedPolicy": "pay-what-you-can: stop when vault < 1 raw; leave remaining pending; call succeeds",
+    "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+    "create": "bten::create_wal_sui_trader_rebate_state",
+    "pay": "bten::pay_wal_sui_trader_rebates",
+    "accrueAdapters": [
+      "bten::cetus_swap_registered_a2b_rebate",
+      "bten::cetus_swap_registered_b2a_rebate"
+    ],
+    "accrueAttest": [
+      "bten::attest_external_cetus_route_rebate",
+      "bten::attest_external_cetus_routes_rebate"
+    ],
+    "stateObjectId": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a",
+    "createDigest": "5Ck3So5X8YvBsGpKboxCyiXWshaNAu3tLzHeCWnLRSw5",
+    "package": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+    "upgradeDigest": "6ijN86FiJCU1emcnAD5pargwHe5tVJodXRiA9z34144A",
+    "at": "2026-09-16T01:08:48.116422+01:00"
+  },
+  "v27WalSuiRebate": {
+    "digest": "6ijN86FiJCU1emcnAD5pargwHe5tVJodXRiA9z34144A",
+    "package": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+    "rebateState": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a",
+    "createDigest": "5Ck3So5X8YvBsGpKboxCyiXWshaNAu3tLzHeCWnLRSw5",
+    "at": "2026-09-16T01:08:48.116422+01:00"
   }
 }

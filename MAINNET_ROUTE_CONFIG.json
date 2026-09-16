@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v25-live",
-  "publishedVersion": 25,
-  "currentPackage": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
+  "status": "v27-live",
+  "publishedVersion": 27,
+  "currentPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -72,14 +72,25 @@
           "disabledAt": "2026-09-15T23:47:58Z"
         }
       ],
-      "poolRegistryNote": "USDT/USDC/DEEP/NS unregistered on-chain via bten::unregister_pool in v25; do not use for routes or ops LP. WAL/SUI Bandbot desk 0x72f5\u20263f17 registered via register_additional_pool (bucket=1) for gate/attest; not a BTEN-pair adapter pool.",
+      "poolRegistryNote": "USDT/USDC/DEEP/NS unregistered on-chain via bten::unregister_pool in v25. WAL/SUI Bandbot desk 0x72f5\u20263f17 registered (bucket=1). v26: Bandbot SUI\u2194WAL via bten::cetus_swap_registered_b2a / a2b (Pool<WAL,SUI>) natively emits RouteRecorded; WAL\u2192BTEN still uses BTEN-pair adapters.",
       "bandbotWalSuiPool": {
         "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
         "pair": "WAL/SUI",
         "bucket": 1,
-        "note": "WAL/SUI Bandbot desk \u2014 registered for gate/attest; not a BTEN-pair adapter pool",
+        "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> \u2014 registered adapters + 1-raw trader rebate from route_fee_vault via *_rebate / pay_wal_sui_trader_rebates (max 1000).",
         "registeredDigest": "Htvyk9p7VPVkeZpu8TbvsNKE9bNrhn5iyipTNmqHr3MM",
-        "registeredAt": "2026-09-16T00:00:00+01:00"
+        "registeredAt": "2026-09-16T00:00:00+01:00",
+        "coinOrder": "Pool<WAL,SUI>",
+        "adapters": {
+          "a2b": "bten::cetus_swap_registered_a2b",
+          "b2a": "bten::cetus_swap_registered_b2a",
+          "a2bReturn": "bten::cetus_swap_registered_a2b_return",
+          "b2aReturn": "bten::cetus_swap_registered_b2a_return"
+        },
+        "rebateRaw": 1,
+        "rebateSource": "route_fee_vault",
+        "rebateBatchMax": 1000,
+        "rebatePolicy": "pay-what-you-can from route_fee_vault; no uncapped mint"
       }
     },
     {
@@ -274,7 +285,7 @@
     "managedRebalancePolicy": "config/managed_rebalance_policy.json",
     "turbosAdapterPlan": "config/turbos_adapter_plan.json"
   },
-  "upgradeTx": "AwfnPvTxo1Fv7hYgE1bhjHy84VSRoGsEQRFBBR37PzLH",
+  "upgradeTx": "6ijN86FiJCU1emcnAD5pargwHe5tVJodXRiA9z34144A",
   "v17Proofs": {
     "cetusSuiToBten": {
       "tx": "2vD23DFGXoLsV2qyBfWMLFeTR8humxhmuZDGVEQhcBWw",
@@ -285,9 +296,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
+  "livePackageId": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688",
+  "previousPackageId": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -455,5 +466,35 @@
     "upgradeCapPolicy": "Compatible (0)",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c"
   },
-  "poolRegistrySize": 8
+  "poolRegistrySize": 8,
+  "v26": {
+    "digest": "7U81cRhXeoiLNEMfCfbPmBT3NZvtwjXZP5d4hLzgLHdz",
+    "package": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+    "note": "registered-pool adapters"
+  },
+  "walSuiTraderRebate": {
+    "amountRaw": 1,
+    "funding": "route_fee_vault",
+    "maxBatch": 1000,
+    "underfundedPolicy": "pay-what-you-can",
+    "stateObjectId": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a",
+    "package": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703"
+  },
+  "v27": {
+    "digest": "6ijN86FiJCU1emcnAD5pargwHe5tVJodXRiA9z34144A",
+    "package": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+    "previous": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
+    "rebateState": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a",
+    "createRebateDigest": "5Ck3So5X8YvBsGpKboxCyiXWshaNAu3tLzHeCWnLRSw5",
+    "added": [
+      "bten::cetus_swap_registered_a2b_rebate",
+      "bten::cetus_swap_registered_b2a_rebate",
+      "bten::pay_wal_sui_trader_rebates",
+      "bten::create_wal_sui_trader_rebate_state",
+      "bten::attest_external_cetus_route_rebate",
+      "bten::attest_external_cetus_routes_rebate"
+    ],
+    "rebate": "1 raw BTEN from route_fee_vault per WAL/SUI qualifying trade; max 1000/batch; pay-what-you-can",
+    "at": "2026-09-16T01:08:48.116422+01:00"
+  }
 }
