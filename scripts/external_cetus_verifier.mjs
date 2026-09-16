@@ -55,13 +55,13 @@ function readPublishedTomlPackageIds() {
 
 function resolvePackageIds() {
   const published = readPublishedTomlPackageIds();
-  // Prefer top-level live/current package (v23+). Nested verifier.livePackageId can lag upgrades.
+  // Prefer top-level live/current package (v28+). policy.livePackageId can lag upgrades.
   const livePackageId = normalHex(
-    policy.livePackageId
+    mainnet.currentPackage
       || mainnet.livePackageId
-      || mainnet.currentPackage
       || published.publishedAt
-      || verifier.livePackageId,
+      || verifier.livePackageId
+      || policy.livePackageId,
   );
   const originalPackageId = normalHex(
     mainnet.originalPackageId

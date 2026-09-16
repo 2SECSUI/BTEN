@@ -33,9 +33,9 @@
   },
   "minTradesPerBlock": 10,
   "gatedMeans": "Trade-gated: min(pending, batch_trades/10, 100) per settle; 10 receipts per block",
-  "livePackageId": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
-  "livePackageVersion": 24,
-  "cacheBust": "20260915T231600Z",
+  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "livePackageVersion": 28,
+  "cacheBust": "20260916T002900Z",
   "hopsRequired": 10,
   "tradeBar": true,
   "maxSettleBlocks": 100
