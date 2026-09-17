@@ -2,12 +2,12 @@
 /// (no discount). Pricing source of truth is keeper-posted mist SUI/BTEN from
 /// Cetus `Pool<WAL,BTEN>` × `Pool<WAL,SUI>` (see scripts/ops_buy_desk_sync_price.mjs).
 ///
-/// Prefer `buy_with_sui_posted_price` for settlement. Legacy `buy_with_sui` still
+/// Prefer `buy_with_sui_posted_price_ops_fee` for settlement (v30 ops fee). Legacy `buy_with_sui` still
 /// reads `current_sqrt_price` on a configured `Pool<BTEN, SUI>` in-transaction;
 /// that path is optional — the Cetus BTEN/SUI pool is left OPEN and must not be
 /// unregistered for this desk rewire. Keeper must stay running for fair posted pricing.
 module bten::ops_buy_desk {
-    use bten::bten::{BTEN, RegistryAdminCap};
+    use bten::bten::{Self, BTEN, RegistryAdminCap, OpsInteractionFeeConfig};
     use sui::balance::{Self, Balance};
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
@@ -31,6 +31,8 @@ module bten::ops_buy_desk {
     const E_BAD_POOL: u64 = 8;
     const E_NOT_UPDATER: u64 = 9;
     const E_OVERFLOW: u64 = 10;
+    /// Legacy free buy disabled — use `*_ops_fee` (v30).
+    const E_OPS_FEE_REQUIRED: u64 = 11;
 
     /// Capability for ops inventory / config of the buy desk.
     public struct OpsBuyDeskAdminCap has key, store { id: UID }
@@ -243,7 +245,7 @@ module bten::ops_buy_desk {
         });
     }
 
-    /// Public buy: pay `Coin<SUI>`, receive BTEN at **on-chain Cetus pool mid**.
+    /// v30: free path disabled — use `buy_with_sui_ops_fee`.  Public buy: pay `Coin<SUI>`, receive BTEN at **on-chain Cetus pool mid**.
     /// No discount. `min_bten_out` is the buyer slippage floor.
     public entry fun buy_with_sui(
         desk: &mut OpsBuyDesk,
@@ -252,6 +254,22 @@ module bten::ops_buy_desk {
         min_bten_out: u64,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges default 0.5 SUI to ops, then settles the buy.
+    /// Public buy: pay `Coin<SUI>`, receive BTEN at **on-chain Cetus pool mid**.
+    /// No discount. `min_bten_out` is the buyer slippage floor.
+    public entry fun buy_with_sui_ops_fee(
+        desk: &mut OpsBuyDesk,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        pool: &Pool<BTEN, SUI>,
+        payment: Coin<SUI>,
+        min_bten_out: u64,
+        ctx: &mut TxContext,
+    ) {
+        bten::collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert!(!desk.paused, E_PAUSED);
         let pool_addr = object::id_to_address(&object::id(pool));
         assert!(pool_addr == desk.pool_id, E_BAD_POOL);
@@ -266,7 +284,7 @@ module bten::ops_buy_desk {
         settle_buy(desk, payment, sui_in, bten_out, min_bten_out, effective_price, /*pricing=*/0, ctx);
     }
 
-    /// Primary buy at the keeper-posted mid (`price_mist_sui_per_bten`).
+    /// v30: free path disabled — use `buy_with_sui_posted_price_ops_fee`.  Primary buy at the keeper-posted mid (`price_mist_sui_per_bten`).
     /// Keeper must keep this equal to WAL-implied mid (BTEN/WAL × WAL/SUI; no discount).
     public entry fun buy_with_sui_posted_price(
         desk: &mut OpsBuyDesk,
@@ -274,6 +292,21 @@ module bten::ops_buy_desk {
         min_bten_out: u64,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges default 0.5 SUI to ops, then settles the buy.
+    /// Primary buy at the keeper-posted mid (`price_mist_sui_per_bten`).
+    /// Keeper must keep this equal to WAL-implied mid (BTEN/WAL × WAL/SUI; no discount).
+    public entry fun buy_with_sui_posted_price_ops_fee(
+        desk: &mut OpsBuyDesk,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        payment: Coin<SUI>,
+        min_bten_out: u64,
+        ctx: &mut TxContext,
+    ) {
+        bten::collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert!(!desk.paused, E_PAUSED);
         let sui_in = coin::value(&payment);
         assert!(sui_in > 0, E_ZERO_INPUT);

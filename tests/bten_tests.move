@@ -2,6 +2,7 @@
 module bten::bten_tests {
     use bten::bten;
     use sui::coin;
+    use sui::sui::SUI;
     use sui::clock::{Self, Clock};
     use sui::test_scenario;
     use sui::transfer;
@@ -920,5 +921,485 @@ module bten::bten_tests {
         };
         scenario.end();
     }
+
+
+    /// v29: permissionless WAL/SUI attest happy path (any signer, no Cap).
+    #[test]
+    fun attest_wal_sui_external_route_happy_path() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let anyone = @0xE;
+        let pool = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+        let trader = @0xD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 0, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_paused(&mut verifier, &admin_cap, false);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        // Non-keeper signer — Cap not required for WAL/SUI path.
+        scenario.next_tx(anyone);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let clock = scenario.take_shared<Clock>();
+            let digest = vector[
+                9u8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+                9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+            ];
+            assert!(bten::wal_sui_pool_id() == pool, 700);
+            bten::attest_wal_sui_external_route(
+                &mut state, &registry, &mut verifier, pool, digest, 0,
+                trader, 1, bten::wal_sui_event_kind_swap(), &clock, scenario.ctx(),
+            );
+            assert!(bten::batch_trades(&state) == 1, 701);
+            assert!(bten::external_verifier_events_today(&verifier) == 1, 702);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    /// v29: wrong pool_id aborts with E_WAL_SUI_POOL_MISMATCH (44).
+    #[test]
+    #[expected_failure(abort_code = 44)]
+    fun attest_wal_sui_external_route_wrong_pool_aborts() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let anyone = @0xE;
+        let wrong_pool = @0xC;
+        let trader = @0xD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, wrong_pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 0, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_paused(&mut verifier, &admin_cap, false);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(anyone);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let clock = scenario.take_shared<Clock>();
+            let digest = vector[
+                8u8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+            ];
+            bten::attest_wal_sui_external_route(
+                &mut state, &registry, &mut verifier, wrong_pool, digest, 0,
+                trader, 1, bten::wal_sui_event_kind_add(), &clock, scenario.ctx(),
+            );
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+
+    /// v30: defaults for ops interaction fee.
+    #[test]
+    fun ops_interaction_fee_defaults() {
+        assert!(bten::default_ops_interaction_fee_mist() == 500_000_000, 800);
+        assert!(
+            bten::default_ops_fee_recipient()
+                == @0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a,
+            801,
+        );
+    }
+
+    /// v30: collect exact fee transfers to ops; underpay aborts separately.
+    #[test]
+    fun collect_ops_interaction_fee_happy_path() {
+        let admin = @0xA;
+        let payer = @0xC;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(payer);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            assert!(bten::ops_interaction_fee_mist(&fee_cfg) == 500_000_000, 810);
+            // Pay exact fee
+            let fee = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+
+        let ops = bten::default_ops_fee_recipient();
+        scenario.next_tx(ops);
+        {
+            let got = scenario.take_from_sender<coin::Coin<SUI>>();
+            assert!(coin::value(&got) == 500_000_000, 811);
+            scenario.return_to_sender(got);
+        };
+        scenario.end();
+    }
+
+    /// v30: remainder of overpay returned to payer.
+    #[test]
+    fun collect_ops_interaction_fee_returns_remainder() {
+        let admin = @0xA;
+        let payer = @0xC;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(payer);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let fee = coin::mint_for_testing<SUI>(700_000_000, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+
+        scenario.next_tx(payer);
+        {
+            let rem = scenario.take_from_sender<coin::Coin<SUI>>();
+            assert!(coin::value(&rem) == 200_000_000, 820);
+            scenario.return_to_sender(rem);
+        };
+        scenario.end();
+    }
+
+    /// v30: underpay aborts E_OPS_INTERACTION_FEE (46).
+    #[test]
+    #[expected_failure(abort_code = 46)]
+    fun collect_ops_interaction_fee_underpay_aborts() {
+        let admin = @0xA;
+        let payer = @0xC;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(payer);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let fee = coin::mint_for_testing<SUI>(499_999_999, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+        scenario.end();
+    }
+
+
+    /// v30: ops wallet sender is fee-waived (full coin returned; zero ok).
+    #[test]
+    fun collect_ops_interaction_fee_ops_sender_waived() {
+        let admin = @0xA;
+        let ops = @0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        assert!(bten::is_ops_interaction_fee_waived(ops), 840);
+        assert!(!bten::is_ops_interaction_fee_waived(@0xC), 841);
+
+        // Non-zero fee coin fully returned to ops sender (nothing to recipient).
+        scenario.next_tx(ops);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let fee = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+        scenario.next_tx(ops);
+        {
+            let rem = scenario.take_from_sender<coin::Coin<SUI>>();
+            assert!(coin::value(&rem) == 500_000_000, 842);
+            scenario.return_to_sender(rem);
+        };
+
+        // Zero-value fee coin accepted when waived.
+        scenario.next_tx(ops);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let fee = coin::mint_for_testing<SUI>(0, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+        scenario.end();
+    }
+
+    /// v30: random (non-allowlisted) sender is still charged >= fee.
+    #[test]
+    fun collect_ops_interaction_fee_random_sender_charged() {
+        let admin = @0xA;
+        let payer = @0xDEAD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        assert!(!bten::is_ops_interaction_fee_waived(payer), 850);
+
+        scenario.next_tx(payer);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let fee = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+
+        let ops = bten::default_ops_fee_recipient();
+        scenario.next_tx(ops);
+        {
+            let got = scenario.take_from_sender<coin::Coin<SUI>>();
+            assert!(coin::value(&got) == 500_000_000, 851);
+            scenario.return_to_sender(got);
+        };
+        scenario.end();
+    }
+
+    /// v30: admin can raise the fee; subsequent collect uses new amount.
+    #[test]
+    fun set_ops_interaction_fee_updates_amount() {
+        let admin = @0xA;
+        let payer = @0xC;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_ops_interaction_fee(&mut fee_cfg, &admin_cap, 1_000_000_000);
+            assert!(bten::ops_interaction_fee_mist(&fee_cfg) == 1_000_000_000, 830);
+            test_scenario::return_shared(fee_cfg);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(payer);
+        {
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            let fee = coin::mint_for_testing<SUI>(1_000_000_000, scenario.ctx());
+            bten::collect_ops_interaction_fee(&fee_cfg, fee, scenario.ctx());
+            test_scenario::return_shared(fee_cfg);
+        };
+
+        let ops = bten::default_ops_fee_recipient();
+        scenario.next_tx(ops);
+        {
+            let got = scenario.take_from_sender<coin::Coin<SUI>>();
+            assert!(coin::value(&got) == 1_000_000_000, 831);
+            scenario.return_to_sender(got);
+        };
+        scenario.end();
+    }
+
+
+    /// LP add + remove on WAL/SUI each bump batch_trades (gated receipts).
+    #[test]
+    fun attest_wal_sui_add_and_remove_both_gate() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let anyone = @0xE;
+        let pool = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+        let trader = @0xD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 0, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_paused(&mut verifier, &admin_cap, false);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(anyone);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let clock = scenario.take_shared<Clock>();
+            let digest_add = vector[
+                1u8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            ];
+            let digest_remove = vector[
+                2u8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            ];
+            assert!(bten::wal_sui_event_kind_add() == 2, 900);
+            assert!(bten::wal_sui_event_kind_remove() == 3, 901);
+            bten::attest_wal_sui_external_route(
+                &mut state, &registry, &mut verifier, pool, digest_add, 0,
+                trader, 1, bten::wal_sui_event_kind_add(), &clock, scenario.ctx(),
+            );
+            assert!(bten::batch_trades(&state) == 1, 902);
+            bten::attest_wal_sui_external_route(
+                &mut state, &registry, &mut verifier, pool, digest_remove, 0,
+                trader, 1, bten::wal_sui_event_kind_remove(), &clock, scenario.ctx(),
+            );
+            assert!(bten::batch_trades(&state) == 2, 903);
+            assert!(bten::external_verifier_events_today(&verifier) == 2, 904);
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
+    /// Invalid WAL/SUI event_kind aborts E_WAL_SUI_EVENT_KIND (45).
+    #[test]
+    #[expected_failure(abort_code = 45)]
+    fun attest_wal_sui_invalid_event_kind_aborts() {
+        let admin = @0xA;
+        let keeper = @0xB;
+        let anyone = @0xE;
+        let pool = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+        let trader = @0xD;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+
+        scenario.next_tx(admin);
+        {
+            let mut registry = scenario.take_shared<bten::PoolRegistry>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            let clock = scenario.take_shared<Clock>();
+            bten::register_pool(&mut registry, &admin_cap, pool, 1);
+            bten::finalize_pool_registry(&mut registry, &admin_cap);
+            bten::create_external_route_verifier(&registry, &admin_cap, keeper, 0, &clock, scenario.ctx());
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(clock);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(admin);
+        {
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::set_external_route_verifier_paused(&mut verifier, &admin_cap, false);
+            test_scenario::return_shared(verifier);
+            scenario.return_to_sender(admin_cap);
+        };
+
+        scenario.next_tx(anyone);
+        {
+            let mut state = scenario.take_shared<bten::EmissionState>();
+            let registry = scenario.take_shared<bten::PoolRegistry>();
+            let mut verifier = scenario.take_shared<bten::ExternalRouteVerifierState>();
+            let clock = scenario.take_shared<Clock>();
+            let digest = vector[
+                3u8, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            ];
+            bten::attest_wal_sui_external_route(
+                &mut state, &registry, &mut verifier, pool, digest, 0,
+                trader, 1, 99u8, &clock, scenario.ctx(),
+            );
+            test_scenario::return_shared(state);
+            test_scenario::return_shared(registry);
+            test_scenario::return_shared(verifier);
+            test_scenario::return_shared(clock);
+        };
+        scenario.end();
+    }
+
 
 }

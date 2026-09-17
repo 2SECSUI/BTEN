@@ -1,8 +1,8 @@
 {
   "network": "mainnet",
-  "status": "v28-live",
-  "publishedVersion": 28,
-  "currentPackage": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "status": "v30-live | LP add+remove gated via external Cetus attest (swap/add/remove); ops interaction fee 0.5 SUI on trader *_ops_fee paths.",
+  "publishedVersion": 30,
+  "currentPackage": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
   "publicIntegration": "config/block10_integration.json",
   "lpProgrammePolicy": "config/lp_program_policy.json",
   "btenCoinType": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::BTEN",
@@ -28,12 +28,14 @@
       "enabled": true,
       "pools": [
         "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+        "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
         "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
         "0x2eb3cd887c38a20c7d4775a02847f8cbf55f1648bbfe3931420cb06180eb9128",
         "0xf6c5df04eb488373c8309b96f0ea187aada7c3b446b3fb6ef5f73f222eaa5f0c",
         "0x0d78599b20124110383d0378e52307b67ee0db3e1216397a3d0cd538e9c49cb6",
         "0x2090da44a439e9669d2182da4a875de5c427cf5679662e8c293312208df8d427",
-        "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17"
+        "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+        "0x3ea08eda95787196aa5afb3880b4f22eaf548bfc3cab4e209d3864c6cfb426f3"
       ],
       "activeTestedPairs": [
         "BTEN/NAVX",
@@ -45,14 +47,8 @@
       "excludedPairs": [
         "BTEN/vSUI"
       ],
-      "walPoolNote": "BTEN/WAL pool 0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7 is registered (bucket 1). Swaps and liquidity adds are external-verifier gated; block release stays ~10 min time slots, not a 10-trade bar.",
+      "walPoolNote": "BTEN/WAL pool 0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7 is registered (bucket 1). Swaps, liquidity adds, and liquidity removes are external-verifier gated; block release stays ~10 min time slots, not a 10-trade bar.",
       "disabledPools": [
-        {
-          "pool": "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
-          "pair": "BTEN/USDT",
-          "reason": "do-not-use; unregistered from PoolRegistry (bleed remove v25)",
-          "disabledAt": "2026-09-15T23:47:58Z"
-        },
         {
           "pool": "0x26dd78ba541b00dc3fbf4c2833551c27c6aa33055ae63612290ddbfcf42c4b45",
           "pair": "BTEN/USDC",
@@ -72,12 +68,12 @@
           "disabledAt": "2026-09-15T23:47:58Z"
         }
       ],
-      "poolRegistryNote": "USDT/USDC/DEEP/NS unregistered on-chain via bten::unregister_pool in v25. WAL/SUI Bandbot desk 0x72f5…3f17 registered (bucket=1). v26: Bandbot SUI↔WAL via bten::cetus_swap_registered_b2a / a2b (Pool<WAL,SUI>) natively emits RouteRecorded; WAL→BTEN still uses BTEN-pair adapters.",
+      "poolRegistryNote": "v25 unregistered USDC/DEEP/NS (USDT re-registered AF3NK64a43N6sPCcZqdsy1bUbi8m6TseYK5KU1qxGaCX bucket=1). BTEN/SUI 0x7f46\u20262950 remains registered OPEN reward sink. WAL/SUI Bandbot desk 0x72f5\u20263f17 registered (bucket=1). Do not touch WAL/SUI desk LP. | BTEN/HAEDAL 0x3ea08eda95787196aa5afb3880b4f22eaf548bfc3cab4e209d3864c6cfb426f3 registered bucket=1 (oTiE9dVoQGGKJXWPf9tJfQBURTfAZYnmkY1dibj5pvD).",
       "bandbotWalSuiPool": {
         "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
         "pair": "WAL/SUI",
         "bucket": 1,
-        "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> — registered adapters + 1-raw trader rebate from route_fee_vault via *_rebate / pay_wal_sui_trader_rebates (max 1000).",
+        "note": "WAL/SUI Bandbot desk Pool<WAL,SUI> \u2014 registered adapters + 1-raw trader rebate from route_fee_vault via *_rebate / pay_wal_sui_trader_rebates (max 1000).",
         "registeredDigest": "Htvyk9p7VPVkeZpu8TbvsNKE9bNrhn5iyipTNmqHr3MM",
         "registeredAt": "2026-09-16T00:00:00+01:00",
         "coinOrder": "Pool<WAL,SUI>",
@@ -91,13 +87,6 @@
         "rebateSource": "route_fee_vault",
         "rebateBatchMax": 1000,
         "rebatePolicy": "pay-what-you-can from route_fee_vault; no uncapped mint"
-      },
-      "priceTruthNote": "Buy/Swap pricing = WAL-implied BTEN (BTEN/WAL × WAL/SUI). Pool 0x7f46…2950 BTEN/SUI is OPEN legacy/display-only.",
-      "buyPathNote": "Primary BTEN purchase = BTEN/WAL 0xa9f12a… only. any-coin → WAL → BTEN.",
-      "btenSuiPoolRole": {
-        "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
-        "role": "legacy-display-only",
-        "neverUnregister": true
       }
     },
     {
@@ -131,7 +120,7 @@
     "requiresSuiSponsorBudget": true
   },
   "externalCetusVerifier": {
-    "entrypoint": "bten::attest_external_cetus_route",
+    "entrypoint": "bten::attest_wal_sui_external_route",
     "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
     "cap": "0xd321f14d2620a79c1c7da73c0f4149b6abeb2a19251fd0e423c27fd1d9f10e1d",
     "dailyEventCap": 0,
@@ -142,10 +131,14 @@
     "status": "active-public-event-reader",
     "activationTransaction": "59Yg7FtvQ7R5rrgVq8xrHK7hxoCQ9oNxVoXARoHe6FXW",
     "keeper": "0xd833a2ffe167e0bd56205b6b4e4a4bd78e035ff899a788fc892b5be713b76474",
-    "security": "Only the verifier capability held by the dedicated keeper can attest. Gated external volume includes Cetus swaps AND liquidity adds on registered BTEN pools (SwapEvent / AddLiquidityEvent / AddLiquidityV2Event). Attestation increments batch_trades toward the v16 trade gate (10 receipts per block, MAX_SETTLE=100).",
-    "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+    "security": "WAL/SUI path is permissionless (no Cap) via attest_wal_sui_external_route*. Other registered pools still require ExternalRouteVerifierCap + keeper sender. Replay protected by processed table.",
+    "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
     "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
     "eventTypes": [
+      "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::WalSuiExternalAttested",
+      "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::ExternalCetusRouteAttested",
+      "0x8f4ee2f47e61dd1f6657492020934e3fc06bec36da782c4ba02c5fd17ab37ca5::bten::ExternalCetusRouteAttested",
+      "0x8f4ee2f47e61dd1f6657492020934e3fc06bec36da782c4ba02c5fd17ab37ca5::bten::WalSuiExternalAttested",
       "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c::bten::ExternalCetusRouteAttested",
       "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688::bten::ExternalCetusRouteAttested",
       "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896::bten::ExternalCetusRouteAttested",
@@ -154,7 +147,7 @@
       "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
       "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested"
     ],
-    "liveTapeRule": "Display only. Emission gating is the attestation receipt itself for swaps and liquidity adds on registered BTEN Cetus pools. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
+    "liveTapeRule": "Display only. Emission gating is the attestation receipt itself for swaps, liquidity adds, and liquidity removes on registered BTEN Cetus pools. One gate receipt per transaction digest even when multiple BTEN pools are touched.",
     "exampleAggregatorDigest": "8CzMG6mnfGMyWSNBER9FGmJMqwmDyLUoWDELnBUFkA7h",
     "attestationKeyFormat": "base64(32-byte-digest):event_sequence",
     "paused": false,
@@ -174,17 +167,34 @@
     "oneReceiptPerDigest": true,
     "gatedEventKinds": [
       "swap",
-      "liquidity_add"
+      "liquidity_add",
+      "liquidity_remove"
     ],
     "cetusEventTypes": [
       "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent",
       "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::AddLiquidityEvent",
-      "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event"
+      "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event",
+      "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::RemoveLiquidityEvent",
+      "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::RemoveLiquidityV2Event"
     ],
     "exampleLiquidityAddDigest": "99vJkJJ7xUv7QQdwafgJjLWRCqp4QXtV9FDBUFTtXVtz",
     "priorityDigests": [],
     "dailyEventCapNote": "0 = unlimited (v28); on-chain assert skipped when daily_event_cap==0",
-    "autoGateNote": "WAL/SUI pool 0x72f5… is in venues.cetus.pools; SwapEvent+AddLiquidity(+V2) attested by external_cetus_verifier when keeper loop runs. Registered cetus_swap_registered_* emit RouteRecorded instantly. Continuous schedule left DISABLED pending gas OK."
+    "autoGateNote": "v29: WAL/SUI attest via permissionless attest_wal_sui_external_route* (Cap NOT required). GH keeper stays DISABLED; Bandbot runs attest. Swap/Add/Remove(+V2) kinds 1/2/3.",
+    "walSuiEntrypoints": {
+      "single": "bten::attest_wal_sui_external_route",
+      "batch": "bten::attest_wal_sui_external_routes",
+      "singleRebate": "bten::attest_wal_sui_external_route_rebate",
+      "batchRebate": "bten::attest_wal_sui_external_routes_rebate",
+      "capRequired": false,
+      "eventKinds": {
+        "swap": 1,
+        "add": 2,
+        "remove": 3
+      },
+      "note": "v29 permissionless WAL/SUI-only; Cap still required for attest_external_cetus_route* on other pools"
+    },
+    "lpGateNote": "Registered-pool Cetus LP add and LP remove are emission-gated the same way as swaps: external attest bumps batch_trades (one receipt/digest). WAL/SUI uses permissionless attest_wal_sui_external_route with event_kind 2=add / 3=remove. Other pools use Cap-gated attest_external_cetus_route. No trader-facing BTEN LP entrypoints; protocol deploy_* paths are Cap-gated ops and remain uncharged (attest-only keepers also uncharged)."
   },
   "routeRebate": {
     "state": "0x3ee90e618bc814feb124b4a783ff43015777945d30d98f6857953dbb3ed818c8",
@@ -204,7 +214,7 @@
     ],
     "allocationPerAllowlistedPoolRaw": "400000000",
     "remainingProgrammeBtenRaw": "0",
-    "status": "Deployed: prior ~5885 BTEN protocol_liquidity + subsequent settle accruals into Cetus OOR positions across 10 allowlisted pools by lp_program_policy weights; programme balance 0 after 2026-09-13 ops release. | v25: unregistered USDT+USDC+DEEP+NS from PoolRegistry; ops LPs on those pools closed.",
+    "status": "Deployed: prior ~5885 BTEN protocol_liquidity + subsequent settle accruals into Cetus OOR positions across 10 allowlisted pools by lp_program_policy weights; programme balance 0 after 2026-09-13 ops release. | v25: unregistered USDT+USDC+DEEP+NS from PoolRegistry; ops LPs on those pools closed. | 2026-09-16: BTEN/USDT re-registered AF3NK64a43N6sPCcZqdsy1bUbi8m6TseYK5KU1qxGaCX; BTEN/SUI+USDT marked OPEN reward sinks.",
     "positions": [
       {
         "asset": "SUI",
@@ -303,9 +313,9 @@
       "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950"
     }
   },
-  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+  "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
   "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
-  "previousPackageId": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "previousPackageId": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
   "v18": {
     "live": true,
     "packageVersion": 18,
@@ -322,7 +332,7 @@
     "magmaBluefinAdapterPlan": "config/magma_bluefin_adapter_plan.json",
     "liveTape": "treatAllLiveTapeAsGated",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) — still upgradeable"
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable"
   },
   "liveTape": {
     "treatAllLiveTapeAsGated": true,
@@ -369,9 +379,9 @@
     "tradeBar": true,
     "blockTimeSecs": 600
   },
-  "pendingPackageVersion": 28,
-  "livePackageVersion": 28,
-  "packageStatus": "v28-live",
+  "pendingPackageVersion": 24,
+  "livePackageVersion": 29,
+  "packageStatus": "v24-live",
   "v20Status": "superseded-by-v22",
   "v20": {
     "live": true,
@@ -381,7 +391,7 @@
     "previousPackageId": "0xd439e5d4bff20efb36c62722ca999a229fcbde019cf3ddea74f0b526409bed7e",
     "v19UpgradeTx": "aZXWoQssttz7N6EQSwziYdyuQKh3642R61rXYLxjXsB",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) — still upgradeable",
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
     "emission": "time-pending catch-up without trade bar; 600s pace once caught up"
   },
   "v21Status": "superseded-by-v22",
@@ -393,7 +403,7 @@
     "previousPackageId": "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc",
     "v20UpgradeTx": "4aRdUQqshwnmU1c7shC84Foq8pmska6zzYWcR4QfUv4s",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c",
-    "upgradeCapPolicy": "compatible (0) — still upgradeable",
+    "upgradeCapPolicy": "compatible (0) \u2014 still upgradeable",
     "emission": "Bitcoin-style MAX_SETTLE_BLOCKS=1; 600s advance_slots; no bulk catch-up dumps",
     "supersededBy": "0x636c670a9454013ae7ea96046279b75821b339146598b68661b9b06a26eb61f6"
   },
@@ -406,8 +416,8 @@
     "fix": "auto_pay_trader u128 intermediate to avoid u64 overflow",
     "supersededBy": "v23"
   },
-  "cacheBust": "20260916T194500Z-wal-buy-path",
-  "uiRevision": "v28-wal-buy-path",
+  "cacheBust": "20260915T231600Z",
+  "uiRevision": "v24-v16-trade-gate",
   "dappUiPolicy": {
     "hopsRequired": 10,
     "tradeBar": true,
@@ -452,7 +462,7 @@
     "gasMist": 272061740,
     "note": "Compatible upgrade restoring v16 emission; keep ManagedVault, OpsBuyDesk, auto_pay u128, external attest"
   },
-  "previousPackage": "0xd09ce79839cac09cb2bf8a24b223fb4580268045805863b29b6bcfcea043d703",
+  "previousPackage": "0x541218960bce9fb0c1c8677691687bea9d4d64d9cc868c28e06aab1381ed797f",
   "v25": {
     "package": "0xfd25d25c6367bdb9591805b9ded083f30a6c928944c11a8135bc61ab5c41d4ec",
     "upgradeDigest": "FdGQDSwPsVH85gZNme1cSzAMpGixG5MFT26fxRW7fLsF",
@@ -473,7 +483,7 @@
     "upgradeCapPolicy": "Compatible (0)",
     "upgradeCap": "0x97744b65d7241a102c68016bc568eab7552e1d72a1a0583a054b9dff51b2c10c"
   },
-  "poolRegistrySize": 8,
+  "poolRegistrySize": 10,
   "v26": {
     "digest": "7U81cRhXeoiLNEMfCfbPmBT3NZvtwjXZP5d4hLzgLHdz",
     "package": "0xa3c678ade7baaa4a27ddd7176a750700d41cf5e7e8c0ebcff7112a23ca11f5ff",
@@ -515,34 +525,70 @@
     "setDailyCapDigest": "26NRdyGhtHuuAnBz9wNbkEeYvV44jwVmFbBzpy8CWTbE",
     "at": "2026-09-16T01:22:46.336455+01:00"
   },
-  "priceTruth": {
-    "mode": "wal-implied-bten",
-    "cetusBtenWalPool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
-    "cetusWalSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
-    "cetusBtenSuiPoolLegacy": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
-    "rule": "One price story: BTEN/WAL × WAL/SUI. BTEN/SUI is OPEN legacy display only — not pricing, not primary buy.",
-    "docs": "docs/BUY_VIA_WAL.md"
-  },
-  "buyPath": {
-    "mandate": "any-input-coin → WAL → BTEN",
-    "primaryBtenPurchasePool": "0xa9f12a204ac1cb778c015e77a88fc8eb5926599ece17b2a8841753c7712544c7",
-    "adapters": [
-      "bten::cetus_swap_to_bten",
-      "bten::cetus_swap_to_bten_b2a"
+  "v29": {
+    "digest": "4kpc4Z3tf8oXnH2pb9AS5PrVJKwXYQMhkudK19Af31YR",
+    "package": "0x8f4ee2f47e61dd1f6657492020934e3fc06bec36da782c4ba02c5fd17ab37ca5",
+    "previous": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
+    "upgradeCapPolicy": 0,
+    "permissionlessWalSui": true,
+    "added": [
+      "bten::attest_wal_sui_external_route",
+      "bten::attest_wal_sui_external_routes",
+      "bten::attest_wal_sui_external_route_rebate",
+      "bten::attest_wal_sui_external_routes_rebate",
+      "bten::WalSuiExternalAttested"
     ],
-    "neverPurchaseBtenVia": [
-      "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
-      "BTEN/CETUS",
-      "BTEN/NAVX",
-      "BTEN/MAGMA",
-      "BTEN/TURBOS"
-    ],
-    "note": "Side BTEN LPs may remain registered for emission/attestation and exits, but Block10 Buy must not open or use them as the purchase leg. Never unregister BTEN/SUI. Never open new side BTEN LPs for Buy.",
-    "docs": "docs/BUY_VIA_WAL.md"
+    "eventKinds": {
+      "1": "swap",
+      "2": "add",
+      "3": "remove"
+    },
+    "note": "WAL/SUI-only Cap-free attest; other pools remain Cap-gated",
+    "at": "2026-09-16T20:44:02+01:00"
   },
-  "bandbotIntegration": {
-    "configuration": "config/bandbot_bten_integration.json",
-    "docs": "docs/BANDBOT_BTEN_INTEGRATION.md",
-    "dryRunScript": "scripts/bandbot_harvest_sink_settle_dryrun.mjs"
-  }
+  "rewardSinksOpen": {
+    "updatedAt": "2026-09-16T21:34:49Z",
+    "btenSui": {
+      "pool": "0x7f46bdbd74d2f162617376e4cecccb2c603bb9459766226d1359b38a605a2950",
+      "registry": "already-registered",
+      "status": "OPEN reward sink",
+      "registerTx": null,
+      "confirmedAt": "2026-09-16T21:34:49Z"
+    },
+    "btenUsdt": {
+      "pool": "0x6b1d71d696993b11561d80e5f0d952e845086a6418766dda4c67cca8db17e19c",
+      "registry": "registered",
+      "status": "OPEN reward sink",
+      "registerDigest": "AF3NK64a43N6sPCcZqdsy1bUbi8m6TseYK5KU1qxGaCX",
+      "bucket": 1,
+      "fn": "bten::register_additional_pool",
+      "coinOrder": "Pool<USDT,BTEN>",
+      "liquidityNote": "Cetus liquidity=0; residual dust only \u2014 LP seed still needed if programme wants depth",
+      "confirmedAt": "2026-09-16T21:34:49Z"
+    },
+    "btenHaedal": {
+      "pool": "0x3ea08eda95787196aa5afb3880b4f22eaf548bfc3cab4e209d3864c6cfb426f3",
+      "position": "0xaf2882f18d23f1ffbf6e629cafbb9c65e30df20c1a214e97c049f43efb2de369",
+      "registry": "registered",
+      "status": "OPEN reward sink \u2014 farm HAEDAL harvests",
+      "registerDigest": "oTiE9dVoQGGKJXWPf9tJfQBURTfAZYnmkY1dibj5pvD",
+      "createDigest": "3LMsByDB587eiZDav29aXg2deYyJ1uGNa8wVbUM8BmWq",
+      "buyHaedalDigest": "8DT9nJPEQdTmzUrvuPnvnLuRNEWTx8MMmvLCfXUGAtcb",
+      "bucket": 1,
+      "fn": "bten::register_additional_pool",
+      "coinOrder": "Pool<HAEDAL,BTEN>",
+      "feeRate": 2500,
+      "tickSpacing": 60,
+      "seeded": {
+        "haedal": "104.532943068",
+        "bten": "1300.0",
+        "haedalRaw": "104532943068",
+        "btenRaw": "130000000000",
+        "note": "tiny farm sink; HAEDAL bought with SUI then seeded"
+      }
+    }
+  },
+  "packageVersion": 30,
+  "opsInteractionFeeConfig": "0xef706ead1654afa2276f94ffda82b4193a50c0bdeb6e497354f20712d72949e6",
+  "upgradeDigestV30": "Ebi51YT32ycRuodWk2CU5uMYGpwKZTFiNbXjuyAzzeFM"
 }

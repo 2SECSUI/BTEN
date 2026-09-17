@@ -6,24 +6,24 @@
   "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
   "routeTreasuryState": "0xf1992cffa7d4980cd03f37a114bd49fc01a1edef09213cffaec7c0f081fa23ce",
   "settlement": {
-    "enabled": true,
+    "enabled": false,
     "maximumBlocksPerRun": 100,
     "gasBudgetMist": "30000000",
     "routesPerBlock": 10,
-    "note": "v24: restore v16 trade-gated settle. eligible = min(pending, batch_trades/10, 100). On-chain MIN_TRADES_PER_BLOCK=10, MAX_SETTLE_BLOCKS=100. Surplus trades do not pre-unlock. GitHub execute loops settle until eligible==0 or maximumSettleCallsPerRun.",
+    "note": "DISABLED \u2014 Bandbot WAL/SUI keeper owns attest; GH settle stays off (Michael).",
     "tradeBar": true,
     "maximumSettleCallsPerRun": 30
   },
   "treasurySync": {
-    "enabled": true
+    "enabled": false
   },
   "lpProgrammeAccrual": {
-    "enabled": true,
+    "enabled": false,
     "state": "0x9e9fb23df5d54146a7ace1712cb8e4bcd1dd99dcec93c7f60f323d50d1a1acb0",
     "reason": "The finalized, unpaused V9 LP programme may receive accrued BTEN. The keeper cannot withdraw, swap, add liquidity, fund farms, or access any capability."
   },
   "nativeFarmSync": {
-    "enabled": true,
+    "enabled": false,
     "state": "0x49fcdc714509043ac3ead1ce1d4fbd72ab3f2060f60a50d1db7c5bc289ef4e58",
     "reason": "Permissionless deterministic sync only moves the fixed staking allocation for blocks released after the farm started. The keeper receives no farm admin capability and cannot withdraw principal or rewards."
   },
@@ -33,10 +33,16 @@
   },
   "minTradesPerBlock": 10,
   "gatedMeans": "Trade-gated: min(pending, batch_trades/10, 100) per settle; 10 receipts per block",
-  "livePackageId": "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c",
-  "livePackageVersion": 28,
-  "cacheBust": "20260916T003800Z-restore-after-attest",
+  "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
+  "livePackageVersion": 30,
+  "cacheBust": "20260917T180000Z-v30-lp-add-remove-gated",
   "hopsRequired": 10,
   "tradeBar": true,
-  "maxSettleBlocks": 100
+  "maxSettleBlocks": 100,
+  "attest": {
+    "enabled": false,
+    "includeRemoveLiquidity": true,
+    "note": "DISABLED for GH execute \u2014 Bandbot/permissionless WAL/SUI + Cap path for other pools. When enabled, include swap + AddLiquidity(+V2) + RemoveLiquidity(+V2) on registered pools.",
+    "includeAddLiquidity": true
+  }
 }

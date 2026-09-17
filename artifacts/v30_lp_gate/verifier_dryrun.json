@@ -1,0 +1,183 @@
+{
+  "mode": "dry-run",
+  "targetDigest": null,
+  "packages": {
+    "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
+    "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
+    "eventTypes": [
+      "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::WalSuiExternalAttested",
+      "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::ExternalCetusRouteAttested",
+      "0x8f4ee2f47e61dd1f6657492020934e3fc06bec36da782c4ba02c5fd17ab37ca5::bten::ExternalCetusRouteAttested",
+      "0x8f4ee2f47e61dd1f6657492020934e3fc06bec36da782c4ba02c5fd17ab37ca5::bten::WalSuiExternalAttested",
+      "0x6e46f9b9fb500882f69ed96d370fc61153ff39b1056aef2a86485bc81b17324c::bten::ExternalCetusRouteAttested",
+      "0x193e41283f69201559581394b9bc8e9743e5411f9407b0609127421881843688::bten::ExternalCetusRouteAttested",
+      "0xf036a39e2c97ba69b4610788d64319e8343248ff972d70273c9b735d24265896::bten::ExternalCetusRouteAttested",
+      "0xc21ce53ebc5509aca282d42f4a3a6b950a051e6b39eccb114c9596cb25b124fc::bten::ExternalCetusRouteAttested",
+      "0x57be4e19af4806285d00fb199f6221e0446c585dacb0593ee1e646de1a8d4098::bten::ExternalCetusRouteAttested",
+      "0x7239537d82dcf0643b653020d138a4fedff419391bc6f0d34e23dee0f5bd8b3e::bten::ExternalCetusRouteAttested",
+      "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested",
+      "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::WalSuiExternalAttested"
+    ]
+  },
+  "verifier": {
+    "state": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
+    "paused": false,
+    "eventsToday": "45",
+    "dailyEventCap": "0"
+  },
+  "policy": {
+    "activationAfterMs": "1789210768409",
+    "fixedFeePoints": "1",
+    "oneReceiptPerTransaction": true,
+    "treatAllLiveTapeAsGated": true,
+    "blockTransactions": false,
+    "scannedPools": 9,
+    "alreadyAttestedInPublicLog": 0,
+    "eligibleBeforeCap": 186,
+    "attestationKeyFormat": "base64(digest):event_sequence",
+    "gatedKinds": [
+      "swap",
+      "liquidity_add",
+      "liquidity_remove"
+    ],
+    "walSuiPermissionless": true
+  },
+  "candidates": [
+    {
+      "digest": "7g5vPL3V5S2wRjAnL87eUZDgaR9AfgjkWHT39pF6QfWg",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x112be958ca71f6d437e551835745f100641fa069c18095a0eba98b9a1bff56d7",
+      "timestamp": "2026-09-17T17:02:19.436Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "CjXgNFLa7igL9mVVV4Z5JyrKWj4Axpexo7Zsavha3Wti",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0xa78642e07d836bcfc98a5267866201e3ad74d53a895ea687ae50c03b959306b2",
+      "timestamp": "2026-09-17T17:02:19.436Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "9bfNDd3JDr1qn415hbm54uC3uKqHrkw3PNaW1NzC8Tks",
+      "eventSequence": 4,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x112be958ca71f6d437e551835745f100641fa069c18095a0eba98b9a1bff56d7",
+      "timestamp": "2026-09-17T17:02:15.924Z",
+      "feePoints": "1",
+      "kind": "liquidity_remove"
+    },
+    {
+      "digest": "3wkVmcWrdStNXCDBv3FdM3NCzWmhivpTCQcHxRbMKMf9",
+      "eventSequence": 4,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0xa78642e07d836bcfc98a5267866201e3ad74d53a895ea687ae50c03b959306b2",
+      "timestamp": "2026-09-17T17:02:15.924Z",
+      "feePoints": "1",
+      "kind": "liquidity_remove"
+    },
+    {
+      "digest": "7KbxdK2Qvd2hRBHgyVGbX7YviEEF8juTVzWaWw7MAWuD",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x112be958ca71f6d437e551835745f100641fa069c18095a0eba98b9a1bff56d7",
+      "timestamp": "2026-09-17T17:01:38.878Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "HkXkU4eWPVmMaeQbuiBCQeFPJ9beqa2oueNPLV1VVHwT",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0xa78642e07d836bcfc98a5267866201e3ad74d53a895ea687ae50c03b959306b2",
+      "timestamp": "2026-09-17T17:01:38.878Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "22xSZua3JEMkNuu2Y7RUK1gZPiLFd33wjL3gCqpUZN9v",
+      "eventSequence": 4,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0xa78642e07d836bcfc98a5267866201e3ad74d53a895ea687ae50c03b959306b2",
+      "timestamp": "2026-09-17T17:01:34.682Z",
+      "feePoints": "1",
+      "kind": "liquidity_remove"
+    },
+    {
+      "digest": "HzLT2UmXEaiU5sXFUkWnF51kF5pnQACn8FGeKF5Rvb1X",
+      "eventSequence": 4,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x112be958ca71f6d437e551835745f100641fa069c18095a0eba98b9a1bff56d7",
+      "timestamp": "2026-09-17T17:01:34.682Z",
+      "feePoints": "1",
+      "kind": "liquidity_remove"
+    },
+    {
+      "digest": "6RRwfJwThv5XAAqVepAb66FZup3STcBFCqeWCpL6bdv",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x9dae5a145c094f5e548c598a74ad4634146a1915d9585476449dfa9418cf89cb",
+      "timestamp": "2026-09-17T17:01:06.911Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "84VFmUroyTVnRhESf4VAByHwjHBWvChk2eo7cXDqhLTz",
+      "eventSequence": 4,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x9dae5a145c094f5e548c598a74ad4634146a1915d9585476449dfa9418cf89cb",
+      "timestamp": "2026-09-17T17:01:04.062Z",
+      "feePoints": "1",
+      "kind": "liquidity_remove"
+    },
+    {
+      "digest": "59S4WzPuJMueZVZirVcoWVFscbBS1XN3iS6sGebQCpKE",
+      "eventSequence": 4,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x9dae5a145c094f5e548c598a74ad4634146a1915d9585476449dfa9418cf89cb",
+      "timestamp": "2026-09-17T16:58:44.294Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "GLx1dasRQF32LBq1ZjBrEyr2L9QHc63QMiRtV4DdRt11",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0xa78642e07d836bcfc98a5267866201e3ad74d53a895ea687ae50c03b959306b2",
+      "timestamp": "2026-09-17T16:58:43.020Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "Evz1Wzu8GPYf8HDCWdxb562BKGpAAWaA1p9R1WBSS4Az",
+      "eventSequence": 1,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x112be958ca71f6d437e551835745f100641fa069c18095a0eba98b9a1bff56d7",
+      "timestamp": "2026-09-17T16:58:42.596Z",
+      "feePoints": "1",
+      "kind": "liquidity_add"
+    },
+    {
+      "digest": "BWVkGXTFCUu8TPfLQFHo7QvdnRXHD1Cz4x8tTVB71czX",
+      "eventSequence": 0,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0xb3264caf737c1728001a9d837e44bf84092bd87a9afb5b1b6d1a0042b8a507da",
+      "timestamp": "2026-09-17T16:58:39.943Z",
+      "feePoints": "1",
+      "kind": "swap"
+    },
+    {
+      "digest": "GXzxfHzi7qktzZHoay97YLCRi48H8rH4TmJQN1eAYEYb",
+      "eventSequence": 33,
+      "pool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+      "trader": "0x13afdcdd1889b6b9041a7d3a1aea0edc204ba2df18f7bf8ffca15f11416f1a3d",
+      "timestamp": "2026-09-17T16:58:22.397Z",
+      "feePoints": "1",
+      "kind": "swap"
+    }
+  ],
+  "submitted": []
+}

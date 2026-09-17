@@ -1,0 +1,165 @@
+{
+  "jobId": "bten-laptop-earn-loop-daemon",
+  "network": "mainnet",
+  "status": "daemon-ready-disabled-by-default",
+  "dapp": "(not used — laptop daemon only)",
+  "localUi": "(not used — laptop daemon only)",
+  "docs": "config/laptop_earn_loop.json",
+  "related": {
+    "schedulerStub": "config/earn_loop_scheduler_stub.json",
+    "integration": "config/bandbot_bten_integration.json",
+    "walSuiKeeper": "config/bandbot_wal_sui_keeper.json",
+    "daemon": "scripts/laptop_earn_loop_daemon.mjs",
+    "redeem": "scripts/laptop_earn_loop_redeem_to_sui.mjs",
+    "state": "artifacts/v30/laptop_earn_loop_state.json",
+    "lastLiveReport": "artifacts/v30/FLASH_EARN_1SUI_FINAL_REPORT.txt"
+  },
+  "enabled": true,
+  "enabledNote": "File default is OFF. Daemon still runs dry ticks when started. Live requires enabled=true (optional) + env BTEN_EARN_LOOP_EXECUTE=1 + CLI --execute. Bluefin park/redeem also needs BTEN_BLUEFIN_EXECUTE=1.",
+  "pattern": "local-daemon-shells-out-to-flash-and-park",
+  "httpHooks": null,
+  "runner": {
+    "cwd": "/workspace/BTEN-work",
+    "daemonScript": "scripts/laptop_earn_loop_daemon.mjs",
+    "flashScript": "scripts/template_a_flash_earn_loop.mjs",
+    "parkScript": "scripts/earn_loop_park_residuals.mjs",
+    "redeemScript": "scripts/laptop_earn_loop_redeem_to_sui.mjs",
+    "node": "node",
+    "artifactsDir": "artifacts/v30",
+    "stateFile": "artifacts/v30/laptop_earn_loop_state.json",
+    "npmScript": "laptop:earn-daemon"
+  },
+  "cadence": {
+    "flashIntervalSec": 60,
+    "flashIntervalMs": 60000,
+    "redeemStartMin": 5,
+    "redeemIncrementMin": 1,
+    "redeemFraction": 0.5,
+    "redeemNote": "Redeem timer starts at 5 minutes, then +1 minute each redeem cycle (5→6→7…). On fire: redeem 50% of amounts added in the tracked window, swap to SUI, clear window, keep 1-min flash loop.",
+    "ignoreMinProfit": true,
+    "timezone": "Europe/London",
+    "overlapPolicy": "skip-if-previous-still-running"
+  },
+  "schedule": {
+    "suggestion": "daemon every 1m flash / growing redeem",
+    "cron": null,
+    "flashIntervalMs": 60000,
+    "redeemStartMin": 5,
+    "redeemIncrementMin": 1,
+    "timezone": "Europe/London",
+    "overlapPolicy": "skip-if-previous-still-running",
+    "note": "Prefer npm run laptop:earn-daemon over cron; daemon owns cadence + state."
+  },
+  "limits": {
+    "borrowSuiDefault": 1,
+    "borrowFlag": "--borrow",
+    "borrowFlagNote": "CLI flag is --borrow <SUI human>, NOT --sui-amount",
+    "askBeforeBorrowSuiGreaterThan": 1,
+    "askBeforeNote": "Any tick with --borrow > 1 requires explicit Michael OK before live.",
+    "ignoreMinProfit": true,
+    "minProfitSui": 0,
+    "minProfitMist": "0",
+    "minProfitFlag": "--min-profit",
+    "redeemFraction": 0.5,
+    "gasFloorSui": 1.5,
+    "opsOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a"
+  },
+  "env": {
+    "requiredAlways": {
+      "SUI_CONFIG_DIR": "~/.sui/sui_config (or Bandbot secret path to keystore for ops signer)"
+    },
+    "liveGates": {
+      "BTEN_EARN_LOOP_EXECUTE": "1 — required with --execute for any live flash/park/redeem",
+      "BTEN_BLUEFIN_EXECUTE": "1 — required for Bluefin DEEP–SUI live park/redeem"
+    },
+    "never": ["private keys in JSON", "paste suiprivkey into Bandbot prompts"]
+  },
+  "cli": {
+    "dryDaemon": "npm run laptop:earn-daemon",
+    "dryDaemonOnce": "node scripts/laptop_earn_loop_daemon.mjs --once",
+    "dryFlash": "node scripts/template_a_flash_earn_loop.mjs --borrow 1 --min-profit 0",
+    "dryPark": "node scripts/earn_loop_park_residuals.mjs",
+    "dryRedeem": "node scripts/laptop_earn_loop_redeem_to_sui.mjs",
+    "liveDaemon": "BTEN_EARN_LOOP_EXECUTE=1 BTEN_BLUEFIN_EXECUTE=1 node scripts/laptop_earn_loop_daemon.mjs --execute",
+    "liveFlash": "BTEN_EARN_LOOP_EXECUTE=1 node scripts/template_a_flash_earn_loop.mjs --borrow 1 --min-profit 0 --execute",
+    "liveParkBluefin": "BTEN_BLUEFIN_EXECUTE=1 node scripts/earn_loop_park_residuals.mjs --execute",
+    "optionalFlags": {
+      "--once": "daemon: single tick then exit",
+      "--execute": "live only when BTEN_EARN_LOOP_EXECUTE=1 also set",
+      "--no-lp": "flash only; skip follow-up Cetus parks inside flash script",
+      "--skip-bluefin": "park script only",
+      "--fraction": "redeem script; default 0.5",
+      "--state": "redeem script; path to bandbot_earn_loop_state.json"
+    }
+  },
+  "tick": {
+    "steps": [
+      "1. Daemon poll ~2s; skip if tickInFlight or killSwitch",
+      "2. If now >= nextRedeemAt: redeem 50% of trackedAdds → SUI; clear window; redeemIntervalMin += 1 (5→6→7…); schedule nextRedeemAt",
+      "3. If now >= nextFlashAt: flash with --borrow 1 --min-profit 0 (ignore min profit); park residuals; snapshot LP liquidity deltas into trackedAdds; nextFlashAt += 60s",
+      "4. Persist artifacts/v30/laptop_earn_loop_state.json (+ apps/bandbot-earn/state.json mirror)",
+      "5. Live broadcast only if --execute AND BTEN_EARN_LOOP_EXECUTE=1 (Bluefin also needs BTEN_BLUEFIN_EXECUTE=1)"
+    ],
+    "whatItDoes": "1-min NAVI flash earn (ignore min-profit) + residual Earn parks; growing redeem timer redeems 50% of bot-tracked adds to SUI."
+  },
+  "trackedParks": [
+    "HAEDAL-BTEN",
+    "WAL-BTEN",
+    "BTEN-SUI",
+    "BTEN-CETUS",
+    "Bluefin DEEP-SUI"
+  ],
+  "successCriteria": {
+    "dry": ["daemon writes state", "flash/park/redeem dry artifacts", "redeem cadence advances in state"],
+    "live": [
+      "dual gates present",
+      "flash digest + repay confirmed",
+      "tracked adds recorded",
+      "redeem removes ≤50% of tracked window and never closes positions"
+    ],
+    "failStop": [
+      "killSwitch true → skip",
+      "tickInFlight → skip overlap",
+      "--execute without BTEN_EARN_LOOP_EXECUTE → stay dry",
+      "borrow > askBeforeBorrowSuiGreaterThan without Michael OK → stop"
+    ]
+  },
+  "safety": {
+    "neverTouchVault": "0x539079f8c0b0055e334307d472fe693a2c0ae545d4f3c9752e1e6ceddb446bc0",
+    "walSuiDesk": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17 — swap-through ONLY; never add/remove desk LP",
+    "addOnlyParks": ["HAEDAL-BTEN", "WAL-BTEN", "BTEN-SUI", "BTEN-CETUS", "Bluefin DEEP-SUI"],
+    "neverClose": ["BTEN/SUI", "BTEN/CETUS", "BTEN/WAL"],
+    "redeemFromBotTrackedAddsOnly": true,
+    "noVeraUiAutomation": true,
+    "bluefinViaOnchainApisOnly": true,
+    "neverEmbedPrivateKeys": true,
+    "githubKeeperRemainsDisabled": true
+  },
+  "killSwitch": {
+    "primary": "Set killSwitch=true in artifacts/v30/laptop_earn_loop_state.json or toggle in apps/bandbot-earn UI",
+    "config": "enabled=false in this job config",
+    "env": "Unset BTEN_EARN_LOOP_EXECUTE and BTEN_BLUEFIN_EXECUTE",
+    "cli": "Omit --execute (scripts default dry-run)",
+    "emergency": "Stop daemon process + revoke ops keystore access on runner host"
+  },
+  "objectIdsNeededByBandbot": {
+    "note": "Prefer shell-out; IDs hard-coded in scripts + bandbot_bten_integration.json.",
+    "livePackageId": "0x8f4ee2f47e61dd1f6657492020934e3fc06bec36da782c4ba02c5fd17ab37ca5",
+    "opsOwner": "0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a",
+    "forbiddenVault": "0x539079f8c0b0055e334307d472fe693a2c0ae545d4f3c9752e1e6ceddb446bc0",
+    "walSuiDeskPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+    "bluefinDeepSuiPool": "0x7242459a663c4e59434252ceb27c228f6b1f21f2ba506f3b62d71b19a7421cc1"
+  },
+  "lastSuccessfulLive": {
+    "approxBorrowSui": 1,
+    "flashDigest": "a3jn7iJo32mAvrEkFC7L9QnmGKQLJ29LupSXGHmMtiC",
+    "provider": "NAVI",
+    "artifacts": [
+      "artifacts/v30/earn_loop_1sui_dry_stdout.json",
+      "artifacts/v30/earn_loop_1sui_live_stdout.json",
+      "artifacts/v30/earn_loop_park_1sui_bluefin_live_stdout.json",
+      "artifacts/v30/FLASH_EARN_1SUI_FINAL_REPORT.txt"
+    ]
+  },
+  "cacheBust": "20260917T170500Z-earn-loop-daemon-1m-redeem-grow"
+}

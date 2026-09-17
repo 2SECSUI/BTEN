@@ -1,0 +1,53 @@
+{
+  "completedAt": "2026-09-17T18:05:00+01:00",
+  "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
+  "livePackageVersion": 30,
+  "upgradePerformed": false,
+  "upgradeReason": "Verifier/config only — on-chain attest paths already gate add+remove (WAL/SUI kinds 2/3; Cap path kind-agnostic).",
+  "alreadyGated": {
+    "onChainAdaptersRouteRecorded": "Swap adapters (cetus_* / turbos_* / registered_*) emit RouteRecorded. No trader-facing BTEN LP add/remove entrypoints exist.",
+    "protocolLpDeploy": "deploy_protocol_liquidity_* Cap-gated; do not emit RouteRecorded; Cetus AddLiquidity events remain externally attestable.",
+    "externalVerifier": "Already matched Swap + AddLiquidity(+V2) + RemoveLiquidity(+V2); WAL/SUI permissionless kinds 1/2/3.",
+    "configGatedEventKinds": ["swap", "liquidity_add", "liquidity_remove"]
+  },
+  "changes": [
+    "MAINNET_ROUTE_CONFIG: added RemoveLiquidity(+V2) to cetusEventTypes; v30 status; lpGateNote; liveTapeRule mentions removes",
+    "config/keeper_policy.json: livePackageId→v30; includeAddLiquidity+includeRemoveLiquidity",
+    "config/bandbot_wal_sui_keeper.json: package ids→v30; lpGate note (no Bandbot app/UI edits)",
+    "config/block10_integration.json: emissionGate lists add/remove + wal_sui entrypoints; package→v30",
+    "scripts/lib/cetus_lp_gate.mjs: shared match/prefer/kind helpers",
+    "scripts/external_cetus_verifier.mjs: uses shared lib; header documents removes",
+    "tests: Move attest_wal_sui_add_and_remove_both_gate + invalid kind; JS cetus_lp_gate.test.mjs; keeper policy test aligned"
+  ],
+  "opsFee": {
+    "traderLpThroughBtenFeePaths": "N/A — no trader BTEN LP entrypoints",
+    "protocolDeploy": "uncharged",
+    "attestKeepers": "uncharged",
+    "traderSwapOpsFee": "0.5 SUI on *_ops_fee; ops wallet waived (v30)"
+  },
+  "tests": {
+    "move": "39/39 PASS (incl. attest_wal_sui_add_and_remove_both_gate, attest_wal_sui_invalid_event_kind_aborts)",
+    "js": "10/10 PASS (cetus_lp_gate + github_keeper_policy)"
+  },
+  "verifierDryRun": {
+    "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
+    "eligibleBeforeCap": 186,
+    "candidatesShown": 15,
+    "kindsInCandidates": { "liquidity_add": 8, "liquidity_remove": 5, "swap": 2 },
+    "sampleRemoveDigest": "9bfNDd3JDr1qn415hbm54uC3uKqHrkw3PNaW1NzC8Tks",
+    "sampleAddDigest": "7g5vPL3V5S2wRjAnL87eUZDgaR9AfgjkWHT39pF6QfWg",
+    "execute": false,
+    "executeNote": "GH attest disabled; Bandbot owns WAL/SUI permissionless attest. Dry-run only."
+  },
+  "howAddVsRemoveCount": {
+    "add": "Cetus AddLiquidity/AddLiquidityV2 on registered pool → verifier kind liquidity_add → WAL/SUI event_kind=2 or Cap attest → record_atomic_route → +1 batch_trades / one receipt per digest",
+    "remove": "Cetus RemoveLiquidity/RemoveLiquidityV2 on registered pool → verifier kind liquidity_remove → WAL/SUI event_kind=3 or Cap attest → same receipt semantics as swaps/adds",
+    "priority": "Within one digest: add > remove > swap for the single gate receipt"
+  },
+  "safety": {
+    "upgradeCap": "Compatible kept; not upgraded this change",
+    "vault5390": "untouched",
+    "poolsKeptOpen": ["BTEN/SUI", "BTEN/CETUS", "BTEN/WAL"],
+    "bandbotAppUi": "untouched"
+  }
+}

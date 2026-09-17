@@ -2,16 +2,17 @@
 /**
  * BTEN direct-Cetus event verifier.
  *
- * Narrow public-data keeper: examines successful Cetus SwapEvent and liquidity-add
- * records (AddLiquidityEvent / AddLiquidityV2Event) on registered BTEN pools and
- * attests them so they count as gated (`attest_external_cetus_route` ->
- * `record_atomic_route` -> `batch_trades` / trader points). On-chain attestation
- * only requires registered pool + digest + event_sequence (no SwapEvent requirement).
- * Live-tape labeling is not the block-release gate; v16 trade gate (10 receipts / block, MAX_SETTLE=100) is.
- * OpenPositionEvent alone is not attested; prefer AddLiquidityV2 sequence when an
- * open+add pair shares a digest. One emission-gate receipt per transaction digest,
- * including multi-pool aggregator PTBs. Never quotes, swaps, transfers treasury, or
- * prints private keys.
+ * Narrow public-data keeper: examines successful Cetus SwapEvent and liquidity
+ * records (AddLiquidity[Event|V2Event] / RemoveLiquidity[Event|V2Event]) on
+ * registered BTEN pools and attests them so they count as gated
+ * (`attest_wal_sui_external_route` for WAL/SUI, `attest_external_cetus_route`
+ * otherwise -> `record_atomic_route` -> `batch_trades` / trader points).
+ * On-chain attestation only requires registered pool + digest + event_sequence.
+ * Live-tape labeling is not the block-release gate; v16 trade gate (10 receipts /
+ * block, MAX_SETTLE=100) is. OpenPositionEvent alone is not attested; prefer
+ * AddLiquidityV2 when an open+add pair shares a digest. One emission-gate
+ * receipt per transaction digest, including multi-pool aggregator PTBs. Never
+ * quotes, swaps, transfers treasury, or prints private keys.
  *
  * Usage:
  *   node scripts/external_cetus_verifier.mjs              # dry-run scan
@@ -24,6 +25,14 @@ import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
+import {
+  matchPoolEvent,
+  preferGatedMatch,
+  walSuiEventKind,
+  pickBestPerDigest,
+  GATED_KINDS,
+} from "./lib/cetus_lp_gate.mjs";
+
 
 const root = path.resolve(import.meta.dirname, "..");
 const mainnet = JSON.parse(fs.readFileSync(path.join(root, "MAINNET_ROUTE_CONFIG.json"), "utf8"));
@@ -33,10 +42,7 @@ const digestFlagIndex = process.argv.indexOf("--digest");
 const TARGET_DIGEST = digestFlagIndex >= 0 ? String(process.argv[digestFlagIndex + 1] ?? "").trim() : "";
 const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 const CLOCK = "0x6";
-const CETUS_SWAP_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent";
-const CETUS_ADD_LIQUIDITY_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::AddLiquidityEvent";
-const CETUS_ADD_LIQUIDITY_V2_EVENT = "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event";
-const CETUS_OPEN_POSITION_EVENT = "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::OpenPositionEvent";
+const WAL_SUI_POOL_ID = "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17";
 const verifier = mainnet.externalCetusVerifier;
 
 if (!verifier?.state || !verifier?.cap || !verifier?.activationAfterMs) {
@@ -78,8 +84,6 @@ function normalHex(value) {
   const text = String(value ?? "").trim().toLowerCase();
   return text || null;
 }
-function positive(value) { try { return BigInt(value ?? 0) > 0n; } catch { return false; } }
-
 function decodeBase58(value) {
   const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   let number = 0n;
@@ -208,27 +212,6 @@ async function recentAttestations(eventTypes) {
   return keys;
 }
 
-function matchPoolEvent(event, pool, sender) {
-  const type = event.contents?.type?.repr;
-  const json = event.contents?.json ?? {};
-  if (normal(json.pool) !== normal(pool)) return null;
-  if (normal(event.sender?.address) !== sender) return null;
-  if (type === CETUS_SWAP_EVENT && positive(json.amount_in) && positive(json.amount_out)) {
-    return { kind: "swap", event };
-  }
-  if (type === CETUS_ADD_LIQUIDITY_V2_EVENT && (positive(json.amount_a) || positive(json.amount_b))) {
-    return { kind: "liquidity_add", event };
-  }
-  if (type === CETUS_ADD_LIQUIDITY_EVENT && (positive(json.amount_a) || positive(json.amount_b) || positive(json.liquidity))) {
-    return { kind: "liquidity_add", event };
-  }
-  // OpenPosition alone is never attested; only note it when an add also exists.
-  if (type === CETUS_OPEN_POSITION_EVENT) {
-    return { kind: "open_position", event };
-  }
-  return null;
-}
-
 function candidateFromTransaction(transaction, pool) {
   if (!transaction || transaction.effects?.status !== "SUCCESS") return null;
   const timestamp = Date.parse(transaction.effects?.timestamp ?? "");
@@ -243,13 +226,9 @@ function candidateFromTransaction(transaction, pool) {
     const hit = matchPoolEvent(event, pool, sender);
     if (hit) matched.push(hit);
   }
-  const hasAdd = matched.some((item) => item.kind === "liquidity_add");
-  // Prefer AddLiquidityV2/AddLiquidity sequence; ignore bare OpenPosition.
-  // Otherwise take the first swap (or liquidity) on this pool in the PTB.
-  const preferred = matched.find((item) => item.kind === "liquidity_add")
-    || matched.find((item) => item.kind === "swap")
-    || (hasAdd ? matched.find((item) => item.kind === "open_position") : null);
-  if (!preferred || preferred.kind === "open_position") return null;
+  // Prefer add > remove > swap; ignore bare OpenPosition.
+  const preferred = preferGatedMatch(matched);
+  if (!preferred) return null;
   const match = preferred.event;
   const digestBytes = decodeBase58(transaction.digest);
   if (digestBytes.length !== 32) return null;
@@ -286,21 +265,42 @@ async function submit(client, signer, candidate, livePackageId, eventTypes) {
   const tx = new Transaction();
   tx.setSender(policy.keeperAddress);
   tx.setGasBudget(BigInt(policy.settlement.gasBudgetMist));
-  tx.moveCall({
-    target: `${livePackageId}::bten::attest_external_cetus_route`,
-    arguments: [
-      tx.object(mainnet.emissionState),
-      tx.object(mainnet.poolRegistry),
-      tx.object(verifier.state),
-      tx.object(verifier.cap),
-      tx.pure.address(candidate.pool),
-      tx.pure.vector("u8", candidate.digestBytes),
-      tx.pure.u64(candidate.eventSequence),
-      tx.pure.address(candidate.trader),
-      tx.pure.u64(candidate.feePoints),
-      tx.object(CLOCK),
-    ],
-  });
+  const isWalSui = normal(candidate.pool) === normal(WAL_SUI_POOL_ID);
+  if (isWalSui) {
+    // v29: permissionless WAL/SUI path — Cap NOT required.
+    tx.moveCall({
+      target: `${livePackageId}::bten::attest_wal_sui_external_route`,
+      arguments: [
+        tx.object(mainnet.emissionState),
+        tx.object(mainnet.poolRegistry),
+        tx.object(verifier.state),
+        tx.pure.address(candidate.pool),
+        tx.pure.vector("u8", candidate.digestBytes),
+        tx.pure.u64(candidate.eventSequence),
+        tx.pure.address(candidate.trader),
+        tx.pure.u64(candidate.feePoints),
+        tx.pure.u8(walSuiEventKind(candidate.kind)),
+        tx.object(CLOCK),
+      ],
+    });
+  } else {
+    // Other pools: Cap + keeper sender still required.
+    tx.moveCall({
+      target: `${livePackageId}::bten::attest_external_cetus_route`,
+      arguments: [
+        tx.object(mainnet.emissionState),
+        tx.object(mainnet.poolRegistry),
+        tx.object(verifier.state),
+        tx.object(verifier.cap),
+        tx.pure.address(candidate.pool),
+        tx.pure.vector("u8", candidate.digestBytes),
+        tx.pure.u64(candidate.eventSequence),
+        tx.pure.address(candidate.trader),
+        tx.pure.u64(candidate.feePoints),
+        tx.object(CLOCK),
+      ],
+    });
+  }
   let result;
   try {
     result = await client.signAndExecuteTransaction({
@@ -333,7 +333,9 @@ const { livePackageId, originalPackageId } = resolvePackageIds();
 const eventTypes = [...new Set([
   ...(verifier.eventTypes ?? []),
   `${livePackageId}::bten::ExternalCetusRouteAttested`,
+  `${livePackageId}::bten::WalSuiExternalAttested`,
   `${originalPackageId}::bten::ExternalCetusRouteAttested`,
+  `${originalPackageId}::bten::WalSuiExternalAttested`,
 ].filter(Boolean))];
 
 const pools = mainnet.venues.flatMap((venue) => (
@@ -366,17 +368,9 @@ if (TARGET_DIGEST) {
     .filter(Boolean)));
 }
 
-const kindRank = { liquidity_add: 0, swap: 1 };
-const byDigest = new Map();
-for (const candidate of batches.flat()) {
-  // Multi-pool aggregator PTBs earn ONE gate receipt (swap or liquidity add).
-  const current = byDigest.get(candidate.digest);
-  const nextRank = kindRank[candidate.kind] ?? 9;
-  const curRank = current ? (kindRank[current.kind] ?? 9) : 99;
-  if (!current || nextRank < curRank || (nextRank === curRank && candidate.eventSequence < current.eventSequence)) {
-    byDigest.set(candidate.digest, candidate);
-  }
-}
+// Multi-pool aggregator PTBs earn ONE gate receipt (add > remove > swap).
+const byDigestList = pickBestPerDigest(batches.flat());
+const byDigest = new Map(byDigestList.map((c) => [c.digest, c]));
 
 const dailyCap = Number(state.daily_event_cap);
 // daily_event_cap == 0 means unlimited on-chain (v28+).
@@ -417,7 +411,8 @@ const report = {
     alreadyAttestedInPublicLog: attestations.size,
     eligibleBeforeCap: allCandidates.length,
     attestationKeyFormat: "base64(digest):event_sequence",
-    gatedKinds: ["swap", "liquidity_add"],
+    gatedKinds: [...GATED_KINDS],
+    walSuiPermissionless: true,
   },
   candidates: candidates.map(({ digest, eventSequence, pool, trader, timestamp, feePoints, kind }) => ({
     digest, eventSequence, pool, trader, timestamp, feePoints, kind: kind ?? "swap",

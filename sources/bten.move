@@ -21,6 +21,13 @@
 /// via `cetus_swap_registered_a2b` / `cetus_swap_registered_b2a`.
 /// WAL/SUI traders earn 1 raw BTEN from `route_fee_vault` via `*_rebate` adapters /
 /// `attest_external_cetus_route_rebate`, flushed by `pay_wal_sui_trader_rebates` (max 1000).
+/// v29 adds permissionless WAL/SUI-only entrypoints `attest_wal_sui_external_route*`
+/// (pool assert + event_kind; no Cap; other pools still Cap-gated).
+/// v30 charges OPS_INTERACTION_FEE_MIST (default 0.5 SUI) on trader swap/buy
+/// `*_ops_fee` entrypoints; legacy free swap/buy entries abort E_OPS_FEE_REQUIRED.
+/// Keeper attest paths are not charged. Ops recipient: OPS_FEE_RECIPIENT.
+/// Ops / hard-coded protocol wallets on the waive allowlist are not charged
+/// (fee coin returned in full, including zero-value).
 module bten::bten {
     use std::ascii;
     use std::string;
@@ -137,13 +144,33 @@ module bten::bten {
     const E_MANAGED_VAULT_PAUSED: u64 = 41;
     const E_MANAGED_VAULT_TAKEN: u64 = 42;
     const E_WAL_SUI_REBATE_BATCH: u64 = 43;
+    /// WAL/SUI-dedicated attest called with a non-WAL/SUI pool_id.
+    const E_WAL_SUI_POOL_MISMATCH: u64 = 44;
+    /// event_kind must be 1=swap, 2=add, or 3=remove.
+    const E_WAL_SUI_EVENT_KIND: u64 = 45;
     const MANAGED_PROFIT_FEE_BPS: u64 = 200;
     /// Bandbot WAL/SUI Cetus pool — sole pool eligible for the 1-raw trader rebate.
     const WAL_SUI_POOL_ID: address = @0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17;
+    /// WalSuiExternalAttested.event_kind: Cetus SwapEvent on WAL/SUI.
+    const WAL_SUI_EVENT_KIND_SWAP: u8 = 1;
+    /// WalSuiExternalAttested.event_kind: AddLiquidity / AddLiquidityV2 on WAL/SUI.
+    const WAL_SUI_EVENT_KIND_ADD: u8 = 2;
+    /// WalSuiExternalAttested.event_kind: RemoveLiquidity / RemoveLiquidityV2 on WAL/SUI.
+    const WAL_SUI_EVENT_KIND_REMOVE: u8 = 3;
     /// 0.00000001 BTEN (1 raw unit at 8 decimals) per qualifying WAL/SUI trade.
     const WAL_SUI_TRADER_REBATE_RAW: u64 = 1;
     /// Max 1-raw pays per `pay_wal_sui_trader_rebates` call.
     const MAX_WAL_SUI_REBATE_BATCH: u64 = 1000;
+
+    /// v30 default ops interaction fee: 0.5 SUI = 500_000_000 MIST.
+    /// Charged once per trader-facing BTEN swap / OpsBuyDesk buy entry.
+    const OPS_INTERACTION_FEE_MIST: u64 = 500_000_000;
+    /// Ops wallet (UpgradeCap owner) receiving interaction fees.
+    const OPS_FEE_RECIPIENT: address = @0x58189b677894e0fe7ad38e0e516408a3500da57d86fc0436373bc1d9c6334d0a;
+    /// Fee coin value below configured ops interaction fee.
+    const E_OPS_INTERACTION_FEE: u64 = 46;
+    /// Legacy free swap/buy path disabled — call the matching `*_ops_fee` entry.
+    const E_OPS_FEE_REQUIRED: u64 = 47;
 
     public struct BTEN has drop {}
 
@@ -154,6 +181,22 @@ module bten::bten {
     /// Held during setup so exact live pool IDs can be registered. Destroy it
     /// after the initial pool set is tested and the registry is finalized.
     public struct RegistryAdminCap has key, store { id: UID }
+
+    /// Shared config for the v30 ops interaction fee (Compatible add).
+    /// Default recipient = OPS_FEE_RECIPIENT; default fee = OPS_INTERACTION_FEE_MIST.
+    /// Admin may update via RegistryAdminCap; never touches UpgradeCap / vault.
+    public struct OpsInteractionFeeConfig has key {
+        id: UID,
+        recipient: address,
+        fee_mist: u64,
+    }
+
+    /// Emitted when a trader pays the ops interaction fee.
+    public struct OpsInteractionFeePaid has copy, drop {
+        payer: address,
+        recipient: address,
+        amount_mist: u64,
+    }
 
     /// A deliberately narrow capability held by the remote keeper. It grants
     /// no upgrade, registry, LP, or treasury authority.
@@ -501,6 +544,18 @@ module bten::bten {
         events_today: u64,
     }
 
+    /// WAL/SUI-only external attest annotation (v29). Emitted *after* the
+    /// existing `ExternalCetusRouteAttested` path so Compatible upgrades do not
+    /// change the old event layout. `event_kind`: 1=swap, 2=add, 3=remove.
+    public struct WalSuiExternalAttested has copy, drop {
+        pool_id: address,
+        trader: address,
+        digest: vector<u8>,
+        event_sequence: u64,
+        event_kind: u8,
+        fee_points: u64,
+    }
+
     /// Pending 1-raw BTEN rebates for traders who hit the registered WAL/SUI
     /// pool via in-contract `cetus_swap_registered_*_rebate` adapters or via
     /// `attest_external_cetus_route_rebate`. Funded only from `route_fee_vault`
@@ -570,6 +625,94 @@ module bten::bten {
     #[test_only]
     public fun initialize_for_testing(ctx: &mut TxContext) { init(BTEN {}, ctx) }
 
+
+    // ===== v30 ops interaction fee (Compatible) =====
+
+    /// Create the shared ops-interaction fee config (once). Defaults:
+    /// fee = 500_000_000 MIST (0.5 SUI), recipient = OPS_FEE_RECIPIENT.
+    public entry fun create_ops_interaction_fee_config(
+        _admin: &RegistryAdminCap,
+        ctx: &mut TxContext,
+    ) {
+        transfer::share_object(OpsInteractionFeeConfig {
+            id: object::new(ctx),
+            recipient: OPS_FEE_RECIPIENT,
+            fee_mist: OPS_INTERACTION_FEE_MIST,
+        });
+    }
+
+    /// Admin: set fee amount in MIST (must be > 0).
+    public entry fun set_ops_interaction_fee(
+        config: &mut OpsInteractionFeeConfig,
+        _admin: &RegistryAdminCap,
+        fee_mist: u64,
+    ) {
+        assert!(fee_mist > 0, E_OPS_INTERACTION_FEE);
+        config.fee_mist = fee_mist;
+    }
+
+    /// Admin: set ops fee recipient (non-zero).
+    public entry fun set_ops_interaction_fee_recipient(
+        config: &mut OpsInteractionFeeConfig,
+        _admin: &RegistryAdminCap,
+        recipient: address,
+    ) {
+        assert!(recipient != @0x0, E_OPS_INTERACTION_FEE);
+        config.recipient = recipient;
+    }
+
+    /// True when `sender` is a hard-coded ops/protocol wallet that must not
+    /// pay the trader interaction fee. Scan note: the only hard-coded wallet
+    /// address constant in BTEN Move sources is `OPS_FEE_RECIPIENT` (pool IDs
+    /// like `WAL_SUI_POOL_ID` are not wallets; keeper/treasury/farm recipients
+    /// are runtime-configured, not compile-time address constants).
+    public fun is_ops_interaction_fee_waived(sender: address): bool {
+        sender == OPS_FEE_RECIPIENT
+    }
+
+    /// Collect `config.fee_mist` from `fee_coin`, transfer to ops recipient,
+    /// return any remainder to the sender. Aborts if coin value < fee.
+    /// When `tx_context::sender(ctx)` is on the ops/protocol waive allowlist,
+    /// the fee is not charged: the full `fee_coin` (including zero-value) is
+    /// returned to the sender and nothing is transferred to ops.
+    /// Public so `ops_buy_desk` can charge the same fee on buy paths.
+    public fun collect_ops_interaction_fee(
+        config: &OpsInteractionFeeConfig,
+        mut fee_coin: Coin<SUI>,
+        ctx: &mut TxContext,
+    ) {
+        let payer = tx_context::sender(ctx);
+        if (is_ops_interaction_fee_waived(payer)) {
+            if (coin::value(&fee_coin) == 0) {
+                coin::destroy_zero(fee_coin);
+            } else {
+                transfer::public_transfer(fee_coin, payer);
+            };
+            return
+        };
+        let due = config.fee_mist;
+        assert!(coin::value(&fee_coin) >= due, E_OPS_INTERACTION_FEE);
+        let pay = coin::split(&mut fee_coin, due, ctx);
+        let recipient = config.recipient;
+        transfer::public_transfer(pay, recipient);
+        event::emit(OpsInteractionFeePaid {
+            payer,
+            recipient,
+            amount_mist: due,
+        });
+        if (coin::value(&fee_coin) == 0) {
+            coin::destroy_zero(fee_coin);
+        } else {
+            transfer::public_transfer(fee_coin, payer);
+        };
+    }
+
+    public fun ops_interaction_fee_mist(config: &OpsInteractionFeeConfig): u64 { config.fee_mist }
+    public fun ops_interaction_fee_recipient(config: &OpsInteractionFeeConfig): address { config.recipient }
+    public fun default_ops_interaction_fee_mist(): u64 { OPS_INTERACTION_FEE_MIST }
+    public fun default_ops_fee_recipient(): address { OPS_FEE_RECIPIENT }
+
+
     fun init(witness: BTEN, ctx: &mut TxContext) {
         let publisher = tx_context::sender(ctx);
         let (cap, metadata) = coin::create_currency<BTEN>(
@@ -625,7 +768,7 @@ module bten::bten {
         abort E_LEGACY_ROUTE_DISABLED
     }
 
-    /// Swap a non-BTEN pool asset into BTEN through an approved Cetus pool.
+    /// v30: free path disabled — use `cetus_swap_to_bten_ops_fee`.  Swap a non-BTEN pool asset into BTEN through an approved Cetus pool.
     /// The received BTEN and any unused input are returned atomically to the
     /// caller only after the Cetus flash-swap repayment succeeds. Route points
     /// use the actual input paid by Cetus, never a caller-supplied value.
@@ -640,6 +783,28 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Swap a non-BTEN pool asset into BTEN through an approved Cetus pool.
+    /// The received BTEN and any unused input are returned atomically to the
+    /// caller only after the Cetus flash-swap repayment succeeds. Route points
+    /// use the actual input paid by Cetus, never a caller-supplied value.
+    public entry fun cetus_swap_to_bten_ops_fee<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, BTEN>,
+        mut input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         let pool_id = object::id(pool);
         let pool_address = object::id_to_address(&pool_id);
         assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
@@ -660,7 +825,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_b, ctx), tx_context::sender(ctx));
     }
 
-    /// Swap BTEN into a non-BTEN asset through an approved Cetus pool. This is
+    /// v30: free path disabled — use `cetus_swap_from_bten_ops_fee`.  Swap BTEN into a non-BTEN asset through an approved Cetus pool. This is
     /// the reverse leg of `cetus_swap_to_bten` and has the same output guard.
     public entry fun cetus_swap_from_bten<A>(
         state: &mut EmissionState,
@@ -673,6 +838,26 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Swap BTEN into a non-BTEN asset through an approved Cetus pool. This is
+    /// the reverse leg of `cetus_swap_to_bten` and has the same output guard.
+    public entry fun cetus_swap_from_bten_ops_fee<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, BTEN>,
+        mut input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         let pool_id = object::id(pool);
         let pool_address = object::id_to_address(&pool_id);
         assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
@@ -693,7 +878,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_a, ctx), tx_context::sender(ctx));
     }
 
-    /// BTEN-first-pool variant: swap a non-BTEN asset into BTEN. Cetus orders
+    /// v30: free path disabled — use `cetus_swap_to_bten_b2a_ops_fee`.  BTEN-first-pool variant: swap a non-BTEN asset into BTEN. Cetus orders
     /// the live BTEN/SUI pool as `Pool<BTEN, SUI>`, so this mirrors the
     /// BTEN-second implementation above without accepting arbitrary ordering.
     public entry fun cetus_swap_to_bten_b2a<A>(
@@ -707,6 +892,27 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// BTEN-first-pool variant: swap a non-BTEN asset into BTEN. Cetus orders
+    /// the live BTEN/SUI pool as `Pool<BTEN, SUI>`, so this mirrors the
+    /// BTEN-second implementation above without accepting arbitrary ordering.
+    public entry fun cetus_swap_to_bten_b2a_ops_fee<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        pool: &mut Pool<BTEN, A>,
+        mut input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         let pool_id = object::id(pool);
         let pool_address = object::id_to_address(&pool_id);
         assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
@@ -727,7 +933,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_bten, ctx), tx_context::sender(ctx));
     }
 
-    /// BTEN-first-pool variant: swap BTEN into the paired non-BTEN asset.
+    /// v30: free path disabled — use `cetus_swap_from_bten_a2b_ops_fee`.  BTEN-first-pool variant: swap BTEN into the paired non-BTEN asset.
     public entry fun cetus_swap_from_bten_a2b<A>(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -739,6 +945,25 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// BTEN-first-pool variant: swap BTEN into the paired non-BTEN asset.
+    public entry fun cetus_swap_from_bten_a2b_ops_fee<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        pool: &mut Pool<BTEN, A>,
+        mut input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         let pool_id = object::id(pool);
         let pool_address = object::id_to_address(&pool_id);
         assert!(table::contains(&registry.pools, pool_address), E_POOL_NOT_REGISTERED);
@@ -759,7 +984,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
-    /// Swap coin A -> coin B on any registered Cetus pool (`Pool<A, B>` by object
+    /// v30: free path disabled — use `cetus_swap_registered_a2b_ops_fee`.  Swap coin A -> coin B on any registered Cetus pool (`Pool<A, B>` by object
     /// id). Used for non-BTEN pairs such as Bandbot WAL/SUI (`Pool<WAL, SUI>`):
     /// a2b is WAL->SUI. Records one `RouteRecorded` / bumps `batch_trades` via
     /// `record_atomic_route` using the Cetus-paid input amount as fee_points.
@@ -774,6 +999,28 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Swap coin A -> coin B on any registered Cetus pool (`Pool<A, B>` by object
+    /// id). Used for non-BTEN pairs such as Bandbot WAL/SUI (`Pool<WAL, SUI>`):
+    /// a2b is WAL->SUI. Records one `RouteRecorded` / bumps `batch_trades` via
+    /// `record_atomic_route` using the Cetus-paid input amount as fee_points.
+    public entry fun cetus_swap_registered_a2b_ops_fee<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<A>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_cetus_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -791,7 +1038,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_b, ctx), tx_context::sender(ctx));
     }
 
-    /// Swap coin B -> coin A on any registered Cetus pool (`Pool<A, B>`).
+    /// v30: free path disabled — use `cetus_swap_registered_b2a_ops_fee`.  Swap coin B -> coin A on any registered Cetus pool (`Pool<A, B>`).
     /// For Bandbot WAL/SUI this is SUI->WAL (buy path). Same gating as a2b.
     public entry fun cetus_swap_registered_b2a<A, B>(
         state: &mut EmissionState,
@@ -804,6 +1051,26 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Swap coin B -> coin A on any registered Cetus pool (`Pool<A, B>`).
+    /// For Bandbot WAL/SUI this is SUI->WAL (buy path). Same gating as a2b.
+    public entry fun cetus_swap_registered_b2a_ops_fee<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<B>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_cetus_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -859,7 +1126,7 @@ module bten::bten {
         });
     }
 
-    /// Same as `cetus_swap_registered_a2b`, then accrues +1 pending WAL/SUI
+    /// v30: free path disabled — use `cetus_swap_registered_a2b_rebate_ops_fee`.  Same as `cetus_swap_registered_a2b`, then accrues +1 pending WAL/SUI
     /// trader rebate when `pool` is the Bandbot WAL/SUI desk.
     public entry fun cetus_swap_registered_a2b_rebate<A, B>(
         state: &mut EmissionState,
@@ -873,6 +1140,27 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Same as `cetus_swap_registered_a2b`, then accrues +1 pending WAL/SUI
+    /// trader rebate when `pool` is the Bandbot WAL/SUI desk.
+    public entry fun cetus_swap_registered_a2b_rebate_ops_fee<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        rebate: &mut WalSuiTraderRebateState,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<A>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_cetus_pool(registry, pool);
         let pool_address = object::id_to_address(&object::id(pool));
         let requested = coin::value(&input);
@@ -893,7 +1181,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_b, ctx), sender);
     }
 
-    /// Same as `cetus_swap_registered_b2a`, then accrues +1 pending WAL/SUI
+    /// v30: free path disabled — use `cetus_swap_registered_b2a_rebate_ops_fee`.  Same as `cetus_swap_registered_b2a`, then accrues +1 pending WAL/SUI
     /// trader rebate when `pool` is the Bandbot WAL/SUI desk (SUI→WAL buy).
     public entry fun cetus_swap_registered_b2a_rebate<A, B>(
         state: &mut EmissionState,
@@ -907,6 +1195,27 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Same as `cetus_swap_registered_b2a`, then accrues +1 pending WAL/SUI
+    /// trader rebate when `pool` is the Bandbot WAL/SUI desk (SUI→WAL buy).
+    public entry fun cetus_swap_registered_b2a_rebate_ops_fee<A, B>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        rebate: &mut WalSuiTraderRebateState,
+        config: &GlobalConfig,
+        pool: &mut Pool<A, B>,
+        mut input: Coin<B>,
+        min_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_cetus_pool(registry, pool);
         let pool_address = object::id_to_address(&object::id(pool));
         let requested = coin::value(&input);
@@ -1112,7 +1421,7 @@ module bten::bten {
     }
 
 
-    /// Atomically route SUI through BTEN and into a BTEN-first Cetus partner
+    /// v30: free path disabled — use `cetus_sui_to_asset_via_bten_a2b_ops_fee`.  Atomically route SUI through BTEN and into a BTEN-first Cetus partner
     /// pool. This records one receipt only after both flash swaps settle and
     /// the trader's final minimum output is met.
     public entry fun cetus_sui_to_asset_via_bten_a2b<A>(
@@ -1128,6 +1437,29 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Atomically route SUI through BTEN and into a BTEN-first Cetus partner
+    /// pool. This records one receipt only after both flash swaps settle and
+    /// the trader's final minimum output is met.
+    public entry fun cetus_sui_to_asset_via_bten_a2b_ops_fee<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        bten_asset_pool: &mut Pool<BTEN, A>,
+        mut input: Coin<SUI>,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        bten_asset_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_cetus_pool(registry, sui_bten_pool);
         assert_registered_cetus_pool(registry, bten_asset_pool);
         let requested = coin::value(&input);
@@ -1152,7 +1484,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
-    /// Same atomic SUI -> BTEN -> asset route when the partner asset is coin A
+    /// v30: free path disabled — use `cetus_sui_to_asset_via_bten_b2a_ops_fee`.  Same atomic SUI -> BTEN -> asset route when the partner asset is coin A
     /// and BTEN is coin B. The type ordering is enforced by Move.
     public entry fun cetus_sui_to_asset_via_bten_b2a<A>(
         state: &mut EmissionState,
@@ -1167,6 +1499,28 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Same atomic SUI -> BTEN -> asset route when the partner asset is coin A
+    /// and BTEN is coin B. The type ordering is enforced by Move.
+    public entry fun cetus_sui_to_asset_via_bten_b2a_ops_fee<A>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        asset_bten_pool: &mut Pool<A, BTEN>,
+        mut input: Coin<SUI>,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        asset_bten_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_cetus_pool(registry, sui_bten_pool);
         assert_registered_cetus_pool(registry, asset_bten_pool);
         let requested = coin::value(&input);
@@ -1213,7 +1567,7 @@ module bten::bten {
         });
     }
 
-    /// Atomic SUI -> BTEN -> asset route with a bounded BTEN rebate. The
+    /// v30: free path disabled — use `cetus_sui_to_asset_via_bten_rebate_a2b_ops_fee`.  Atomic SUI -> BTEN -> asset route with a bounded BTEN rebate. The
     /// caller supplies the final minimum output and the public dapp must offer
     /// this entry only after its disclosed direct-vs-BTEN quote is net better.
     /// The contract itself enforces the amount source, caps, registered pools,
@@ -1234,6 +1588,34 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Atomic SUI -> BTEN -> asset route with a bounded BTEN rebate. The
+    /// caller supplies the final minimum output and the public dapp must offer
+    /// this entry only after its disclosed direct-vs-BTEN quote is net better.
+    /// The contract itself enforces the amount source, caps, registered pools,
+    /// final output minimum, and exactly one route receipt.
+    public entry fun cetus_sui_to_asset_via_bten_rebate_a2b_ops_fee<A>(
+        state: &mut EmissionState,
+        treasury: &mut RouteTreasuryState,
+        rebate: &mut RouteRebateState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        bten_asset_pool: &mut Pool<BTEN, A>,
+        mut input: Coin<SUI>,
+        requested_rebate_bten: u64,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        bten_asset_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert!(!treasury.paused, E_TREASURY_PAUSED);
         assert_registered_cetus_pool(registry, sui_bten_pool);
         assert_registered_cetus_pool(registry, bten_asset_pool);
@@ -1269,7 +1651,7 @@ module bten::bten {
         transfer::public_transfer(coin::from_balance(receive_asset, ctx), tx_context::sender(ctx));
     }
 
-    /// Equivalent capped-rebate route for registered partner pools whose
+    /// v30: free path disabled — use `cetus_sui_to_asset_via_bten_rebate_b2a_ops_fee`.  Equivalent capped-rebate route for registered partner pools whose
     /// canonical Cetus ordering is asset/BTEN.
     public entry fun cetus_sui_to_asset_via_bten_rebate_b2a<A>(
         state: &mut EmissionState,
@@ -1287,6 +1669,31 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Equivalent capped-rebate route for registered partner pools whose
+    /// canonical Cetus ordering is asset/BTEN.
+    public entry fun cetus_sui_to_asset_via_bten_rebate_b2a_ops_fee<A>(
+        state: &mut EmissionState,
+        treasury: &mut RouteTreasuryState,
+        rebate: &mut RouteRebateState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        config: &GlobalConfig,
+        sui_bten_pool: &mut Pool<BTEN, SUI>,
+        asset_bten_pool: &mut Pool<A, BTEN>,
+        mut input: Coin<SUI>,
+        requested_rebate_bten: u64,
+        min_asset_out: u64,
+        sui_bten_sqrt_price_limit: u128,
+        asset_bten_sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert!(!treasury.paused, E_TREASURY_PAUSED);
         assert_registered_cetus_pool(registry, sui_bten_pool);
         assert_registered_cetus_pool(registry, asset_bten_pool);
@@ -1337,7 +1744,7 @@ module bten::bten {
 
 
 
-    /// Turbos gated swap: asset (coin A) -> BTEN (coin B). Exact-in; records one receipt.
+    /// v30: free path disabled — use `turbos_swap_to_bten_ops_fee`.  Turbos gated swap: asset (coin A) -> BTEN (coin B). Exact-in; records one receipt.
     public entry fun turbos_swap_to_bten<A, FeeType>(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -1349,6 +1756,25 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Turbos gated swap: asset (coin A) -> BTEN (coin B). Exact-in; records one receipt.
+    public entry fun turbos_swap_to_bten_ops_fee<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        pool: &mut TurbosPool<A, BTEN, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_turbos_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -1363,7 +1789,7 @@ module bten::bten {
         transfer::public_transfer(out_bten, sender);
     }
 
-    /// Turbos gated swap: BTEN (coin B) -> asset (coin A).
+    /// v30: free path disabled — use `turbos_swap_from_bten_ops_fee`.  Turbos gated swap: BTEN (coin B) -> asset (coin A).
     public entry fun turbos_swap_from_bten<A, FeeType>(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -1375,6 +1801,25 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Turbos gated swap: BTEN (coin B) -> asset (coin A).
+    public entry fun turbos_swap_from_bten_ops_fee<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        pool: &mut TurbosPool<A, BTEN, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_turbos_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -1389,7 +1834,7 @@ module bten::bten {
         transfer::public_transfer(out_asset, sender);
     }
 
-    /// Turbos gated swap when pool order is BTEN/A: asset (B) -> BTEN (A).
+    /// v30: free path disabled — use `turbos_swap_to_bten_b_first_ops_fee`.  Turbos gated swap when pool order is BTEN/A: asset (B) -> BTEN (A).
     public entry fun turbos_swap_to_bten_b_first<A, FeeType>(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -1401,6 +1846,25 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Turbos gated swap when pool order is BTEN/A: asset (B) -> BTEN (A).
+    public entry fun turbos_swap_to_bten_b_first_ops_fee<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        pool: &mut TurbosPool<BTEN, A, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<A>,
+        min_bten_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_turbos_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -1415,7 +1879,7 @@ module bten::bten {
         transfer::public_transfer(out_bten, sender);
     }
 
-    /// Turbos gated swap when pool order is BTEN/A: BTEN (A) -> asset (B).
+    /// v30: free path disabled — use `turbos_swap_from_bten_a_first_ops_fee`.  Turbos gated swap when pool order is BTEN/A: BTEN (A) -> asset (B).
     public entry fun turbos_swap_from_bten_a_first<A, FeeType>(
         state: &mut EmissionState,
         registry: &PoolRegistry,
@@ -1427,6 +1891,25 @@ module bten::bten {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        abort E_OPS_FEE_REQUIRED
+    }
+
+    /// v30 ops-fee variant: charges `fee_config.fee_mist` (default 0.5 SUI) to ops.
+    /// Turbos gated swap when pool order is BTEN/A: BTEN (A) -> asset (B).
+    public entry fun turbos_swap_from_bten_a_first_ops_fee<A, FeeType>(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        fee_config: &OpsInteractionFeeConfig,
+        ops_fee: Coin<SUI>,
+        pool: &mut TurbosPool<BTEN, A, FeeType>,
+        versioned: &TurbosVersioned,
+        input: Coin<BTEN>,
+        min_asset_out: u64,
+        sqrt_price_limit: u128,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        collect_ops_interaction_fee(fee_config, ops_fee, ctx);
         assert_registered_turbos_pool(registry, pool);
         let requested = coin::value(&input);
         assert!(requested > 0, E_ZERO_INPUT);
@@ -1888,7 +2371,7 @@ module bten::bten {
     ) {
         attest_external_cetus_route_internal(
             state, registry, verifier, pool_id, transaction_digest,
-            event_sequence, trader, fee_points, clock, ctx,
+            event_sequence, trader, fee_points, true, clock, ctx,
         );
     }
 
@@ -1928,7 +2411,7 @@ module bten::bten {
                 *vector::borrow(&event_sequences, i),
                 *vector::borrow(&traders, i),
                 *vector::borrow(&fee_points_vec, i),
-                clock,
+                true, clock,
                 ctx,
             );
             i = i + 1;
@@ -1953,7 +2436,7 @@ module bten::bten {
     ) {
         attest_external_cetus_route_internal(
             state, registry, verifier, pool_id, transaction_digest,
-            event_sequence, trader, fee_points, clock, ctx,
+            event_sequence, trader, fee_points, true, clock, ctx,
         );
         try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
     }
@@ -1992,12 +2475,184 @@ module bten::bten {
                 *vector::borrow(&event_sequences, i),
                 trader,
                 *vector::borrow(&fee_points_vec, i),
-                clock,
+                true, clock,
                 ctx,
             );
             try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
             i = i + 1;
         };
+    }
+
+    /// Permissionless WAL/SUI-only external attest (v29). No `ExternalRouteVerifierCap`.
+    /// Any gas-paying signer may call. Asserts `pool_id == WAL_SUI_POOL_ID`, then
+    /// runs the same paused / replay / daily-cap / registered-pool / fee_points
+    /// checks as Cap-gated attest (keeper-sender check skipped). Emits
+    /// `WalSuiExternalAttested` after `ExternalCetusRouteAttested`.
+    /// Kinds: 1=swap, 2=add, 3=remove. Spam is limited by the processed table
+    /// (double-attest aborts) and optional daily_event_cap.
+    public entry fun attest_wal_sui_external_route(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        pool_id: address,
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+        trader: address,
+        fee_points: u64,
+        event_kind: u8,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_wal_sui_external_args(pool_id, event_kind);
+        let digest_for_event = copy transaction_digest;
+        attest_external_cetus_route_internal(
+            state, registry, verifier, pool_id, transaction_digest,
+            event_sequence, trader, fee_points, /* enforce_keeper */ false, clock, ctx,
+        );
+        emit_wal_sui_external_attested(
+            pool_id, trader, digest_for_event, event_sequence, event_kind, fee_points,
+        );
+    }
+
+    /// Batch variant of permissionless `attest_wal_sui_external_route`.
+    public entry fun attest_wal_sui_external_routes(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        pool_ids: vector<address>,
+        transaction_digests: vector<vector<u8>>,
+        event_sequences: vector<u64>,
+        traders: vector<address>,
+        fee_points_vec: vector<u64>,
+        event_kinds: vector<u8>,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let n = vector::length(&pool_ids);
+        assert!(n > 0, E_BAD_AMOUNT);
+        assert!(vector::length(&transaction_digests) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&event_sequences) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&traders) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&fee_points_vec) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&event_kinds) == n, E_BAD_AMOUNT);
+        let mut i = 0;
+        while (i < n) {
+            let pool_id = *vector::borrow(&pool_ids, i);
+            let event_kind = *vector::borrow(&event_kinds, i);
+            assert_wal_sui_external_args(pool_id, event_kind);
+            let digest = *vector::borrow(&transaction_digests, i);
+            let digest_for_event = copy digest;
+            let event_sequence = *vector::borrow(&event_sequences, i);
+            let trader = *vector::borrow(&traders, i);
+            let fee_points = *vector::borrow(&fee_points_vec, i);
+            attest_external_cetus_route_internal(
+                state, registry, verifier, pool_id, digest,
+                event_sequence, trader, fee_points, false, clock, ctx,
+            );
+            emit_wal_sui_external_attested(
+                pool_id, trader, digest_for_event, event_sequence, event_kind, fee_points,
+            );
+            i = i + 1;
+        };
+    }
+
+    /// Permissionless WAL/SUI attest + 1-raw trader rebate accrual. No Cap.
+    public entry fun attest_wal_sui_external_route_rebate(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        rebate: &mut WalSuiTraderRebateState,
+        pool_id: address,
+        transaction_digest: vector<u8>,
+        event_sequence: u64,
+        trader: address,
+        fee_points: u64,
+        event_kind: u8,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        assert_wal_sui_external_args(pool_id, event_kind);
+        let digest_for_event = copy transaction_digest;
+        attest_external_cetus_route_internal(
+            state, registry, verifier, pool_id, transaction_digest,
+            event_sequence, trader, fee_points, false, clock, ctx,
+        );
+        try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
+        emit_wal_sui_external_attested(
+            pool_id, trader, digest_for_event, event_sequence, event_kind, fee_points,
+        );
+    }
+
+    /// Batch variant of permissionless `attest_wal_sui_external_route_rebate`.
+    public entry fun attest_wal_sui_external_routes_rebate(
+        state: &mut EmissionState,
+        registry: &PoolRegistry,
+        verifier: &mut ExternalRouteVerifierState,
+        rebate: &mut WalSuiTraderRebateState,
+        pool_ids: vector<address>,
+        transaction_digests: vector<vector<u8>>,
+        event_sequences: vector<u64>,
+        traders: vector<address>,
+        fee_points_vec: vector<u64>,
+        event_kinds: vector<u8>,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let n = vector::length(&pool_ids);
+        assert!(n > 0, E_BAD_AMOUNT);
+        assert!(vector::length(&transaction_digests) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&event_sequences) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&traders) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&fee_points_vec) == n, E_BAD_AMOUNT);
+        assert!(vector::length(&event_kinds) == n, E_BAD_AMOUNT);
+        let mut i = 0;
+        while (i < n) {
+            let pool_id = *vector::borrow(&pool_ids, i);
+            let event_kind = *vector::borrow(&event_kinds, i);
+            assert_wal_sui_external_args(pool_id, event_kind);
+            let digest = *vector::borrow(&transaction_digests, i);
+            let digest_for_event = copy digest;
+            let event_sequence = *vector::borrow(&event_sequences, i);
+            let trader = *vector::borrow(&traders, i);
+            let fee_points = *vector::borrow(&fee_points_vec, i);
+            attest_external_cetus_route_internal(
+                state, registry, verifier, pool_id, digest,
+                event_sequence, trader, fee_points, false, clock, ctx,
+            );
+            try_accrue_wal_sui_trader_rebate(rebate, pool_id, trader);
+            emit_wal_sui_external_attested(
+                pool_id, trader, digest_for_event, event_sequence, event_kind, fee_points,
+            );
+            i = i + 1;
+        };
+    }
+
+    fun assert_wal_sui_external_args(pool_id: address, event_kind: u8) {
+        assert!(pool_id == WAL_SUI_POOL_ID, E_WAL_SUI_POOL_MISMATCH);
+        assert!(
+            event_kind == WAL_SUI_EVENT_KIND_SWAP
+                || event_kind == WAL_SUI_EVENT_KIND_ADD
+                || event_kind == WAL_SUI_EVENT_KIND_REMOVE,
+            E_WAL_SUI_EVENT_KIND,
+        );
+    }
+
+    fun emit_wal_sui_external_attested(
+        pool_id: address,
+        trader: address,
+        digest: vector<u8>,
+        event_sequence: u64,
+        event_kind: u8,
+        fee_points: u64,
+    ) {
+        event::emit(WalSuiExternalAttested {
+            pool_id,
+            trader,
+            digest,
+            event_sequence,
+            event_kind,
+            fee_points,
+        });
     }
 
     fun attest_external_cetus_route_internal(
@@ -2009,11 +2664,14 @@ module bten::bten {
         event_sequence: u64,
         trader: address,
         fee_points: u64,
+        enforce_keeper: bool,
         clock: &Clock,
         ctx: &TxContext,
     ) {
         assert!(!verifier.paused, E_EXTERNAL_VERIFIER_PAUSED);
-        assert!(tx_context::sender(ctx) == verifier.keeper, E_EXTERNAL_VERIFIER_SENDER);
+        if (enforce_keeper) {
+            assert!(tx_context::sender(ctx) == verifier.keeper, E_EXTERNAL_VERIFIER_SENDER);
+        };
         assert!(table::contains(&registry.pools, pool_id), E_POOL_NOT_REGISTERED);
         assert!(*table::borrow(&registry.pools, pool_id) == BUCKET_CETUS, E_POOL_NOT_REGISTERED);
         assert!(vector::length(&transaction_digest) == 32, E_EXTERNAL_EVENT_DIGEST);
@@ -2793,6 +3451,10 @@ module bten::bten {
     public fun external_verifier_is_paused(config: &ExternalRouteVerifierState): bool { config.paused }
     public fun external_verifier_daily_cap(config: &ExternalRouteVerifierState): u64 { config.daily_event_cap }
     public fun external_verifier_events_today(config: &ExternalRouteVerifierState): u64 { config.events_today }
+    public fun wal_sui_pool_id(): address { WAL_SUI_POOL_ID }
+    public fun wal_sui_event_kind_swap(): u8 { WAL_SUI_EVENT_KIND_SWAP }
+    public fun wal_sui_event_kind_add(): u8 { WAL_SUI_EVENT_KIND_ADD }
+    public fun wal_sui_event_kind_remove(): u8 { WAL_SUI_EVENT_KIND_REMOVE }
     public fun lp_program_is_paused(programme: &LpProgramState): bool { programme.paused }
     public fun lp_program_is_finalized(programme: &LpProgramState): bool { programme.finalized }
     public fun lp_program_weight(programme: &LpProgramState, pool_id: address): u64 {

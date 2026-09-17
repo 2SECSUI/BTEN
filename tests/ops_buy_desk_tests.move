@@ -89,16 +89,30 @@ module bten::ops_buy_desk_tests {
             test_scenario::return_shared(clock);
         };
 
-        // Buyer pays 0.4 SUI → 1 BTEN at posted mid
+        // Create ops interaction fee config (default recipient = OPS_FEE_RECIPIENT)
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+
+        // Buyer pays 0.4 SUI purchase + 0.5 SUI ops fee → 1 BTEN at posted mid
         scenario.next_tx(buyer);
         {
             let mut desk = scenario.take_shared<OpsBuyDesk>();
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
+            assert!(bten::ops_interaction_fee_mist(&fee_cfg) == 500_000_000, 39);
             let payment = coin::mint_for_testing<SUI>(400_000_000, scenario.ctx());
-            ops_buy_desk::buy_with_sui_posted_price(&mut desk, payment, 100_000_000, scenario.ctx());
+            let ops_fee = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
+            ops_buy_desk::buy_with_sui_posted_price_ops_fee(
+                &mut desk, &fee_cfg, ops_fee, payment, 100_000_000, scenario.ctx(),
+            );
             assert!(ops_buy_desk::inventory(&desk) == 900_000_000, 40);
             assert!(ops_buy_desk::total_sold_bten(&desk) == 100_000_000, 41);
             assert!(ops_buy_desk::total_received_sui(&desk) == 400_000_000, 42);
             test_scenario::return_shared(desk);
+            test_scenario::return_shared(fee_cfg);
         };
 
         scenario.next_tx(buyer);
@@ -108,12 +122,21 @@ module bten::ops_buy_desk_tests {
             scenario.return_to_sender(got);
         };
 
-        // Ops receives SUI
+        // Desk sui_recipient (ops) receives purchase SUI
         scenario.next_tx(ops);
         {
             let sui = scenario.take_from_sender<coin::Coin<SUI>>();
             assert!(coin::value(&sui) == 400_000_000, 55);
             scenario.return_to_sender(sui);
+        };
+
+        // Default OPS_FEE_RECIPIENT receives the 0.5 SUI interaction fee
+        let fee_ops = bten::default_ops_fee_recipient();
+        scenario.next_tx(fee_ops);
+        {
+            let fee = scenario.take_from_sender<coin::Coin<SUI>>();
+            assert!(coin::value(&fee) == 500_000_000, 56);
+            scenario.return_to_sender(fee);
         };
 
         // Withdraw remaining inventory
@@ -144,10 +167,17 @@ module bten::ops_buy_desk_tests {
             ops_buy_desk::create(&admin_cap, ops, ops, ops, POOL, SAMPLE_PRICE, scenario.ctx());
             scenario.return_to_sender(admin_cap);
         };
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
         scenario.next_tx(ops);
         {
             let mut desk = scenario.take_shared<OpsBuyDesk>();
             let desk_admin = scenario.take_from_sender<OpsBuyDeskAdminCap>();
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
             ops_buy_desk::deposit_bten(
                 &mut desk,
                 &desk_admin,
@@ -155,8 +185,12 @@ module bten::ops_buy_desk_tests {
             );
             ops_buy_desk::set_paused(&mut desk, &desk_admin, true);
             let payment = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
-            ops_buy_desk::buy_with_sui_posted_price(&mut desk, payment, 1, scenario.ctx());
+            let ops_fee = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
+            ops_buy_desk::buy_with_sui_posted_price_ops_fee(
+                &mut desk, &fee_cfg, ops_fee, payment, 1, scenario.ctx(),
+            );
             test_scenario::return_shared(desk);
+            test_scenario::return_shared(fee_cfg);
             scenario.return_to_sender(desk_admin);
         };
         scenario.end();
@@ -176,10 +210,17 @@ module bten::ops_buy_desk_tests {
             ops_buy_desk::create(&admin_cap, ops, ops, ops, POOL, SAMPLE_PRICE, scenario.ctx());
             scenario.return_to_sender(admin_cap);
         };
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            bten::create_ops_interaction_fee_config(&admin_cap, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
         scenario.next_tx(ops);
         {
             let mut desk = scenario.take_shared<OpsBuyDesk>();
             let desk_admin = scenario.take_from_sender<OpsBuyDeskAdminCap>();
+            let fee_cfg = scenario.take_shared<bten::OpsInteractionFeeConfig>();
             ops_buy_desk::deposit_bten(
                 &mut desk,
                 &desk_admin,
@@ -187,7 +228,43 @@ module bten::ops_buy_desk_tests {
             );
             // 0.002 SUI → ~466781 mist; demand impossible min_out
             let payment = coin::mint_for_testing<SUI>(2_000_000, scenario.ctx());
-            ops_buy_desk::buy_with_sui_posted_price(&mut desk, payment, 1_000_000_000, scenario.ctx());
+            let ops_fee = coin::mint_for_testing<SUI>(500_000_000, scenario.ctx());
+            ops_buy_desk::buy_with_sui_posted_price_ops_fee(
+                &mut desk, &fee_cfg, ops_fee, payment, 1_000_000_000, scenario.ctx(),
+            );
+            test_scenario::return_shared(desk);
+            test_scenario::return_shared(fee_cfg);
+            scenario.return_to_sender(desk_admin);
+        };
+        scenario.end();
+    }
+
+    /// Legacy free buy path must abort (v30).
+    #[test]
+    #[expected_failure(abort_code = 11)]
+    fun legacy_buy_requires_ops_fee() {
+        let admin = @0xA;
+        let ops = @0xB;
+        let mut scenario = test_scenario::begin(admin);
+        bten::initialize_for_testing(scenario.ctx());
+        scenario.create_system_objects();
+        scenario.next_tx(admin);
+        {
+            let admin_cap = scenario.take_from_sender<bten::RegistryAdminCap>();
+            ops_buy_desk::create(&admin_cap, ops, ops, ops, POOL, SAMPLE_PRICE, scenario.ctx());
+            scenario.return_to_sender(admin_cap);
+        };
+        scenario.next_tx(ops);
+        {
+            let mut desk = scenario.take_shared<OpsBuyDesk>();
+            let desk_admin = scenario.take_from_sender<OpsBuyDeskAdminCap>();
+            ops_buy_desk::deposit_bten(
+                &mut desk,
+                &desk_admin,
+                coin::mint_for_testing<BTEN>(100_000_000, scenario.ctx()),
+            );
+            let payment = coin::mint_for_testing<SUI>(400_000_000, scenario.ctx());
+            ops_buy_desk::buy_with_sui_posted_price(&mut desk, payment, 1, scenario.ctx());
             test_scenario::return_shared(desk);
             scenario.return_to_sender(desk_admin);
         };

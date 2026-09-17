@@ -1,0 +1,92 @@
+{
+  "network": "mainnet",
+  "status": "paste-ready-for-bandbot",
+  "docs": "docs/BANDBOT_WAL_SUI_KEEPER.md",
+  "livePackageId": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6",
+  "livePackageVersion": 30,
+  "upgradeDigest": "4kpc4Z3tf8oXnH2pb9AS5PrVJKwXYQMhkudK19Af31YR",
+  "originalPackageId": "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0",
+  "permissionlessWalSui": true,
+  "externalRouteVerifierCapRequired": false,
+  "capNote": "Cap NOT required for WAL/SUI path. Do not paste keys here. If Cap is ever needed for other pools, store only in Bandbot secrets / sponsored keeper settings Michael provides.",
+  "objects": {
+    "emissionState": "0x22face12e4a73bc38171c5a2dd62a1cef8650bac3abc95eb5d3852ee36544253",
+    "poolRegistry": "0xc78a803d7acc6e9740911802e382a45c347e0fb012613a908eb0738c4957d133",
+    "externalRouteVerifierState": "0x32206a1e910973b54b1225969365f58601399d3611a712e3644ab52c334b26f3",
+    "distributionState": "0x155a879794ae0c251677c7c9937b621ed094087908bc804d9112c897aeddb9b6",
+    "clock": "0x6",
+    "walSuiPool": "0x72f5c6eef73d77de271886219a2543e7c29a33de19a6c69c5cf1899f729c3f17",
+    "walSuiTraderRebateState": "0x4ff5c2d9ed680a2fc6b0844797411257f95a1780885789ef419523b377b1ad7a"
+  },
+  "entrypoints": {
+    "attestSingle": "bten::attest_wal_sui_external_route",
+    "attestBatch": "bten::attest_wal_sui_external_routes",
+    "attestSingleRebate": "bten::attest_wal_sui_external_route_rebate",
+    "attestBatchRebate": "bten::attest_wal_sui_external_routes_rebate",
+    "settleAndDistributeOptional": "bten::settle_and_distribute"
+  },
+  "eventKinds": {
+    "1": "swap",
+    "2": "add",
+    "3": "remove"
+  },
+  "cetusEventTypes": {
+    "swap": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent",
+    "add": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::AddLiquidityEvent",
+    "addV2": "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::AddLiquidityV2Event",
+    "remove": "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::RemoveLiquidityEvent",
+    "removeV2": "0xdb5cd62a06c79695bfc9982eb08534706d3752fe123b48e0144f480209b3117f::pool::RemoveLiquidityV2Event"
+  },
+  "btenEventTypes": [
+    "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::ExternalCetusRouteAttested",
+    "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::WalSuiExternalAttested",
+    "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::ExternalCetusRouteAttested",
+    "0x31c6c71184b08a574bd62fa8edd9a75aab9a986427484cf765a1890ce00aece0::bten::WalSuiExternalAttested"
+  ],
+  "ptbBatchAttest": {
+    "target": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::attest_wal_sui_external_routes",
+    "argsOrder": [
+      "emissionState",
+      "poolRegistry",
+      "externalRouteVerifierState",
+      "pool_ids (all WAL_SUI)",
+      "transaction_digests (32 bytes each)",
+      "event_sequences",
+      "traders",
+      "fee_points_vec (prefer 1)",
+      "event_kinds (1|2|3)",
+      "clock"
+    ]
+  },
+  "settleOptional": {
+    "when": "min(pending_blocks, batch_trades/10, 100) >= 1",
+    "target": "0x5a26ec01ee35959a00dfd684b9551c77b33e37f62596dc59196651129dbf06d6::bten::settle_and_distribute",
+    "args": [
+      "emissionState",
+      "distributionState",
+      "clock"
+    ],
+    "skipIfNotEligible": true
+  },
+  "gasCapsMist": {
+    "attestBatch": "30000000",
+    "attestPlusSettle": "50000000"
+  },
+  "safety": {
+    "doNotTouchLpPositions": true,
+    "doNotTouchIdleFundsBeyondGas": true,
+    "neverEmbedPrivateKeys": true,
+    "spamNote": "Permissionless; processed table blocks double-count (abort 30). Pause/daily_cap are admin controls.",
+    "githubKeeper": "disabled \u2014 do not re-enable"
+  },
+  "lpGate": {
+    "add": true,
+    "remove": true,
+    "eventKinds": {
+      "swap": 1,
+      "add": 2,
+      "remove": 3
+    },
+    "note": "LP add and remove on WAL/SUI count as gated receipts via permissionless attest (kinds 2/3)."
+  }
+}
